@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Quotations</h1>
+        <p>Price estimates, draft proposals and customer quotes</p>
+    </div>
+    <div class="page-head-actions">
+        <button class="btn btn-ghost"><svg class="icon"><use href="#i-download"/></svg> Export</button>
+        <button class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg> New Quotation</button>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-file"/></svg></div>
+        </div>
+        <div class="stat-value">{{ quotations.paginator.count }}</div>
+        <div class="stat-label">Total Quotations</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-clock"/></svg></div>
+        </div>
+        <div class="stat-value">{% for q in quotations %}{% if q.status == 'draft' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not quotations %}0{% endif %}</div>
+        <div class="stat-label">Drafts</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--info-soft); color:var(--info);"><svg class="icon"><use href="#i-upload"/></svg></div>
+        </div>
+        <div class="stat-value">{% for q in quotations %}{% if q.status == 'sent' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not quotations %}0{% endif %}</div>
+        <div class="stat-label">Sent to Client</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-check"/></svg></div>
+        </div>
+        <div class="stat-value">{% for q in quotations %}{% if q.status == 'accepted' or q.status == 'converted' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not quotations %}0{% endif %}</div>
+        <div class="stat-label">Accepted / Converted</div>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.08s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'billing:quotation_list' %}" class="chip {% if not status_filter %}active{% endif %}">All</a>
+            {% for val,label in status_choices %}
+            <a href="?status={{ val }}" class="chip {% if status_filter == val %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2 flex-wrap">
+                <div class="search-field" style="width: 300px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Quote #, customer name...">
+                </div>
+                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.1s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Quote #</th>
+                    <th>Customer</th>
+                    <th>Items</th>
+                    <th>Valid Until</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th class="text-right">Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for q in quotations %}
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div class="fleet-icon" style="background:var(--secondary-soft); border:none;">
+                                <svg class="icon" style="color:var(--secondary);"><use href="#i-file"/></svg>
+                            </div>
+                            <a href="{% url 'billing:quotation_detail' pk=q.pk %}" style="font-size:13px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ q.quotation_number }}</a>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-size:13px; font-weight:800; color:var(--text);">{{ q.customer.full_name|default:"—" }}</div>
+                        <div class="td-faint">{{ q.customer.company_name|default:"" }}</div>
+                    </td>
+                    <td>
+                        <div style="font-size:13px; font-weight:800; color:var(--text);">{{ q.items.count }} line{{ q.items.count|pluralize }}</div>
+                        <div class="td-faint">{{ q.items.all|length }} services</div>
+                    </td>
+                    <td>
+                        {% if q.valid_until %}
+                        <div style="font-size:12.5px; font-weight:700; color:var(--text);">{{ q.valid_until|date:"d M Y" }}</div>
+                        {% else %}
+                        <span class="td-faint">No expiry</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="font-size:13px; font-weight:800; color:var(--text);">{{ q.currency|default:"TZS" }} {{ q.total|default:0|floatformat:2 }}</div>
+                    </td>
+                    <td>
+                        <span class="badge {% if q.status == 'accepted' or q.status == 'converted' %}b-delivered{% elif q.status == 'sent' %}b-transit{% elif q.status == 'draft' %}b-pending{% elif q.status == 'rejected' or q.status == 'expired' %}b-delayed{% else %}b-warehouse{% endif %}">{{ q.get_status_display }}</span>
+                    </td>
+                    <td class="text-right">
+                        <div style="font-size:13px; font-weight:800; color:var(--text); white-space:nowrap;">{{ q.created_at|date:"d M Y" }}</div>
+                        <div class="td-faint">{{ q.created_by.full_name|default:q.created_by.email|slice:":15" }}</div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-file"/></svg></div>
+                            <p>No quotations found. Create your first customer quote.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if quotations.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ quotations.number }} of {{ quotations.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if quotations.has_previous %}?page={{ quotations.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not quotations.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            {% for num in quotations.paginator.page_range %}
+                {% if forloop.first or forloop.last or num >= quotations.number|add:"-2" and num <= quotations.number|add:"2" %}
+                <a href="?page={{ num }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+                   class="page-btn {% if num == quotations.number %}active{% endif %}">{{ num }}</a>
+                {% elif num == quotations.number|add:"-3" or num == quotations.number|add:"3" %}
+                <span class="page-dots">…</span>
+                {% endif %}
+            {% endfor %}
+            <a href="{% if quotations.has_next %}?page={{ quotations.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not quotations.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

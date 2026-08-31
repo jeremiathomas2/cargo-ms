@@ -1,0 +1,587 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Operations Dashboard — Shehena{% endblock %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Operations dashboard</h1>
+        <p>{{ today|date:"l, F j, Y" }} · Dar es Salaam Head Office</p>
+    </div>
+    <button class="range-select">
+        <svg class="icon"><use href="#i-clock"/></svg> Last 30 days
+        <svg class="icon"><use href="#i-chevron-down"/></svg>
+    </button>
+</div>
+
+<!-- STAT CARDS -->
+<section class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--info-soft)"><svg class="icon" style="stroke:var(--info)"><use href="#i-box"/></svg></div>
+            <div class="stat-trend trend-up"><svg class="icon"><use href="#i-up"/></svg>8.2%</div>
+        </div>
+        <div class="stat-value">{{ total_shipments|default:"1,248" }}</div>
+        <div class="stat-label">Total shipments</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft)"><svg class="icon" style="stroke:var(--secondary)"><use href="#i-route"/></svg></div>
+            <div class="stat-trend trend-up"><svg class="icon"><use href="#i-up"/></svg>3.1%</div>
+        </div>
+        <div class="stat-value">{{ in_transit|default:"96" }}</div>
+        <div class="stat-label">In transit</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft)"><svg class="icon" style="stroke:var(--brand)"><use href="#i-warehouse"/></svg></div>
+            <div class="stat-trend trend-down"><svg class="icon"><use href="#i-down"/></svg>1.4%</div>
+        </div>
+        <div class="stat-value">{{ at_warehouse|default:"214" }}</div>
+        <div class="stat-label">At warehouse</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft)"><svg class="icon" style="stroke:var(--success)"><use href="#i-check"/></svg></div>
+            <div class="stat-trend trend-up"><svg class="icon"><use href="#i-up"/></svg>12%</div>
+        </div>
+        <div class="stat-value">{{ delivered_today|default:"63" }}</div>
+        <div class="stat-label">Delivered today</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft)"><svg class="icon" style="stroke:var(--warning)"><use href="#i-cash"/></svg></div>
+            <div class="stat-trend trend-down"><svg class="icon"><use href="#i-down"/></svg>5.6%</div>
+        </div>
+        <div class="stat-value">TZS {{ pending_payments|default:"42.6M" }}</div>
+        <div class="stat-label">Pending payments</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--danger-soft)"><svg class="icon" style="stroke:var(--danger)"><use href="#i-alert"/></svg></div>
+            <div class="stat-trend trend-up"><svg class="icon"><use href="#i-up"/></svg>2</div>
+        </div>
+        <div class="stat-value">{{ active_alerts|default:"3" }}</div>
+        <div class="stat-label">Active alerts</div>
+    </div>
+</section>
+
+<!-- SHIPMENTS + MAP -->
+<section class="grid-main reveal" style="animation-delay:.08s">
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <h2>Shipments</h2>
+                <p class="sub">{{ total_shipments|default:"1,248" }} total · {{ in_transit|default:"96" }} moving now</p>
+            </div>
+            <button class="panel-more"><svg class="icon" style="width:16px;height:16px"><use href="#i-chevron-down"/></svg></button>
+        </div>
+        <div class="filter-row" id="filterRow">
+            <button class="chip active" data-filter="all">All</button>
+            <button class="chip" data-filter="in_transit">In transit</button>
+            <button class="chip" data-filter="in_warehouse">Warehouse</button>
+            <button class="chip" data-filter="pending">Pending</button>
+            <button class="chip" data-filter="delivered">Delivered</button>
+            <button class="chip" data-filter="delayed">Delayed</button>
+        </div>
+        <div class="shipment-list" id="shipmentList"></div>
+    </div>
+
+    <div class="panel map-panel">
+        <div class="panel-head">
+            <div>
+                <h2>Live tracking</h2>
+                <p class="sub" id="mapSub">Following active shipment</p>
+            </div>
+            <a href="{% url 'gps_tracking:live_tracking' %}" class="btn btn-ghost" style="padding:7px 14px; font-size:12px;">
+                <svg class="icon"><use href="#i-map"/></svg> Full map
+            </a>
+        </div>
+        <div id="map"></div>
+        <div class="map-stats">
+            <div class="map-stat"><span>Distance</span><strong id="mapDistance">—</strong></div>
+            <div class="map-stat"><span>Average speed</span><strong id="mapSpeed">—</strong></div>
+            <div class="map-stat"><span>Last update</span><strong id="mapUpdate">—</strong></div>
+        </div>
+        <div class="detail-card" id="detailCard"></div>
+    </div>
+</section>
+
+<!-- CROSS BORDER SPOTLIGHT -->
+{% if cross_border_shipments %}
+<section class="panel spotlight reveal" style="animation-delay:.1s">
+    <div class="panel-head" style="padding:0;">
+        <div>
+            <h2>Cross-border shipment</h2>
+            <p class="sub">Regional corridor · Central &amp; Southern route</p>
+        </div>
+        <span class="badge b-transit">In transit</span>
+    </div>
+    <div class="spotlight-grid">
+        <div class="spot-field"><span>Tracking no.</span><strong>{{ cross_border_shipments.0.tracking_id|default:"SHN-TZ-2026-000124" }}</strong></div>
+        <div class="spot-field"><span>Consignee</span><strong>{{ cross_border_shipments.0.customer.name|default:"Copperbelt Mining Supplies" }}</strong></div>
+        <div class="spot-field"><span>Carrier</span><strong>TransAfrica Logistics</strong></div>
+        <div class="spot-field"><span>Route</span><strong><span class="flag">🇹🇿</span> {{ cross_border_shipments.0.origin|default:"Dar es Salaam" }} → {{ cross_border_shipments.0.destination|default:"Lusaka" }} <span class="flag">🇿🇲</span></strong></div>
+    </div>
+    <div class="checkpoints">
+        <div class="cp done">
+            <div class="cp-dot"><svg class="icon"><use href="#i-check"/></svg></div>
+            <strong>Dar es Salaam</strong><span>Departed · 10 Aug</span>
+        </div>
+        <div class="cp done">
+            <div class="cp-dot"><svg class="icon"><use href="#i-check"/></svg></div>
+            <strong>Mbeya weigh station</strong><span>Cleared · 11 Aug</span>
+        </div>
+        <div class="cp delayed">
+            <div class="cp-dot"><svg class="icon"><use href="#i-alert"/></svg></div>
+            <strong>Tunduma border</strong><span>Delayed · customs hold</span>
+        </div>
+        <div class="cp pending">
+            <div class="cp-dot"><svg class="icon"><use href="#i-clock"/></svg></div>
+            <strong>Lusaka</strong><span>ETA 3 Sep</span>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- CHARTS + FLEET -->
+<section class="grid-secondary reveal" style="animation-delay:.12s">
+    <div class="panel chart-box">
+        <div class="panel-head" style="padding:0 0 4px;">
+            <div>
+                <h2>Cargo volume</h2>
+                <p class="sub">Shipments booked per month</p>
+            </div>
+        </div>
+        <div class="chart-wrap chart-sm">
+            <canvas id="volumeChart"></canvas>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <h2>Fleet snapshot</h2>
+                <p class="sub">{{ vehicles|length|default:"4" }} vehicles · {{ on_route_vehicles|default:"2" }} on route</p>
+            </div>
+        </div>
+        <div class="fleet-list" id="fleetList"></div>
+    </div>
+</section>
+
+<section class="grid-secondary reveal" style="animation-delay:.14s; grid-template-columns:1fr 1.3fr;">
+    <div class="panel chart-box">
+        <div class="panel-head" style="padding:0 0 4px;">
+            <div>
+                <h2>Cargo by status</h2>
+                <p class="sub">Current snapshot</p>
+            </div>
+        </div>
+        <div class="chart-wrap chart-md">
+            <canvas id="statusChart"></canvas>
+        </div>
+        <div class="chart-legend" id="statusLegend"></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <h2>Delivery schedule</h2>
+                <p class="sub">Progress across all active shipments</p>
+            </div>
+        </div>
+        <div class="schedule-panel" id="scheduleList"></div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{{ monthly_data|json_script:"monthly_data" }}
+{{ status_data|json_script:"status_data" }}
+<script>
+(function(){
+  "use strict";
+
+  var STATUS_LABEL = {
+    in_transit:   {label:"In transit",  badge:"b-transit",   color:"#38AEF2", soft:"var(--info-soft)"},
+    transit:      {label:"In transit",  badge:"b-transit",   color:"#38AEF2", soft:"var(--info-soft)"},
+    in_warehouse: {label:"At warehouse",badge:"b-warehouse", color:"#6D5BD0", soft:"var(--secondary-soft)"},
+    warehouse:    {label:"At warehouse",badge:"b-warehouse", color:"#6D5BD0", soft:"var(--secondary-soft)"},
+    pending:      {label:"Pending",     badge:"b-pending",    color:"#E19A1C", soft:"var(--warning-soft)"},
+    booked:       {label:"Pending",     badge:"b-pending",    color:"#E19A1C", soft:"var(--warning-soft)"},
+    ready_for_dispatch: {label:"Pending",badge:"b-pending",   color:"#E19A1C", soft:"var(--warning-soft)"},
+    delivered:    {label:"Delivered",   badge:"b-delivered",  color:"#1DA36B", soft:"var(--success-soft)"},
+    out_for_delivery:{label:"Delivered",badge:"b-delivered",  color:"#1DA36B", soft:"var(--success-soft)"},
+    delayed:      {label:"Delayed",     badge:"b-delayed",    color:"#E5484D", soft:"var(--danger-soft)"},
+    customs_hold: {label:"Delayed",     badge:"b-delayed",    color:"#E5484D", soft:"var(--danger-soft)"},
+    cancelled:    {label:"Cancelled",   badge:"b-delayed",    color:"#9694A8", soft:"var(--border)"},
+  };
+  function st(s){ return STATUS_LABEL[s] || STATUS_LABEL.pending; }
+
+  var STEPS = ["Booked","Received","Warehouse","In transit","Customs","Out for delivery","Delivered"];
+
+  // Build sample shipment data; mix in real queryset data if available
+  var djangoShipments = [];
+  {% for s in recent_shipments %}
+    djangoShipments.push({
+      id: "{{ s.tracking_id|default:'' }}",
+      customer: "{{ s.customer.full_name|default:''|escapejs }}",
+      cargo: "{{ s.get_cargo_type_display|default:'General cargo' }}",
+      status: "{{ s.get_status_display|default:'pending' }}",
+      carrier: "Shehena Line-Haul",
+      eta: "{% if s.estimated_arrival %}{{ s.estimated_arrival|date:'M j, H:i' }}{% else %}TBD{% endif %}",
+      route: "{{ s.origin|default:'—'|escapejs }} → {{ s.destination|default:'—'|escapejs }}",
+      step: {% if s.status == 'delivered' %}6{% elif s.status == 'out_for_delivery' %}5{% elif s.status == 'customs_hold' or s.status == 'arrived_destination' %}4{% elif s.status == 'in_transit' %}3{% elif s.status == 'in_warehouse' or s.status == 'sorted' or s.status == 'ready_for_dispatch' or s.status == 'loaded' %}2{% elif s.status == 'received' or s.status == 'awaiting_receiving' %}1{% else %}0{% endif %},
+      progress: {% if s.status == 'delivered' %}1{% elif s.status == 'in_transit' %}0.55{% elif s.status == 'out_for_delivery' %}0.9{% elif s.status == 'loaded' %}0.35{% elif s.status == 'ready_for_dispatch' %}0.3{% elif s.status == 'received' %}0.15{% elif s.status == 'customs_hold' %}0.8{% else %}0{% endif %},
+      waypoints:[[-6.7924,39.2083],[-6.8235,37.6822],[-6.1730,35.7419],[-3.8480,32.6000],[-15.3875,28.3228]]
+    });
+  {% endfor %}
+
+  var fallback = [
+    {id:"SHN-TZ-2026-000124", customer:"Copperbelt Mining Supplies", cargo:"Mining equipment parts", status:"in_transit", carrier:"TransAfrica Logistics", eta:"3 Sep, 18:00", route:"Dar es Salaam → Lusaka, ZM", step:3, progress:0.62, waypoints:[[-6.7924,39.2083],[-6.8235,37.6822],[-6.1730,35.7419],[-7.7669,35.6980],[-8.9094,33.4608],[-9.3000,32.7667],[-15.3875,28.3228]]},
+    {id:"SHN-TZ-2026-000131", customer:"Great Lakes Produce Co.", cargo:"Packaged foodstuffs", status:"in_transit", carrier:"Kilimanjaro Freight Lines", eta:"2 Sep, 09:00", route:"Dar es Salaam → Kigali, RW", step:3, progress:0.45, waypoints:[[-6.7924,39.2083],[-6.8235,37.6822],[-6.1730,35.7419],[-4.8180,34.7451],[-4.2133,33.1667],[-3.8480,32.6000],[-2.3833,30.7500],[-1.9441,30.0619]]},
+    {id:"SHN-TZ-2026-000118", customer:"Serengeti Textiles Ltd", cargo:"Raw cotton bales", status:"in_warehouse", carrier:"Shehena Line-Haul", eta:"Awaiting sort", route:"Mwanza → Dar es Salaam", step:2, progress:0, waypoints:[[-2.5164,32.9000],[-3.8480,32.6000],[-6.1730,35.7419],[-6.8235,37.6822],[-6.7924,39.2083]]},
+    {id:"SHN-TZ-2026-000142", customer:"Kilimanjaro Coffee Traders", cargo:"Green coffee beans, export", status:"pending", carrier:"Not yet assigned", eta:"Pickup scheduled", route:"Moshi → Mombasa, KE", step:0, progress:0, waypoints:[[-3.3500,37.3333],[-3.3869,36.6822],[-2.5450,36.7871],[-1.2921,36.8219],[-4.0435,39.6682]]},
+    {id:"SHN-TZ-2026-000109", customer:"Dodoma AgroExports", cargo:"Sunflower oil, 200 drums", status:"delivered", carrier:"Shehena Line-Haul", eta:"Delivered 28 Aug", route:"Dodoma → Dar es Salaam", step:6, progress:1, waypoints:[[-6.1730,35.7419],[-6.8235,37.6822],[-6.7924,39.2083]]},
+    {id:"SHN-TZ-2026-000137", customer:"Zanzibar Spice Traders", cargo:"Mixed spice consignment", status:"delayed", carrier:"Coastal Ferry Freight", eta:"Delayed — port congestion", route:"Dar es Salaam → Zanzibar", step:4, progress:0.8, waypoints:[[-6.7924,39.2083],[-6.1659,39.2026]]}
+  ];
+
+  var shipments = djangoShipments.length ? djangoShipments : fallback;
+
+  var djangoVehicles = [];
+  {% for v in vehicles|slice:":8" %}
+    djangoVehicles.push({
+      plate:"{{ v.plate_number|default:'' }}",
+      model:"{{ v.model|default:'—' }}",
+      driver:"{{ v.primary_driver.name|default:'' }}",
+      status:"{% if v.status == 'on_route' %}On route{% elif v.status == 'available' %}At depot{% elif v.status == 'maintenance' %}Maintenance{% else %}At depot{% endif %}",
+      dot:"{% if v.status == 'on_route' %}#1DA36B{% elif v.status == 'maintenance' %}#E19A1C{% else %}#9694A8{% endif %}"
+    });
+  {% endfor %}
+  var fallbackVehicles = [
+    {plate:"T 331 CDX", model:"Scania R-Series", driver:"J. Mwakalinga", status:"On route", dot:"#1DA36B"},
+    {plate:"T 774 EFB", model:"Mercedes-Benz Actros", driver:"A. Ndosi", status:"On route", dot:"#1DA36B"},
+    {plate:"T 220 KLM", model:"MAN TGX", driver:"H. Massawe", status:"At depot", dot:"#9694A8"},
+    {plate:"T 556 XYZ", model:"Isuzu FVR", driver:"R. Komba", status:"Maintenance", dot:"#E19A1C"}
+  ];
+  var vehicles = djangoVehicles.length ? djangoVehicles : fallbackVehicles;
+
+  /* ============ RENDER: shipment list ============ */
+  var listEl = document.getElementById("shipmentList");
+  var activeFilter = "all";
+  var activeId = shipments[0].id;
+
+  function renderList(){
+    var q = (document.getElementById("searchInput").value || "").toLowerCase();
+    listEl.innerHTML = "";
+    shipments.forEach(function(s){
+      if(activeFilter !== "all" && s.status !== activeFilter) return;
+      if(q && !(s.id.toLowerCase().indexOf(q)>-1 || s.customer.toLowerCase().indexOf(q)>-1 || s.route.toLowerCase().indexOf(q)>-1)) return;
+      var sst = st(s.status);
+      var row = document.createElement("div");
+      row.className = "ship-row" + (s.id===activeId ? " active" : "");
+      row.setAttribute("data-id", s.id);
+      row.setAttribute("data-status", s.status);
+      row.innerHTML =
+        '<div class="ship-thumb" style="background:'+sst.soft+'"><svg class="icon" style="stroke:'+sst.color+'"><use href="#i-box"/></svg></div>'+
+        '<div class="ship-body">'+
+          '<div class="ship-top"><span class="ship-id">'+s.id+'</span><span class="badge '+sst.badge+'">'+sst.label+'</span></div>'+
+          '<div class="ship-route">'+s.route+'</div>'+
+          '<div class="ship-cust">'+s.customer+'</div>'+
+        '</div>';
+      row.addEventListener("click", function(){ selectShipment(s.id); });
+      listEl.appendChild(row);
+    });
+    if(!listEl.children.length){
+      listEl.innerHTML = '<p style="padding:24px; text-align:center; color:var(--text-faint); font-size:13px; font-weight:600;">No shipments match this filter.</p>';
+    }
+  }
+
+  document.getElementById("filterRow").addEventListener("click", function(e){
+    var btn = e.target.closest(".chip");
+    if(!btn) return;
+    document.querySelectorAll(".chip").forEach(function(c){ c.classList.remove("active"); });
+    btn.classList.add("active");
+    activeFilter = btn.getAttribute("data-filter");
+    renderList();
+  });
+
+  var sInput = document.getElementById("searchInput");
+  if(sInput) sInput.addEventListener("input", renderList);
+
+  /* ============ RENDER: detail card ============ */
+  var detailEl = document.getElementById("detailCard");
+  function renderDetail(s){
+    var stepsHtml = STEPS.map(function(label, i){
+      var cls = i < s.step ? "done" : (i === s.step ? "current" : "");
+      var icon = i < s.step ? '<svg class="icon"><use href="#i-check"/></svg>' : "";
+      return '<div class="step '+cls+'"><div class="step-dot">'+icon+'</div><span class="step-label">'+label+'</span><div class="step-line"></div></div>';
+    }).join("");
+    var sst = st(s.status);
+    detailEl.innerHTML =
+      '<div class="detail-top"><div><div class="detail-id">'+s.id+'</div><div class="detail-carrier">'+s.carrier+' · '+s.cargo+'</div></div>'+
+      '<span class="badge '+sst.badge+'">'+sst.label+'</span></div>'+
+      '<div class="stepper">'+stepsHtml+'</div>';
+  }
+
+  /* ============ MAP ============ */
+  var map = L.map("map", {zoomControl:false, attributionControl:true, scrollWheelZoom:false});
+  var tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution:'&copy; OpenStreetMap &copy; CARTO', maxZoom:18, subdomains:'abcd'
+  }).addTo(map);
+  window._tileLayer = tileLayer;
+  L.control.zoom({position:"bottomright"}).addTo(map);
+  // re-sync theme after tileLayer created
+  var htmlEl = document.documentElement;
+  var curTheme = htmlEl.getAttribute("data-theme") || "light";
+  if(curTheme === "dark"){
+    tileLayer.setUrl('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
+  }
+
+  var routeLine, markerStart, markerEnd, markerCurrent;
+
+  function drawRoute(s){
+    if(routeLine) map.removeLayer(routeLine);
+    if(markerStart) map.removeLayer(markerStart);
+    if(markerEnd) map.removeLayer(markerEnd);
+    if(markerCurrent) map.removeLayer(markerCurrent);
+
+    var pts = s.waypoints;
+    routeLine = L.polyline(pts, {color:"#38AEF2", weight:4, opacity:.9, dashArray:"1 10", lineCap:"round"}).addTo(map);
+    animateDash(routeLine);
+
+    var dotIcon = function(color){
+      return L.divIcon({className:"", html:'<div style="width:14px;height:14px;border-radius:50%;background:'+color+';border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>', iconSize:[14,14], iconAnchor:[7,7]});
+    };
+    markerStart = L.marker(pts[0], {icon:dotIcon("#1DA36B")}).addTo(map).bindPopup("Origin");
+    markerEnd = L.marker(pts[pts.length-1], {icon:dotIcon("#E5484D")}).addTo(map).bindPopup("Destination");
+
+    var curPos = pointAtProgress(pts, s.progress);
+    var truckIcon = L.divIcon({
+      className:"",
+      html:'<div style="width:30px;height:30px;border-radius:50%;background:#D96A16;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(217,106,22,.5);border:3px solid #fff;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="1" y="7" width="13" height="10" rx="1.2"/><path d="M14 10h4l4 3.5V17h-8z"/><circle cx="6" cy="19" r="1.8"/><circle cx="17.5" cy="19" r="1.8"/></svg></div>',
+      iconSize:[30,30], iconAnchor:[15,15]
+    });
+    markerCurrent = L.marker(curPos, {icon:truckIcon}).addTo(map);
+
+    map.fitBounds(routeLine.getBounds(), {padding:[30,30]});
+  }
+
+  function pointAtProgress(pts, progress){
+    if(pts.length===1) return pts[0];
+    var total = 0, segLens = [];
+    for(var i=0;i<pts.length-1;i++){
+      var d = Math.hypot(pts[i+1][0]-pts[i][0], pts[i+1][1]-pts[i][1]);
+      segLens.push(d); total += d;
+    }
+    var target = total * Math.max(0, Math.min(1, progress));
+    var acc = 0;
+    for(var j=0;j<segLens.length;j++){
+      if(acc + segLens[j] >= target || j===segLens.length-1){
+        var segT = segLens[j] ? (target - acc) / segLens[j] : 0;
+        var a = pts[j], b = pts[j+1];
+        return [a[0] + (b[0]-a[0])*segT, a[1] + (b[1]-a[1])*segT];
+      }
+      acc += segLens[j];
+    }
+    return pts[pts.length-1];
+  }
+
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function animateDash(line){
+    if(reduceMotion) return;
+    var offset = 0;
+    clearInterval(window._dashTimer);
+    window._dashTimer = setInterval(function(){
+      offset = (offset - 1 + 200) % 200;
+      try{ line.setStyle({dashOffset:String(offset)}); }catch(e){}
+    }, 60);
+  }
+
+  function selectShipment(id){
+    activeId = id;
+    var s = shipments.find(function(x){ return x.id===id; });
+    if(!s) return;
+    document.getElementById("mapSub").textContent = "Following " + s.id;
+    var approxKM = (s.waypoints.length > 4) ? 968 : 420;
+    document.getElementById("mapDistance").textContent = Math.round(approxKM * (s.progress||0.1)) + " / " + approxKM + " km";
+    document.getElementById("mapSpeed").textContent = s.status==="in_transit" ? "64 km/h" : s.progress>=1 ? "—" : "—";
+    document.getElementById("mapUpdate").textContent = s.progress>=1 ? "Trip complete" : "4 minutes ago";
+    renderDetail(s);
+    drawRoute(s);
+    renderList();
+  }
+
+  /* ============ FLEET ============ */
+  var fleetEl = document.getElementById("fleetList");
+  vehicles.slice(0,6).forEach(function(v){
+    var row = document.createElement("div");
+    row.className = "fleet-row";
+    row.innerHTML =
+      '<div class="fleet-icon"><svg class="icon"><use href="#i-truck"/></svg></div>'+
+      '<div class="fleet-body"><strong>'+v.plate+' · '+v.model+'</strong><span>'+(v.driver || 'No driver assigned')+'</span></div>'+
+      '<span class="dot-status" style="background:'+v.dot+'"></span>';
+    fleetEl.appendChild(row);
+  });
+
+  /* ============ DELIVERY SCHEDULE ============ */
+  var schedEl = document.getElementById("scheduleList");
+  shipments.slice(0,6).forEach(function(s){
+    var row = document.createElement("div");
+    row.className = "schedule-row";
+    var stepsHtml = STEPS.map(function(label, i){
+      var cls = i < s.step ? "done" : (i === s.step ? "current" : "");
+      return '<div class="mstep '+cls+'"><div class="mstep-dot"></div><span class="mstep-label">'+label+'</span><div class="mstep-line"></div></div>';
+    }).join("");
+    var sst = st(s.status);
+    row.innerHTML =
+      '<div><div class="sched-id">'+s.id+'</div><div class="sched-cust">'+s.customer+'</div></div>'+
+      '<div class="mini-stepper">'+stepsHtml+'</div>'+
+      '<div class="sched-status"><span class="badge '+sst.badge+'">'+sst.label+'</span></div>';
+    schedEl.appendChild(row);
+  });
+
+  /* ============ CHARTS ============ */
+  var chartTextColor = getComputedStyle(document.body).getPropertyValue("--text-muted").trim() || "#6B6A80";
+  var monthlyEl = document.getElementById('monthly_data');
+  var monthlyData = monthlyEl ? JSON.parse(monthlyEl.textContent) : null;
+  var labels = monthlyData && monthlyData.length ? monthlyData.map(function(d){return d.month;}) : ["Mar","Apr","May","Jun","Jul","Aug"];
+  var values = monthlyData && monthlyData.length ? monthlyData.map(function(d){return d.count;}) : [820, 910, 875, 1005, 1120, 1248];
+
+  var volumeCtx = document.getElementById("volumeChart").getContext("2d");
+  var volumeChart = new Chart(volumeCtx, {
+    type:"line",
+    data:{
+      labels:labels,
+      datasets:[{
+        label:"Shipments",
+        data:values,
+        borderColor:"#38AEF2",
+        backgroundColor:function(ctx){
+          var g = ctx.chart.ctx.createLinearGradient(0,0,0,220);
+          g.addColorStop(0,"rgba(56,174,242,.32)"); g.addColorStop(1,"rgba(56,174,242,0)");
+          return g;
+        },
+        fill:true, tension:.4, borderWidth:3, pointRadius:4, pointBackgroundColor:"#38AEF2", pointBorderColor:"#fff", pointBorderWidth:2
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      animation:{duration:0},
+      layout:{padding:0},
+      events:['mousemove', 'mouseout', 'click', 'touchstart', 'touchmove'],
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          enabled:true,
+          mode:'index',
+          intersect:false,
+          backgroundColor:'rgba(11,5,36,0.9)',
+          titleColor:'#fff',
+          bodyColor:'#fff',
+          borderColor:'rgba(255,255,255,0.1)',
+          borderWidth:1,
+          padding:10,
+          displayColors:false,
+          position:'nearest',
+          callbacks:{
+            label:function(context){
+              return context.parsed.y + ' shipments';
+            }
+          }
+        }
+      },
+      scales:{
+        x:{grid:{display:false}, ticks:{color:chartTextColor, font:{family:"Nunito Sans", weight:"600", size:11}, maxRotation:0, autoSkip:true}},
+        y:{grid:{color:"rgba(150,148,168,.15)"}, ticks:{color:chartTextColor, font:{family:"Nunito Sans", weight:"600", size:11}}}
+      },
+      interaction:{
+        mode:'index',
+        intersect:false
+      },
+      onHover:function(event, chartElement){
+        event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+      }
+    }
+  });
+
+  // Status doughnut
+  var statusEl = document.getElementById('status_data');
+  var statusRaw = statusEl ? JSON.parse(statusEl.textContent) : null;
+  var statusMap = {};
+  if(statusRaw && statusRaw.length){
+    statusRaw.forEach(function(d){ statusMap[d.status] = d.count; });
+  }
+  var defaultStatusData = [
+    {label:"In transit", value:96, color:"#38AEF2", key:"in_transit"},
+    {label:"At warehouse", value:214, color:"#6D5BD0", key:"in_warehouse"},
+    {label:"Pending", value:58, color:"#E19A1C", key:"pending"},
+    {label:"Delivered", value:860, color:"#1DA36B", key:"delivered"},
+    {label:"Delayed", value:20, color:"#E5484D", key:"delayed"}
+  ];
+  var statusData = defaultStatusData.map(function(d){
+    var v = (statusMap[d.key] != null) ? statusMap[d.key] : d.value;
+    // also check alternate keys
+    if(v === 0 || !v){
+      for(var k in statusMap){
+        if(STATUS_LABEL[k] && STATUS_LABEL[k].label === d.label){ v = statusMap[k]; break; }
+      }
+    }
+    return {label:d.label, value:v||0, color:d.color};
+  }).filter(function(d){ return d.value > 0; });
+
+  var statusCtx = document.getElementById("statusChart").getContext("2d");
+  var statusChart = new Chart(statusCtx, {
+    type:"doughnut",
+    data:{
+      labels:statusData.map(function(d){return d.label;}),
+      datasets:[{ data:statusData.map(function(d){return d.value;}), backgroundColor:statusData.map(function(d){return d.color;}), borderWidth:0, hoverOffset:0 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      animation:{duration:0},
+      cutout:"68%",
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          enabled:true,
+          backgroundColor:'rgba(11,5,36,0.9)',
+          titleColor:'#fff',
+          bodyColor:'#fff',
+          borderColor:'rgba(255,255,255,0.1)',
+          borderWidth:1,
+          padding:10,
+          displayColors:true,
+          callbacks:{
+            label:function(context){
+              var label = context.label || '';
+              var value = context.parsed;
+              var total = context.dataset.data.reduce(function(a,b){return a+b;}, 0);
+              var percentage = ((value/total)*100).toFixed(1);
+              return label + ': ' + value + ' (' + percentage + '%)';
+            }
+          }
+        }
+      },
+      onHover:function(event, chartElement){
+        event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+      }
+    }
+  });
+  var legendEl = document.getElementById("statusLegend");
+  statusData.forEach(function(d){
+    var item = document.createElement("div");
+    item.className = "legend-item";
+    item.innerHTML = '<span class="legend-dot" style="background:'+d.color+'"></span>'+d.label;
+    legendEl.appendChild(item);
+  });
+
+  /* ============ INIT ============ */
+  renderList();
+  if(shipments.length) selectShipment(shipments[0].id);
+  window.addEventListener("resize", function(){ map.invalidateSize(); });
+  setTimeout(function(){ map.invalidateSize(); }, 200);
+
+})();
+</script>
+{% endblock %}

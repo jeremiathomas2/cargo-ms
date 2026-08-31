@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>{{ title }}</h1>
+        <p>{{ description }}</p>
+    </div>
+    <div class="page-head-actions">
+        <form method="get" class="flex items-center gap-2">
+            <select name="days" class="chip" onchange="this.form.submit()" style="padding:9px 14px;">
+                <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
+                <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
+                <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 days</option>
+                <option value="365" {% if days == 365 %}selected{% endif %}>Last year</option>
+            </select>
+        </form>
+        <a href="{% url 'reports:export' report_type=report_type %}?days={{ days }}&format=csv" class="btn btn-ghost"><svg class="icon"><use href="#i-download"/></svg> Export CSV</a>
+        <a href="{% url 'reports:dashboard' %}" class="btn btn-primary"><svg class="icon"><use href="#i-chevron-left"/></svg> Back</a>
+    </div>
+</div>
+
+{% if report_type == 'shipment_summary' %}
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-box"/></svg></div>
+        </div>
+        <div class="stat-value">{{ data.total|default:0 }}</div>
+        <div class="stat-label">Total Shipments</div>
+    </div>
+</div>
+
+<div class="grid-secondary reveal" style="animation-delay:.08s">
+    <div class="panel chart-box" style="margin-bottom:0;">
+        <div class="panel-head" style="padding:0 0 12px;">
+            <div><h2>By Status</h2><p class="sub">Current breakdown</p></div>
+        </div>
+        <div class="chart-wrap chart-sm">
+            <canvas id="statusChart"></canvas>
+        </div>
+        <div class="chart-legend" id="statusLegend" style="padding-top:16px;"></div>
+    </div>
+    <div class="panel" style="margin-bottom:0;">
+        <div class="panel-head"><div><h2>Status Detail</h2><p class="sub">Count per status</p></div></div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Status</th><th class="text-right">Count</th></tr></thead>
+                <tbody>
+                    {% for row in data.by_status %}
+                    <tr>
+                        <td><span class="badge {% if row.status == 'delivered' %}b-delivered{% elif row.status == 'in_transit' %}b-transit{% elif row.status == 'warehouse' %}b-warehouse{% elif row.status == 'pending' %}b-pending{% else %}b-delayed{% endif %}">{{ row.status|title }}</span></td>
+                        <td class="text-right" style="font-size:14px; font-weight:800;">{{ row.count }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="2"><div class="data-table-empty"><div class="empty-icon"><svg class="icon"><use href="#i-bar"/></svg></div><p>No data available.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if report_type == 'revenue' %}
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top"><div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-cash"/></svg></div></div>
+        <div class="stat-value">{{ data.total_revenue|default:0|floatformat:0 }}</div>
+        <div class="stat-label">Invoiced Revenue</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><div class="stat-icon" style="background:var(--info-soft); color:var(--info);"><svg class="icon"><use href="#i-check"/></svg></div></div>
+        <div class="stat-value">{{ data.total_payments|default:0|floatformat:0 }}</div>
+        <div class="stat-label">Payments Received</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-clock"/></svg></div></div>
+        <div class="stat-value">{{ data.pending_amount|default:0|floatformat:0 }}</div>
+        <div class="stat-label">Pending Receivables</div>
+    </div>
+</div>
+<div class="panel reveal" style="margin-bottom:18px; animation-delay:.08s">
+    <div class="chart-box">
+        <div class="panel-head" style="padding:0 0 12px;"><div><h2>Revenue by Month</h2><p class="sub">Payment trends over time</p></div></div>
+        <div class="chart-wrap chart-md"><canvas id="revenueChart"></canvas></div>
+    </div>
+</div>
+{% endif %}
+
+{% if report_type == 'delivery_performance' %}
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top"><div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-route"/></svg></div></div>
+        <div class="stat-value">{{ data.total_deliveries|default:0 }}</div>
+        <div class="stat-label">Total Attempts</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-check"/></svg></div></div>
+        <div class="stat-value">{{ data.successful|default:0 }}</div>
+        <div class="stat-label">Successful</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><div class="stat-icon" style="background:var(--danger-soft); color:var(--danger);"><svg class="icon"><use href="#i-alert"/></svg></div></div>
+        <div class="stat-value">{{ data.failed|default:0 }}</div>
+        <div class="stat-label">Failed</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-upload"/></svg></div></div>
+        <div class="stat-value">{{ data.returned|default:0 }}</div>
+        <div class="stat-label">Returned</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><div class="stat-icon" style="background:var(--info-soft); color:var(--info);"><svg class="icon"><use href="#i-bar"/></svg></div></div>
+        <div class="stat-value">{{ data.success_rate|default:0 }}%</div>
+        <div class="stat-label">Success Rate</div>
+    </div>
+</div>
+{% endif %}
+
+{% if report_type == 'customer_shipments' or report_type == 'branch_performance' %}
+<div class="panel reveal" style="animation-delay:.08s">
+    <div class="panel-head">
+        <div>
+            <h2>{% if report_type == 'customer_shipments' %}Customer Rankings{% else %}Branch Performance{% endif %}</h2>
+            <p class="sub">Top performers for selected period</p>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>{% if report_type == 'customer_shipments' %}Customer{% else %}Branch{% endif %}</th>
+                    <th class="text-right">Shipments</th>
+                    <th class="text-right">Total Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data.customers|default:data.branches %}
+                <tr>
+                    <td style="font-weight:800; color:var(--brand);">#{{ forloop.counter }}</td>
+                    <td style="font-size:13px; font-weight:800; color:var(--text);">
+                        {% if report_type == 'customer_shipments' %}{{ row.customer__first_name|default:"" }} {{ row.customer__last_name|default:"" }} {{ row.customer__company_name|default:"" }}{% else %}{{ row.origin_branch__name|default:"—" }}{% endif %}
+                    </td>
+                    <td class="text-right" style="font-weight:800;">{{ row.count }}</td>
+                    <td class="text-right" style="font-weight:800; color:var(--success);">{{ row.total_cost|default:0|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-bar"/></svg></div>
+                            <p>No data available for this period.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    {% if report_type == 'shipment_summary' and data.by_status %}
+    var ctx = document.getElementById('statusChart');
+    if (ctx) {
+        var colors = ['#D96A16','#38AEF2','#6D5BD0','#1DA36B','#E19A1C','#E5484D'];
+        var data = {{ data.by_status|safe }};
+        new Chart(ctx, {
+            type:'doughnut',
+            data:{labels:data.map(function(d){return d.status}), datasets:[{data:data.map(function(d){return d.count}), backgroundColor:colors, borderWidth:0, hoverOffset:6}]},
+            options:{responsive:true, maintainAspectRatio:false, cutout:'62%', plugins:{legend:{display:false}}}
+        });
+        var legend = document.getElementById('statusLegend');
+        if (legend) {
+            legend.innerHTML = data.map(function(d,i){
+                return '<div class="legend-item"><span class="legend-dot" style="background:'+colors[i%colors.length]+'"></span>'+d.status+' ('+d.count+')</div>';
+            }).join('');
+        }
+    }
+    {% endif %}
+    {% if report_type == 'revenue' and data.by_month %}
+    var ctx2 = document.getElementById('revenueChart');
+    if (ctx2) {
+        var months = {{ data.by_month|safe }};
+        new Chart(ctx2, {
+            type:'bar',
+            data:{labels:months.map(function(m){return m.month}), datasets:[
+                {label:'Payments Received', data:months.map(function(m){return m.total||0}), backgroundColor:'#D96A16', borderRadius:8, borderSkipped:false}
+            ]},
+            options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom', labels:{font:{family:'Nunito Sans', size:11, weight:'700'}, boxWidth:12, usePointStyle:true}}},
+                scales:{x:{grid:{display:false}, ticks:{font:{family:'Nunito Sans', size:11, weight:'700'}}}, y:{beginAtZero:true, grid:{color:'rgba(230,231,240,.5)'}, ticks:{font:{family:'Nunito Sans', size:11, weight:'700'}}}}
+            }
+        });
+    }
+    {% endif %}
+})();
+</script>
+{% endblock %}

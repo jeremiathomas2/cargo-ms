@@ -1,0 +1,213 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Cargo Management &amp; Logistics{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,300;0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;0,6..12,800;0,6..12,900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B0524;--navy-deep:#070318;--navy-mid:#17103A;
+    --orange:#D96A16;--orange-dim:#B85810;--blue:#38AEF2;
+    --surface:#F6F5FB;--card:#FFFFFF;--ink:#170F2E;
+    --ink-soft:#6C6480;--ink-faint:#9891AA;--line:#E6E3F0;
+    --input-bg:#FBFAFD;--success:#2E9E6B;--danger:#D14343;
+    --radius-lg:18px;--radius-md:12px;--radius-sm:8px;
+    --shadow-card:0 30px 60px -20px rgba(11,5,36,0.22),0 4px 12px -4px rgba(11,5,36,0.08);
+    --ease:cubic-bezier(.22,.9,.32,1);
+  }
+  html[data-theme="dark"]{
+    --surface:#0D0820;--card:#150E30;--ink:#F1EEFA;
+    --ink-soft:#ADA5C6;--ink-faint:#7A7396;--line:#2A2350;
+    --input-bg:#1B1440;
+    --shadow-card:0 30px 70px -20px rgba(0,0,0,0.55),0 4px 12px -4px rgba(0,0,0,0.35);
+  }
+  @media(prefers-color-scheme:dark){
+    html[data-theme="system"]{
+      --surface:#0D0820;--card:#150E30;--ink:#F1EEFA;
+      --ink-soft:#ADA5C6;--ink-faint:#7A7396;--line:#2A2350;
+      --input-bg:#1B1440;
+      --shadow-card:0 30px 70px -20px rgba(0,0,0,0.55),0 4px 12px -4px rgba(0,0,0,0.35);
+    }
+  }
+  *{box-sizing:border-box}html,body{height:100%}
+  body{margin:0;font-family:'Nunito Sans',system-ui,-apple-system,sans-serif;background:var(--surface);color:var(--ink);-webkit-font-smoothing:antialiased;transition:background .35s var(--ease),color .35s var(--ease)}
+  button{font-family:inherit}input{font-family:inherit}select{font-family:inherit}
+  a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+  ::selection{background:var(--orange);color:#fff}
+  :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}
+
+  .shell{min-height:100vh;display:flex;align-items:stretch}
+  .brand{position:relative;flex:0 0 44%;background:radial-gradient(120% 140% at 12% 0%,#1B1140 0%,var(--navy) 46%,var(--navy-deep) 100%);color:#fff;padding:56px 56px 48px;display:flex;flex-direction:column;overflow:hidden}
+  .brand-mark{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;letter-spacing:.01em}
+  .brand-mark .dot{width:9px;height:9px;border-radius:50%;background:var(--orange);box-shadow:0 0 0 5px rgba(217,106,22,.18)}
+  .brand-copy{margin-top:auto;padding-top:64px;max-width:400px}
+  .brand-copy h1{font-size:33px;line-height:1.18;font-weight:800;margin:0 0 14px;letter-spacing:-0.01em}
+  .brand-copy p{font-size:15.5px;line-height:1.6;color:#C9C2E6;margin:0 0 30px;max-width:34ch}
+  .pill-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:40px}
+  .pill{font-size:12.5px;font-weight:600;color:#DCD6F2;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);padding:6px 13px;border-radius:999px}
+  .route-wrap{margin-top:6px}.route-wrap svg{width:100%;height:auto;display:block;overflow:visible}
+  .route-path{fill:none;stroke:rgba(255,255,255,.22);stroke-width:2;stroke-dasharray:1 10;stroke-linecap:round}
+  .route-progress{fill:none;stroke:var(--orange);stroke-width:2;stroke-linecap:round;stroke-dasharray:46 500;stroke-dashoffset:0;animation:travel 5.5s linear infinite;filter:drop-shadow(0 0 5px rgba(217,106,22,.7))}
+  @keyframes travel{from{stroke-dashoffset:0}to{stroke-dashoffset:-546}}
+  .node{fill:var(--navy);stroke:rgba(255,255,255,.35);stroke-width:1.4}
+  .node-icon{fill:none;stroke:#EDEAFA;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+  .node-label{fill:#9C93C2;font-size:10.5px;font-weight:600;font-family:'Nunito Sans',sans-serif}
+  .brand-footer{margin-top:44px;display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:#867CA8;border-top:1px solid rgba(255,255,255,.09);padding-top:20px}
+
+  .panel{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;position:relative;background:var(--surface)}
+  .theme-switch{position:absolute;top:28px;right:32px;display:flex;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px;box-shadow:0 2px 10px rgba(11,5,36,.05)}
+  .theme-switch button{border:none;background:transparent;cursor:pointer;width:30px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:var(--ink-faint);transition:background .2s var(--ease),color .2s var(--ease)}
+  .theme-switch button svg{width:15px;height:15px}
+  .theme-switch button.active{background:var(--navy);color:#fff}
+  .card-frame{width:100%;max-width:392px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);padding:38px 34px 30px;transition:background .35s var(--ease),border-color .35s var(--ease)}
+
+  .field{margin-bottom:16px}.field label{display:block;font-size:13px;font-weight:700;color:var(--ink);margin-bottom:7px}
+  .input-wrap{position:relative}
+  .field input,.field select{width:100%;padding:12px 14px;background:var(--input-bg);border:1.5px solid var(--line);border-radius:var(--radius-sm);font-size:14.5px;color:var(--ink);transition:border-color .18s var(--ease),box-shadow .18s var(--ease);appearance:none;-webkit-appearance:none}
+  .field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239891AA' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+  .field input::placeholder{color:var(--ink-faint)}
+  .field input:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(56,174,242,.15);outline:none}
+  .toggle-visibility{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--ink-faint)}
+  .toggle-visibility:hover{color:var(--ink-soft);background:rgba(0,0,0,.03)}
+  .toggle-visibility svg{width:18px;height:18px}
+
+  .btn{width:100%;border:none;cursor:pointer;padding:13px 16px;border-radius:var(--radius-sm);font-size:14.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .22s var(--ease),transform .12s var(--ease),box-shadow .22s var(--ease)}
+  .btn-primary{background:var(--orange);color:#fff;box-shadow:0 10px 24px -10px rgba(217,106,22,.55)}
+  .btn-primary:hover{background:var(--blue);box-shadow:0 10px 24px -10px rgba(56,174,242,.5)}
+  .btn-primary:active{transform:scale(.98)}
+  .btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+  .btn-ghost:hover{border-color:var(--blue);color:var(--blue)}
+  .btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+
+  .switch-line{text-align:center;font-size:13.5px;color:var(--ink-soft);margin-top:20px}
+  .switch-line a{color:var(--blue);font-weight:700}
+
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink-soft);background:none;border:none;cursor:pointer;margin-bottom:18px;padding:0;text-decoration:none}
+  .back-link:hover{color:var(--ink)}.back-link svg{width:15px;height:15px}
+
+  .banner{display:none;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:var(--radius-sm);font-size:13px;line-height:1.5;margin-bottom:18px}
+  .banner.show{display:flex}
+  .banner svg{width:16px;height:16px;flex:0 0 auto;margin-top:1px}
+  .banner-error{background:rgba(209,67,67,.08);color:#B23636;border:1px solid rgba(209,67,67,.22)}
+  .banner-success{background:rgba(46,158,107,.09);color:#238157;border:1px solid rgba(46,158,107,.22)}
+
+  .field-errors{margin-top:5px}
+  .field-errors .field-error{font-size:12.5px;color:var(--danger);margin-top:4px}
+  .field-errors ul{margin:0;padding-left:18px}
+  .field-errors li{font-size:12.5px;color:var(--danger);margin-top:2px}
+
+  .form-card{animation:rise .38s var(--ease)}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+  .track-link{text-align:center;margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}
+  .track-link p{font-size:13px;color:var(--ink-soft);margin:0 0 10px}
+
+  @media(max-width:880px){
+    .shell{flex-direction:column}
+    .brand{flex:0 0 auto;padding:36px 26px 30px;align-items:center;text-align:center}
+    .brand-mark{align-self:flex-start}
+    .brand-copy{padding-top:22px;max-width:100%;align-items:center;display:flex;flex-direction:column}
+    .brand-copy h1{font-size:24px}.brand-copy p{max-width:36ch}
+    .pill-row{justify-content:center;margin-bottom:26px}
+    .route-wrap{max-width:340px}
+    .brand-footer{display:none}
+    .panel{padding:34px 20px 50px}
+    .theme-switch{top:16px;right:16px}
+    .card{padding:30px 24px 26px}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="brand">
+    <div class="brand-mark"><span class="dot"></span> CARGOLINE</div>
+    <div class="brand-copy">
+      <h1>Cargo management &amp; logistics, in one place.</h1>
+      <p>Manage cargo, track transportation, and deliver with confidence — from warehouse to final mile.</p>
+      <div class="pill-row">
+        <span class="pill">Track</span><span class="pill">Manage</span><span class="pill">Deliver</span><span class="pill">Monitor</span>
+      </div>
+      <div class="route-wrap">
+        <svg viewBox="0 0 380 120" aria-hidden="true">
+          <path class="route-path" d="M40,90 C 100,90 100,40 150,40 C 220,40 220,90 340,90"/>
+          <path class="route-progress" d="M40,90 C 100,90 100,40 150,40 C 220,40 220,90 340,90"/>
+          <circle class="node" cx="40" cy="90" r="17"/>
+          <path class="node-icon" d="M33,94 v-9 l7,-5 l7,5 v9 z M33,94 h14 M37,94 v-6 h6 v6"/>
+          <text class="node-label" x="40" y="118" text-anchor="middle">Warehouse</text>
+          <circle class="node" cx="150" cy="40" r="17"/>
+          <g transform="translate(141,33)">
+            <path class="node-icon" d="M0,10 h11 v-7 h5 l3,4 v3 h-19 z"/>
+            <circle cx="4" cy="12" r="1.6" fill="#EDEAFA" stroke="none"/>
+            <circle cx="15" cy="12" r="1.6" fill="#EDEAFA" stroke="none"/>
+          </g>
+          <text class="node-label" x="150" y="68" text-anchor="middle">In transit</text>
+          <circle class="node" cx="340" cy="90" r="17"/>
+          <path class="node-icon" d="M340,83 c4,0 7,3 7,6.5 c0,4.5 -7,10 -7,10 s-7,-5.5 -7,-10 c0,-3.5 3,-6.5 7,-6.5 z M340,89.2 a1.7,1.7 0 1 0 0.01,0 z"/>
+          <text class="node-label" x="340" y="118" text-anchor="middle">Delivered</text>
+        </svg>
+      </div>
+    </div>
+    <div class="brand-footer">
+      <span>&copy; 2026 Cargoline</span>
+      <span>Secure sign-in</span>
+    </div>
+  </aside>
+
+  <main class="panel">
+    <div class="theme-switch" role="group" aria-label="Theme">
+      <button type="button" data-theme-btn="light" aria-label="Light theme" title="Light">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12H5M19 12h2.5M4.2 19.8L6 18M18 6l1.8-1.8"/></svg>
+      </button>
+      <button type="button" data-theme-btn="dark" aria-label="Dark theme" title="Dark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg>
+      </button>
+      <button type="button" data-theme-btn="system" aria-label="System theme" title="System">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="12" rx="1.6"/><path d="M8.5 20.5h7M12 16.5v4"/></svg>
+      </button>
+    </div>
+
+    <div class="card-frame">
+      <div class="card form-card">
+        {% if messages %}
+          {% for message in messages %}
+            {% if 'error' in message.tags %}
+              <div class="banner banner-error show">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+                <span>{{ message }}</span>
+              </div>
+            {% elif 'success' in message.tags %}
+              <div class="banner banner-success show">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+                <span>{{ message }}</span>
+              </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  var saved=localStorage.getItem('cargoline-theme')||'system';
+  function applyTheme(t){root.setAttribute('data-theme',t);document.querySelectorAll('[data-theme-btn]').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-theme-btn')===t)});localStorage.setItem('cargoline-theme',t)}
+  applyTheme(saved);
+  document.querySelectorAll('[data-theme-btn]').forEach(function(btn){btn.addEventListener('click',function(){applyTheme(btn.getAttribute('data-theme-btn'))})});
+  document.querySelectorAll('.toggle-visibility').forEach(function(btn){
+    btn.addEventListener('click',function(){var input=document.getElementById(btn.getAttribute('data-toggle-for'));input.type=input.type==='password'?'text':'password'})
+  });
+})();
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

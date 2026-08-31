@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>GPS Devices</h1>
+        <p>Tracker inventory, IMEI registry, SIM and assignment status</p>
+    </div>
+    <div class="page-head-actions">
+        <button class="btn btn-ghost"><svg class="icon"><use href="#i-download"/></svg> Export</button>
+        <button class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg> Register Device</button>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-map"/></svg></div>
+        </div>
+        <div class="stat-value">{{ devices.paginator.count }}</div>
+        <div class="stat-label">Total Devices</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-check"/></svg></div>
+        </div>
+        <div class="stat-value">{% for d in devices %}{% if d.status == 'online' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not devices %}0{% endif %}</div>
+        <div class="stat-label">Online</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-alert"/></svg></div>
+        </div>
+        <div class="stat-value">{% for d in devices %}{% if d.status == 'offline' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not devices %}0{% endif %}</div>
+        <div class="stat-label">Offline</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-truck"/></svg></div>
+        </div>
+        <div class="stat-value">{% for d in devices %}{% if d.assigned_vehicle %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not devices %}0{% endif %}</div>
+        <div class="stat-label">Assigned</div>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.08s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'gps_tracking:device_list' %}" class="chip {% if not status_filter and not type_filter %}active{% endif %}">All</a>
+            {% for val,label in status_choices %}
+            <a href="?status={{ val }}" class="chip {% if status_filter == val %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2 flex-wrap">
+                <div class="search-field" style="width: 280px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Tracker ID, IMEI, SIM, serial...">
+                </div>
+                <select name="type" class="chip" onchange="this.form.submit()">
+                    <option value="">All Types</option>
+                    {% for val,label in type_choices %}
+                    <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.1s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Tracker</th>
+                    <th>Type</th>
+                    <th>IMEI / Serial</th>
+                    <th>Assigned Vehicle</th>
+                    <th>Shipment</th>
+                    <th>Battery</th>
+                    <th>Status</th>
+                    <th class="text-right">Last Seen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in devices %}
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div class="fleet-icon" style="background:var(--info-soft); border:none;">
+                                <svg class="icon" style="color:var(--info);"><use href="#i-map"/></svg>
+                            </div>
+                            <a href="{% url 'gps_tracking:device_detail' pk=d.pk %}" style="font-size:13px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ d.tracker_id }}</a>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge b-warehouse">{{ d.get_device_type_display|default:"Standard" }}</span>
+                    </td>
+                    <td>
+                        <div style="font-size:12px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text);">{{ d.imei|default:"—" }}</div>
+                        <div class="td-faint">S/N: {{ d.serial_number|default:"—" }}</div>
+                    </td>
+                    <td>
+                        {% if d.assigned_vehicle %}
+                        <a href="{% url 'transportation:vehicle_detail' pk=d.assigned_vehicle.pk %}" style="font-size:12.5px; font-weight:800; color:var(--text); font-family:ui-monospace, monospace;">{{ d.assigned_vehicle.registration_number }}</a>
+                        {% else %}<span class="td-faint">—</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if d.assigned_shipment %}
+                        <a href="{% url 'cargo:detail' pk=d.assigned_shipment.pk %}" style="font-size:11.5px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text-muted);">{{ d.assigned_shipment.tracking_id }}</a>
+                        {% else %}<span class="td-faint">—</span>{% endif %}
+                    </td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:52px; height:8px; background:var(--card-2); border-radius:999px; overflow:hidden;">
+                                <div style="width:{% if d.battery_level %}{{ d.battery_level }}{% else %}0{% endif %}%; height:100%; background:{% if d.battery_level and d.battery_level < 20 %}var(--danger){% elif d.battery_level and d.battery_level < 50 %}var(--warning){% else %}var(--success){% endif %};"></div>
+                            </div>
+                            <span style="font-size:12px; font-weight:700;">{% if d.battery_level %}{{ d.battery_level }}%{% else %}—{% endif %}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge {% if d.status == 'online' %}b-delivered{% elif d.status == 'offline' %}b-delayed{% else %}b-pending{% endif %}">{{ d.get_status_display }}</span>
+                    </td>
+                    <td class="text-right">
+                        <div style="font-size:12.5px; font-weight:800; color:var(--text); white-space:nowrap;">
+                            {% if d.last_update %}{{ d.last_update|timesince }} ago{% else %}—{% endif %}
+                        </div>
+                        <div class="td-faint">
+                            {% if d.last_latitude and d.last_longitude %}
+                            {{ d.last_latitude|floatformat:3 }}, {{ d.last_longitude|floatformat:3 }}
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-map"/></svg></div>
+                            <p>No GPS devices registered.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if devices.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ devices.number }} of {{ devices.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if devices.has_previous %}?page={{ devices.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not devices.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if devices.has_next %}?page={{ devices.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not devices.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

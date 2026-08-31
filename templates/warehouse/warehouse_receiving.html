@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head">
+    <div class="flex items-center gap-4 flex-wrap">
+        <a href="{% url 'warehouse:detail' pk=warehouse.pk %}" class="icon-btn" style="padding: 10px;">
+            <svg class="w-5 h-5 stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
+        <div>
+            <h1 class="page-title" style="margin-bottom: 0;">Receiving · {{ warehouse.name }}</h1>
+            <p class="page-sub" style="margin-top: 4px;">Scan incoming shipments, receive and put-away to storage zones</p>
+        </div>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'warehouse:movements' pk=warehouse.pk %}" class="btn ghost">
+            <svg class="icon"><use href="#i-clipboard"/></svg>
+            Movement Log
+        </a>
+        <a href="{% url 'warehouse:zones' pk=warehouse.pk %}" class="btn btn-primary">
+            <svg class="icon"><use href="#i-layers"/></svg>
+            Open Zones
+        </a>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-top"><div class="stat-icon bg-warning/10 text-warning"><svg class="icon"><use href="#i-clock"/></svg></div></div>
+        <div class="stat-value">{{ awaiting_shipments|length }}</div>
+        <div class="stat-label">Awaiting Receipt</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><div class="stat-icon bg-info/10 text-info"><svg class="icon"><use href="#i-upload"/></svg></div></div>
+        <div class="stat-value">{% for s in awaiting_shipments %}{% if s.status == 'received' %}{% if forloop.first %}{% widthratio forloop.counter 1 1 %}{% endif %}{% endif %}{% endfor %}{% if not awaiting_shipments %}0{% endif %}</div>
+        <div class="stat-label">Received Today</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><div class="stat-icon bg-success/10 text-success"><svg class="icon"><use href="#i-layers"/></svg></div></div>
+        <div class="stat-value">{{ warehouse.current_occupancy }}</div>
+        <div class="stat-label">Current Occupancy</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top"><div class="stat-icon bg-brand/10 text-brand"><svg class="icon"><use href="#i-package"/></svg></div></div>
+        <div class="stat-value">{% with total=0 %}{% for s in awaiting_shipments %}{% if forloop.last %}{{ forloop.counter0|add:total }}{% endif %}{% endfor %}{% endwith %}0</div>
+        <div class="stat-label">Packages In Queue</div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+        <div>
+            <h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Inbound Queue</h2>
+            <p class="text-xs text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Shipments marked for receiving at {{ warehouse.name }}</p>
+        </div>
+        <div class="chip-group">
+            <span class="chip active">All ({{ awaiting_shipments|length }})</span>
+            <span class="chip">Awaiting Receipt</span>
+            <span class="chip">Received</span>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left min-w-[900px]">
+            <thead>
+                <tr class="border-b border-gray-200 dark:border-[#291F55] bg-card-2 dark:bg-card-dark2">
+                    <th class="px-5 py-3.5 text-[11.5px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Tracking ID</th>
+                    <th class="px-5 py-3.5 text-[11.5px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Origin</th>
+                    <th class="px-5 py-3.5 text-[11.5px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Customer</th>
+                    <th class="px-5 py-3.5 text-[11.5px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Pkgs</th>
+                    <th class="px-5 py-3.5 text-[11.5px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Weight</th>
+                    <th class="px-5 py-3.5 text-[11.5px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Status</th>
+                    <th class="px-5 py-3.5 text-[11.5px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-[#1E1548]">
+                {% for s in awaiting_shipments %}
+                <tr class="hover:bg-card-2/60 dark:hover:bg-card-dark2/60">
+                    <td class="px-5 py-3.5">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-[10px] bg-info/10 flex items-center justify-center">
+                                <svg class="icon text-info"><use href="#i-upload"/></svg>
+                            </div>
+                            <div>
+                                <div class="text-[13px] font-extrabold text-gray-900 dark:text-white font-mono">{{ s.tracking_id }}</div>
+                                <div class="text-[11px] text-faint dark:text-[#8981B8] font-semibold">{{ s.created_at|date:"d M Y H:i" }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-5 py-3.5">
+                        <div class="text-[12.5px] font-bold text-gray-900 dark:text-white">{{ s.sender_city|default:s.origin }}</div>
+                        {% if s.origin_branch %}<div class="text-[11px] text-faint dark:text-[#8981B8] font-semibold">{{ s.origin_branch.name }}</div>{% endif %}
+                    </td>
+                    <td class="px-5 py-3.5">
+                        <div class="text-[12.5px] font-bold text-gray-900 dark:text-white">{% if s.customer %}{{ s.customer.company_name|default:s.customer.full_name }}{% else %}{{ s.sender_name }}{% endif %}</div>
+                        <div class="text-[11px] text-faint dark:text-[#8981B8] font-semibold">→ {{ s.receiver_name }}</div>
+                    </td>
+                    <td class="px-5 py-3.5 text-[13px] font-black text-gray-900 dark:text-white">{{ s.num_packages }}</td>
+                    <td class="px-5 py-3.5 text-[13px] font-black text-gray-900 dark:text-white">{{ s.charged_weight|default:s.actual_weight }} kg</td>
+                    <td class="px-5 py-3.5">
+                        <span class="b-{% if s.status == 'received' %}warehouse{% else %}pending{% endif %}">{{ s.get_status_display }}</span>
+                    </td>
+                    <td class="px-5 py-3.5">
+                        <form method="post" class="flex items-center justify-end gap-1.5">
+                            {% csrf_token %}
+                            <input type="hidden" name="shipment_id" value="{{ s.pk }}">
+                            {% if s.status == 'awaiting_receiving' or s.status == 'booked' %}
+                            <button type="submit" name="action" value="receive" class="btn btn-primary" style="padding: 8px 14px; font-size: 12px;">
+                                <svg class="icon"><use href="#i-check"/></svg>
+                                Receive
+                            </button>
+                            {% else %}
+                            <button type="submit" name="action" value="put_away" class="btn ghost" style="padding: 8px 14px; font-size: 12px; background: var(--success-bg); color: var(--success); border-color: var(--success-border);">
+                                <svg class="icon"><use href="#i-layers"/></svg>
+                                Put-away
+                            </button>
+                            {% endif %}
+                            <a href="{% url 'cargo:detail' pk=s.pk %}" class="icon-btn" title="Details">
+                                <svg class="icon"><use href="#i-eye"/></svg>
+                            </a>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-14 text-center">
+                        <div class="flex flex-col items-center gap-3">
+                            <div class="w-14 h-14 rounded-full bg-card-2 dark:bg-card-dark2 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-faint dark:text-[#8981B8] stroke-current fill-none stroke-[1.8]" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
+                            </div>
+                            <p class="text-sm font-semibold text-faint dark:text-[#8981B8]">Inbound queue is clear. No shipments awaiting receiving.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

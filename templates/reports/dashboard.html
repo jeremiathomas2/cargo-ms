@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Reports & Analytics</h1>
+        <p>Business intelligence, performance metrics and exportable data</p>
+    </div>
+    <div class="page-head-actions">
+        <div class="range-select">
+            <svg class="icon"><use href="#i-clock"/></svg>
+            <span>Last 30 days</span>
+            <svg class="chev"><use href="#i-chevron-down"/></svg>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 reveal" style="animation-delay:.05s; margin-bottom:22px;">
+    {% for key, meta in report_types.items %}
+    <a href="{% url 'reports:report' report_type=key %}" class="panel card-shadow hover:shadow-lg transition-shadow overflow-hidden group block">
+        <div class="relative h-36 bg-gradient-to-br from-brand/15 via-secondary/10 to-info/10 dark:from-brand/10 dark:via-secondary/5 dark:to-info/5 overflow-hidden p-5">
+            <div class="absolute right-5 top-5 w-14 h-14 rounded-[16px] bg-card/90 flex items-center justify-center group-hover:scale-110 transition-transform">
+                {% if key == 'shipment_summary' %}<svg class="icon" style="color:var(--brand);"><use href="#i-box"/></svg>
+                {% elif key == 'revenue' %}<svg class="icon" style="color:var(--success);"><use href="#i-cash"/></svg>
+                {% elif key == 'customer_shipments' %}<svg class="icon" style="color:var(--secondary);"><use href="#i-users"/></svg>
+                {% elif key == 'branch_performance' %}<svg class="icon" style="color:var(--info);"><use href="#i-warehouse"/></svg>
+                {% elif key == 'delivery_performance' %}<svg class="icon" style="color:var(--warning);"><use href="#i-route"/></svg>
+                {% else %}<svg class="icon" style="color:var(--brand);"><use href="#i-bar"/></svg>{% endif %}
+            </div>
+            <h3 class="text-[18px] font-black text-gray-900 dark:text-white tracking-tight mt-4">{{ meta.name }}</h3>
+            <p class="text-[12px] text-faint dark:text-[#8981B8] font-semibold mt-1.5 leading-relaxed">{{ meta.description }}</p>
+        </div>
+        <div class="px-5 py-4 border-t border-gray-200 dark:border-[#291F55] flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <a href="{% url 'reports:report' report_type=key %}" class="chip" style="font-size:11.5px;">View Report</a>
+                <a href="{% url 'reports:export' report_type=key %}" class="chip" style="font-size:11.5px;">Export CSV</a>
+            </div>
+            <svg class="w-4 h-4 text-muted dark:text-[#B2ACD6] group-hover:text-brand group-hover:translate-x-1 transition-all stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<div class="grid-secondary reveal" style="animation-delay:.08s">
+    <div class="panel chart-box" style="margin-bottom:0;">
+        <div class="panel-head" style="padding:0 0 12px;">
+            <div>
+                <h2>Quick Overview</h2>
+                <p class="sub">System-wide performance snapshot</p>
+            </div>
+        </div>
+        <div class="chart-wrap chart-md">
+            <canvas id="overviewChart"></canvas>
+        </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:18px;">
+        <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head">
+                <div>
+                    <h2>Recent Activity</h2>
+                    <p class="sub">Latest system events</p>
+                </div>
+            </div>
+            <div style="padding:6px 10px 14px;">
+                <div class="fleet-row">
+                    <div class="fleet-icon" style="background:var(--success-soft); border:none;">
+                        <svg class="icon" style="color:var(--success);"><use href="#i-check"/></svg>
+                    </div>
+                    <div class="fleet-body">
+                        <strong>63 deliveries completed</strong>
+                        <span>Today · On-time rate: 94%</span>
+                    </div>
+                    <div class="stat-trend trend-up"><svg><use href="#i-up"/></svg>12%</div>
+                </div>
+                <div class="fleet-row">
+                    <div class="fleet-icon" style="background:var(--info-soft); border:none;">
+                        <svg class="icon" style="color:var(--info);"><use href="#i-box"/></svg>
+                    </div>
+                    <div class="fleet-body">
+                        <strong>1,248 total shipments</strong>
+                        <span>This month · 96 currently in transit</span>
+                    </div>
+                    <div class="stat-trend trend-up"><svg><use href="#i-up"/></svg>8.2%</div>
+                </div>
+                <div class="fleet-row">
+                    <div class="fleet-icon" style="background:var(--brand-soft); border:none;">
+                        <svg class="icon" style="color:var(--brand);"><use href="#i-truck"/></svg>
+                    </div>
+                    <div class="fleet-body">
+                        <strong>4 active vehicles</strong>
+                        <span>Fleet utilization: 67%</span>
+                    </div>
+                    <div class="stat-trend trend-down"><svg><use href="#i-down"/></svg>3%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head">
+                <div>
+                    <h2>Export Data</h2>
+                    <p class="sub">Download CSV or JSON formats</p>
+                </div>
+            </div>
+            <div style="padding:0 20px 18px;">
+                {% for key, meta in report_types.items %}
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border);">
+                    <div style="font-size:13px; font-weight:700; color:var(--text);">{{ meta.name }}</div>
+                    <div style="display:flex; gap:6px;">
+                        <a href="{% url 'reports:export' report_type=key %}?format=csv" class="chip" style="font-size:11px;">CSV</a>
+                        <a href="{% url 'reports:export' report_type=key %}?format=json" class="chip" style="font-size:11px;">JSON</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    var ctx = document.getElementById('overviewChart');
+    if (!ctx) return;
+    var c = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Week 1','Week 2','Week 3','Week 4'],
+            datasets: [{
+                label:'Shipments', data:[280,310,295,363],
+                borderColor:'#D96A16', backgroundColor:'rgba(217,106,22,.12)',
+                tension:.35, fill:true, borderWidth:2.5, pointRadius:0
+            },{
+                label:'Deliveries', data:[262,298,280,347],
+                borderColor:'#1DA36B', backgroundColor:'rgba(29,163,107,.1)',
+                tension:.35, fill:true, borderWidth:2.5, pointRadius:0
+            },{
+                label:'Revenue (k)', data:[28500,31200,29800,34600],
+                borderColor:'#38AEF2', backgroundColor:'rgba(56,174,242,.08)',
+                tension:.35, fill:false, borderWidth:2.5, pointRadius:0, yAxisID:'y1'
+            }]
+        },
+        options:{
+            responsive:true, maintainAspectRatio:false,
+            interaction:{mode:'index', intersect:false},
+            plugins:{legend:{position:'bottom', labels:{font:{family:'Nunito Sans', size:11, weight:'700'}, boxWidth:10, boxHeight:10, usePointStyle:true}}},
+            scales:{
+                x:{grid:{display:false}, ticks:{font:{family:'Nunito Sans', size:11, weight:'700'}, color:'#6B6A80'}},
+                y:{beginAtZero:true, grid:{color:'rgba(230,231,240,.5)'}, ticks:{font:{family:'Nunito Sans', size:11, weight:'700'}, color:'#6B6A80'}},
+                y1:{position:'right', beginAtZero:true, grid:{display:false}, ticks:{font:{family:'Nunito Sans', size:11, weight:'700'}, color:'#6B6A80'}}
+            }
+        }
+    });
+})();
+</script>
+{% endblock %}

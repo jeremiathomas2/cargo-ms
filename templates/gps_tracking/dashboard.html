@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>GPS & Tracking</h1>
+        <p>Live device overview, fleet position and geofence events</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'gps_tracking:live_tracking' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-map"/></svg> Live Map</a>
+        <button class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg> Register Device</button>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-route"/></svg></div>
+        </div>
+        <div class="stat-value">{{ total_devices }}</div>
+        <div class="stat-label">Registered Devices</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-check"/></svg></div>
+        </div>
+        <div class="stat-value">{{ online_devices }}</div>
+        <div class="stat-label">Online / Reporting</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--danger-soft); color:var(--danger);"><svg class="icon"><use href="#i-alert"/></svg></div>
+        </div>
+        <div class="stat-value">{{ offline_devices }}</div>
+        <div class="stat-label">Offline</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-shield"/></svg></div>
+        </div>
+        <div class="stat-value">{{ recent_alerts|length }}</div>
+        <div class="stat-label">Active Alerts</div>
+    </div>
+</div>
+
+<div class="grid-main reveal" style="animation-delay:.08s">
+    <div class="panel" style="margin-bottom:0;">
+        <div class="panel-head">
+            <div>
+                <h2>Recent Alerts</h2>
+                <p class="sub">Geofence, battery and tamper events</p>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Device</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in recent_alerts %}
+                    <tr>
+                        <td style="font-size:12.5px; font-weight:700; white-space:nowrap;">{{ a.created_at|timesince }} ago</td>
+                        <td style="font-size:13px; font-weight:800; font-family:ui-monospace, monospace;">{{ a.device.tracker_id }}</td>
+                        <td>
+                            <span class="badge {% if a.alert_type == 'low_battery' %}b-warning{% elif a.alert_type == 'geofence_enter' or a.alert_type == 'geofence_exit' %}b-info{% elif a.alert_type == 'tamper' or a.alert_type == 'overspeed' %}b-danger{% else %}b-warehouse{% endif %}">
+                                {{ a.get_alert_type_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if a.acknowledged %}<span class="b-delivered">Acknowledged</span>{% else %}<span class="b-pending">Active</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-alert"/></svg></div>
+                            <p>No active alerts. All systems nominal.</p>
+                        </div>
+                    </td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel map-panel" style="margin-bottom:0;">
+        <div class="panel-head">
+            <div>
+                <h2>Fleet Snapshot</h2>
+                <p class="sub">Device types currently registered</p>
+            </div>
+            <a href="{% url 'gps_tracking:geofence_list' %}" class="chip" style="font-size:11.5px;">Manage Geofences</a>
+        </div>
+        <div style="padding:18px 20px;">
+            <div id="fleetChart" class="chart-wrap chart-md"></div>
+        </div>
+        <div class="map-stats">
+            <div class="map-stat"><span>Positions (1h)</span><strong>{{ recent_positions|length }}</strong></div>
+            <div class="map-stat"><span>Top Speed</span><strong>{% if recent_positions %}{{ recent_positions.0.speed|default:0 }} km/h{% else %}0 km/h{% endif %}</strong></div>
+            <div class="map-stat"><span>Last Report</span><strong>{% if recent_positions %}{{ recent_positions.0.timestamp|timesince }} ago{% else %}—{% endif %}</strong></div>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.1s; margin-top:18px;">
+    <div class="panel-head">
+        <div>
+            <h2>Recent Position Reports</h2>
+            <p class="sub">Live telemetry stream from fleet devices</p>
+        </div>
+        <a href="{% url 'gps_tracking:device_list' %}" class="chip" style="font-size:11.5px;">All Devices</a>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Device / Tracker</th>
+                    <th>Vehicle</th>
+                    <th>Speed</th>
+                    <th>Heading</th>
+                    <th>Altitude</th>
+                    <th>Battery</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in recent_positions %}
+                <tr>
+                    <td style="font-size:12.5px; font-weight:700; white-space:nowrap;">{{ p.timestamp|date:"d M H:i" }}</td>
+                    <td>
+                        <a href="{% url 'gps_tracking:device_detail' pk=p.device.pk %}" style="font-size:13px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ p.device.tracker_id }}</a>
+                    </td>
+                    <td style="font-size:12.5px; font-weight:700;">
+                        {% if p.device.assigned_vehicle %}{{ p.device.assigned_vehicle.registration_number }}{% else %}<span class="td-faint">—</span>{% endif %}
+                    </td>
+                    <td style="font-size:13px; font-weight:800;">{{ p.speed|default:0 }} km/h</td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ p.heading|default:0 }}°</td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ p.altitude|default:0 }} m</td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:60px; height:8px; background:var(--card-2); border-radius:999px; overflow:hidden;">
+                                <div style="width:{% if p.battery_level %}{{ p.battery_level }}{% else %}0{% endif %}%; height:100%; background:{% if p.battery_level and p.battery_level < 20 %}var(--danger){% elif p.battery_level and p.battery_level < 50 %}var(--warning){% else %}var(--success){% endif %};"></div>
+                            </div>
+                            <span style="font-size:12px; font-weight:700;">{% if p.battery_level %}{{ p.battery_level }}%{% else %}—{% endif %}</span>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7">
+                    <div class="data-table-empty">
+                        <div class="empty-icon"><svg class="icon"><use href="#i-map"/></svg></div>
+                        <p>No position data received recently.</p>
+                    </div>
+                </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    var typeData = {{ device_type_counts|safe }};
+    if (typeData && typeData.length) {
+        var el = document.getElementById('fleetChart');
+        if (el && window.Chart) {
+            var canvas = document.createElement('canvas');
+            el.appendChild(canvas);
+            var colors = ['#D96A16','#38AEF2','#6D5BD0','#1DA36B','#E19A1C'];
+            new Chart(canvas, {
+                type:'bar',
+                data:{labels:typeData.map(function(d){return d.device_type||'Unknown'}), datasets:[{
+                    label:'Devices', data:typeData.map(function(d){return d.count}),
+                    backgroundColor:colors, borderRadius:10, borderSkipped:false, barThickness:36
+                }]},
+                options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+                    scales:{x:{grid:{display:false}, ticks:{font:{family:'Nunito Sans', size:11, weight:'700'}}},
+                            y:{beginAtZero:true, grid:{color:'rgba(230,231,240,.5)'}, ticks:{stepSize:1, font:{family:'Nunito Sans', size:11, weight:'700'}}}}}
+            });
+        }
+    }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Notification Preferences</h1>
+        <p>Choose how and when you receive updates</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'notifications:list' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-chevron-left"/></svg> Back to Inbox</a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-5 reveal" style="animation-delay:.05s; max-width:900px;">
+    <form method="post" class="panel" style="padding:22px;">
+        {% csrf_token %}
+        <div style="margin-bottom:22px;">
+            <h2 style="font-size:16px; font-weight:800; color:var(--text); margin-bottom:4px;">Delivery Channels</h2>
+            <p style="font-size:12.5px; color:var(--text-muted); font-weight:600;">Select how you want to be notified</p>
+        </div>
+
+        <div style="padding:16px; border-radius:14px; background:var(--card-2); margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <div style="width:44px; height:44px; border-radius:12px; background:var(--info-soft); display:flex; align-items:center; justify-content:center;">
+                    <svg class="icon" style="color:var(--info);"><use href="#i-bell"/></svg>
+                </div>
+                <div>
+                    <div style="font-size:14px; font-weight:800; color:var(--text);">In-app Notifications</div>
+                    <div style="font-size:12px; color:var(--text-muted); font-weight:600;">Show alerts within the dashboard</div>
+                </div>
+            </div>
+            <label style="position:relative; display:inline-block; width:52px; height:30px;">
+                <input type="checkbox" name="notification_in_app" {% if profile.notification_in_app %}checked{% endif %} style="opacity:0; width:0; height:0;">
+                <span style="position:absolute; inset:0; background:var(--card-2); border:1px solid var(--border); border-radius:999px; cursor:pointer; transition:.2s;">
+                    <span style="position:absolute; left:3px; top:3px; width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg, var(--brand), #F0954B); transition:.2s; box-shadow:var(--shadow-1); {% if profile.notification_in_app %}transform:translateX(22px); background:linear-gradient(135deg, var(--info), #1E7FBE);{% endif %}"></span>
+                </span>
+            </label>
+        </div>
+
+        <div style="padding:16px; border-radius:14px; background:var(--card-2); margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <div style="width:44px; height:44px; border-radius:12px; background:var(--success-soft); display:flex; align-items:center; justify-content:center;">
+                    <svg class="icon" style="color:var(--success);"><use href="#i-file"/></svg>
+                </div>
+                <div>
+                    <div style="font-size:14px; font-weight:800; color:var(--text);">Email Notifications</div>
+                    <div style="font-size:12px; color:var(--text-muted); font-weight:600;">Shipment updates to your inbox</div>
+                </div>
+            </div>
+            <label style="position:relative; display:inline-block; width:52px; height:30px;">
+                <input type="checkbox" name="notification_email" {% if profile.notification_email %}checked{% endif %} style="opacity:0; width:0; height:0;">
+                <span style="position:absolute; inset:0; background:var(--card-2); border:1px solid var(--border); border-radius:999px; cursor:pointer; transition:.2s;">
+                    <span style="position:absolute; left:3px; top:3px; width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg, var(--brand), #F0954B); transition:.2s; box-shadow:var(--shadow-1); {% if profile.notification_email %}transform:translateX(22px); background:linear-gradient(135deg, var(--info), #1E7FBE);{% endif %}"></span>
+                </span>
+            </label>
+        </div>
+
+        <div style="padding:16px; border-radius:14px; background:var(--card-2); margin-bottom:22px; display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <div style="width:44px; height:44px; border-radius:12px; background:var(--warning-soft); display:flex; align-items:center; justify-content:center;">
+                    <svg class="icon" style="color:var(--warning);"><use href="#i-support"/></svg>
+                </div>
+                <div>
+                    <div style="font-size:14px; font-weight:800; color:var(--text);">SMS / Text Messages</div>
+                    <div style="font-size:12px; color:var(--text-muted); font-weight:600;">Urgent delivery alerts to phone</div>
+                </div>
+            </div>
+            <label style="position:relative; display:inline-block; width:52px; height:30px;">
+                <input type="checkbox" name="notification_sms" {% if profile.notification_sms %}checked{% endif %} style="opacity:0; width:0; height:0;">
+                <span style="position:absolute; inset:0; background:var(--card-2); border:1px solid var(--border); border-radius:999px; cursor:pointer; transition:.2s;">
+                    <span style="position:absolute; left:3px; top:3px; width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg, var(--brand), #F0954B); transition:.2s; box-shadow:var(--shadow-1); {% if profile.notification_sms %}transform:translateX(22px); background:linear-gradient(135deg, var(--info), #1E7FBE);{% endif %}"></span>
+                </span>
+            </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:12px 18px;">
+            <svg class="icon"><use href="#i-check"/></svg> Save Preferences
+        </button>
+    </form>
+
+    <div class="panel" style="padding:22px;">
+        <div style="margin-bottom:22px;">
+            <h2 style="font-size:16px; font-weight:800; color:var(--text); margin-bottom:4px;">What You'll Receive</h2>
+            <p style="font-size:12.5px; color:var(--text-muted); font-weight:600;">Types of notifications enabled for your account</p>
+        </div>
+
+        <div style="padding:14px 0; border-bottom:1px solid var(--border); display:flex; gap:12px; align-items:flex-start;">
+            <div style="width:32px; height:32px; border-radius:9px; background:var(--info-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg class="icon" style="color:var(--info); width:16px; height:16px;"><use href="#i-route"/></svg>
+            </div>
+            <div>
+                <div style="font-size:13.5px; font-weight:800; color:var(--text);">Shipment Status Updates</div>
+                <div style="font-size:12px; color:var(--text-muted); font-weight:600;">Tracking milestones and location changes</div>
+            </div>
+        </div>
+        <div style="padding:14px 0; border-bottom:1px solid var(--border); display:flex; gap:12px; align-items:flex-start;">
+            <div style="width:32px; height:32px; border-radius:9px; background:var(--danger-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg class="icon" style="color:var(--danger); width:16px; height:16px;"><use href="#i-alert"/></svg>
+            </div>
+            <div>
+                <div style="font-size:13.5px; font-weight:800; color:var(--text);">Delay & Exception Alerts</div>
+                <div style="font-size:12px; color:var(--text-muted); font-weight:600;">Customs holds, route deviations, damage reports</div>
+            </div>
+        </div>
+        <div style="padding:14px 0; border-bottom:1px solid var(--border); display:flex; gap:12px; align-items:flex-start;">
+            <div style="width:32px; height:32px; border-radius:9px; background:var(--warning-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg class="icon" style="color:var(--warning); width:16px; height:16px;"><use href="#i-cash"/></svg>
+            </div>
+            <div>
+                <div style="font-size:13.5px; font-weight:800; color:var(--text);">Billing & Payments</div>
+                <div style="font-size:12px; color:var(--text-muted); font-weight:600;">Invoice issued, payment received, overdue reminders</div>
+            </div>
+        </div>
+        <div style="padding:14px 0; display:flex; gap:12px; align-items:flex-start;">
+            <div style="width:32px; height:32px; border-radius:9px; background:var(--success-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg class="icon" style="color:var(--success); width:16px; height:16px;"><use href="#i-truck"/></svg>
+            </div>
+            <div>
+                <div style="font-size:13.5px; font-weight:800; color:var(--text);">Delivery Confirmations</div>
+                <div style="font-size:12px; color:var(--text-muted); font-weight:600;">Proof of delivery, recipient signatures</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

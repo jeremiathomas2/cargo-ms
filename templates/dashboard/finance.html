@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Finance — Shehena{% endblock %}
+
+{% block content %}
+<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-6">
+    <div>
+        <h1 class="text-[24px] font-extrabold tracking-tight text-gray-900 dark:text-white">Finance</h1>
+        <p class="text-[13.5px] text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Billing &amp; payments overview</p>
+    </div>
+    <a href="{% url 'billing:invoice_list' %}" class="inline-flex items-center justify-center gap-2 rounded-full font-bold text-[13.5px] px-5 py-2.5 bg-brand text-white shadow-[0_8px_18px_-6px_rgba(217,106,22,.55)] hover:bg-[#C25F12]">View invoices</a>
+</div>
+
+<div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+    {% include 'components/stat_card.html' with icon='<path d="M6 2h12v20l-3-2-3 2-3-2-3 2Z" fill="none"/><path d="M9 8h6" fill="none"/><path d="M9 12h6" fill="none"/>' value=total_invoices label="Total invoices" color='secondary' %}
+    {% include 'components/stat_card.html' with icon='<path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0Z" fill="none"/><path d="M12 9v4" fill="none"/><path d="M12 17h.01" fill="none"/>' value=unpaid_invoices label="Unpaid invoices" color='warning' %}
+    {% include 'components/stat_card.html' with icon='<path d="M20 6 9 17l-5-5" fill="none"/>' value=total_revenue label="Total revenue" color='success' %}
+    {% include 'components/stat_card.html' with icon='<circle cx="12" cy="12" r="9" fill="none"/><path d="M12 8v8M9.5 10h5" fill="none"/>' value=pending_amount label="Pending amount" color='danger' %}
+</div>
+
+<div class="panel bg-card dark:bg-card-dark border border-gray-200 dark:border-[#291F55] rounded-[18px] card-shadow overflow-hidden">
+    <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5">
+        <div>
+            <h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Recent payments</h2>
+            <p class="text-xs text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Latest 10 payments</p>
+        </div>
+        <a href="{% url 'payments:list' %}" class="text-[13px] font-extrabold text-info hover:underline">View all</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse min-w-[720px]">
+            <thead>
+                <tr class="border-b border-gray-200 dark:border-[#291F55] bg-card-2 dark:bg-card-dark2">
+                    <th class="px-5 py-3 text-[11px] font-extrabold uppercase tracking-wide text-muted dark:text-[#B2ACD6]">Reference</th>
+                    <th class="px-5 py-3 text-[11px] font-extrabold uppercase tracking-wide text-muted dark:text-[#B2ACD6]">Customer</th>
+                    <th class="px-5 py-3 text-[11px] font-extrabold uppercase tracking-wide text-muted dark:text-[#B2ACD6]">Amount</th>
+                    <th class="px-5 py-3 text-[11px] font-extrabold uppercase tracking-wide text-muted dark:text-[#B2ACD6]">Status</th>
+                    <th class="px-5 py-3 text-[11px] font-extrabold uppercase tracking-wide text-muted dark:text-[#B2ACD6]">Date</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-[#1E1548]">
+                {% for payment in recent_payments %}
+                <tr class="hover:bg-card-2 dark:hover:bg-card-dark2 transition-colors">
+                    <td class="px-5 py-3.5 text-[13px] font-extrabold text-info">{{ payment.reference|default:payment.id|truncatechars:12 }}</td>
+                    <td class="px-5 py-3.5 text-[13px] font-bold text-gray-900 dark:text-white">{{ payment.customer.name|default:"—" }}</td>
+                    <td class="px-5 py-3.5 text-[13px] font-bold text-gray-900 dark:text-white">{{ payment.amount }}</td>
+                    <td class="px-5 py-3.5">
+                        {% if payment.status == 'completed' or payment.status == 'paid' %}
+                            {% include 'components/badge.html' with text=payment.get_status_display type="delivered" %}
+                        {% elif payment.status == 'pending' %}
+                            {% include 'components/badge.html' with text="Pending" type="pending" %}
+                        {% else %}
+                            {% include 'components/badge.html' with text=payment.get_status_display type="info" %}
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3.5 text-[13px] text-muted dark:text-[#B2ACD6] font-semibold">{{ payment.created_at|date:"M j, Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-14 text-center">
+                        <p class="text-sm font-semibold text-faint dark:text-[#8981B8]">No payments yet.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

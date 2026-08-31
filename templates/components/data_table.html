@@ -1,0 +1,52 @@
+{% comment %}
+Reusable responsive table wrapper.
+Slots (via blocks won't work inside includes, so use context vars or layout of blocks in parent):
+  table_header  - render the <tr> of column headers (provide via included file that overrides {{ header }})
+  table_body    - render the <tr> rows
+  empty_message - text to show when no rows
+  empty_state   - set to True to show the empty state instead of the body
+Provide via include params: title, subtitle, empty_message, empty_state.
+The header and body are filled by rendering the block content around this include in the caller,
+or by overriding the `table_header` / `table_body` named blocks (works only when this template is extended,
+so for include usage pass header_rows / body_rows as template variables).
+{% endcomment %}
+<div class="panel bg-card dark:bg-card-dark border border-gray-200 dark:border-[#291F55] rounded-[18px] card-shadow overflow-hidden">
+    {% if title %}
+    <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5">
+        <div>
+            <h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">{{ title }}</h2>
+            {% if subtitle %}<p class="text-xs text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">{{ subtitle }}</p>{% endif %}
+        </div>
+        <div class="actions">{{ actions|default:"" }}</div>
+    </div>
+    {% endif %}
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse min-w-[640px]">
+            <thead>
+                <tr class="border-b border-gray-200 dark:border-[#291F55] bg-card-2 dark:bg-card-dark2">
+                    {% if header_rows %}{{ header_rows|safe }}{% else %}{{ table_header|default:""|safe }}{% endif %}
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-[#1E1548]">
+                {% if empty_state %}
+                <tr>
+                    <td colspan="{{ colspan|default:99 }}" class="px-6 py-14 text-center">
+                        <div class="flex flex-col items-center gap-3">
+                            <div class="w-14 h-14 rounded-full bg-card-2 dark:bg-card-dark2 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-faint dark:text-[#8981B8] stroke-current fill-none stroke-[1.8] stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z" fill="none"/><path d="M3 7.5v9L12 21l9-4.5v-9" fill="none"/><path d="M12 12v9" fill="none"/></svg>
+                            </div>
+                            <p class="text-sm font-semibold text-faint dark:text-[#8981B8]">{{ empty_message|default:"No records found." }}</p>
+                            {% if empty_action %}{{ empty_action|safe }}{% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                {{ table_body|default:""|safe }}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if pagination %}{{ pagination|safe }}{% endif %}
+</div>

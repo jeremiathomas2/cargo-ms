@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Deliveries</h1>
+        <p>Last-mile routing, consignee handoff and proof of delivery</p>
+    </div>
+    <div class="page-head-actions">
+        <button class="btn btn-ghost"><svg class="icon"><use href="#i-download"/></svg> Export</button>
+        <button class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg> New Delivery</button>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-route"/></svg></div>
+        </div>
+        <div class="stat-value">{{ deliveries.paginator.count }}</div>
+        <div class="stat-label">Total Deliveries</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--info-soft); color:var(--info);"><svg class="icon"><use href="#i-truck"/></svg></div>
+        </div>
+        <div class="stat-value">{% for d in deliveries %}{% if d.status == 'in_transit' or d.status == 'dispatched' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not deliveries %}0{% endif %}</div>
+        <div class="stat-label">On Route</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-check"/></svg></div>
+        </div>
+        <div class="stat-value">{% for d in deliveries %}{% if d.status == 'delivered' or d.status == 'completed' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not deliveries %}0{% endif %}</div>
+        <div class="stat-label">Delivered</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--danger-soft); color:var(--danger);"><svg class="icon"><use href="#i-alert"/></svg></div>
+        </div>
+        <div class="stat-value">{% for d in deliveries %}{% if d.status == 'failed' or d.status == 'returned' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not deliveries %}0{% endif %}</div>
+        <div class="stat-label">Failed / Returned</div>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.08s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'delivery:list' %}" class="chip {% if not status_filter %}active{% endif %}">All</a>
+            {% for val,label in status_choices %}
+            <a href="?status={{ val }}" class="chip {% if status_filter == val %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2 flex-wrap">
+                <div class="search-field" style="width: 320px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Tracking ID, consignee, waybill, address...">
+                </div>
+                <select name="date" class="chip" onchange="this.form.submit()">
+                    <option value="">Any Date</option>
+                    <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+                    <option value="week" {% if date_filter == 'week' %}selected{% endif %}>This Week</option>
+                    <option value="month" {% if date_filter == 'month' %}selected{% endif %}>This Month</option>
+                </select>
+                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.1s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Delivery / Tracking</th>
+                    <th>Shipment</th>
+                    <th>Consignee</th>
+                    <th>Destination</th>
+                    <th>Assigned</th>
+                    <th>Planned</th>
+                    <th>Status</th>
+                    <th>POD</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in deliveries %}
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div class="fleet-icon" style="background:var(--brand-soft); border:none;">
+                                <svg class="icon" style="color:var(--brand);"><use href="#i-route"/></svg>
+                            </div>
+                            <div>
+                                <a href="{% url 'delivery:detail' pk=d.pk %}" style="font-size:13px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ d.delivery_number|default:"DLV-"|slice:":-1" }}{{ d.pk }}</a>
+                                <div class="td-faint" style="font-family:ui-monospace, monospace;">{{ d.shipment.tracking_id|default:"—" }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="font-size:12.5px; font-weight:700;">
+                        {% if d.shipment %}<a href="{% url 'cargo:detail' pk=d.shipment.pk %}" style="color:var(--text-muted);">{{ d.shipment.description|default:"—"|truncatechars:40 }}</a>{% else %}<span class="td-faint">—</span>{% endif %}
+                    </td>
+                    <td>
+                        <div style="font-size:13px; font-weight:800; color:var(--text);">{{ d.consignee_name|default:"—" }}</div>
+                        <div class="td-faint" style="font-family:ui-monospace, monospace;">{{ d.consignee_phone|default:"—" }}</div>
+                    </td>
+                    <td>
+                        <div style="font-size:12.5px; font-weight:700; color:var(--text);">{{ d.delivery_address|default:"—"|truncatechars:60 }}</div>
+                        <div class="td-faint">{{ d.delivery_city|default:"" }}</div>
+                    </td>
+                    <td>
+                        {% if d.assigned_driver %}
+                        <div style="font-size:12.5px; font-weight:800; color:var(--text);">{{ d.assigned_driver.first_name|default:"" }} {{ d.assigned_driver.last_name|default:"" }}</div>
+                        {% else %}<span class="td-faint">—</span>{% endif %}
+                        {% if d.assigned_vehicle %}
+                        <div class="td-faint" style="font-family:ui-monospace, monospace;">{{ d.assigned_vehicle.registration_number|default:"" }}</div>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12.5px; font-weight:700; white-space:nowrap;">
+                        {% if d.scheduled_date %}{{ d.scheduled_date|date:"d M" }}{% else %}<span class="td-faint">—</span>{% endif %}
+                        {% if d.scheduled_time %}<div class="td-faint">{{ d.scheduled_time|date:"H:i" }}</div>{% endif %}
+                    </td>
+                    <td>
+                        <span class="badge {% if d.status == 'delivered' or d.status == 'completed' %}b-delivered{% elif d.status == 'in_transit' or d.status == 'dispatched' %}b-transit{% elif d.status == 'scheduled' or d.status == 'pending' %}b-pending{% elif d.status == 'failed' or d.status == 'returned' %}b-delayed{% else %}b-warehouse{% endif %}">{{ d.get_status_display|title }}</span>
+                    </td>
+                    <td>
+                        {% if d.proof_of_delivery %}
+                        <a href="{% url 'delivery:proof' pk=d.pk %}" class="chip" style="font-size:11px;">Signed</a>
+                        {% else %}
+                        <button class="chip" style="font-size:11px; background:var(--card-2);">Pending</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-route"/></svg></div>
+                            <p>No deliveries match this filter.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if deliveries.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ deliveries.number }} of {{ deliveries.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if deliveries.has_previous %}?page={{ deliveries.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not deliveries.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if deliveries.has_next %}?page={{ deliveries.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not deliveries.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

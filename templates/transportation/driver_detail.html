@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head">
+    <div class="flex items-center gap-4 flex-wrap">
+        <a href="{% url 'transportation:driver_list' %}" class="icon-btn" style="padding: 10px;">
+            <svg class="w-5 h-5 stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
+        <div>
+            <div class="flex items-center gap-3 flex-wrap">
+                <div class="w-14 h-14 rounded-full bg-brand/10 flex items-center justify-center font-black text-[26px] text-brand">{{ driver.first_name|first }}{{ driver.last_name|first }}</div>
+                <div>
+                    <h1 class="page-title" style="margin-bottom: 0;">{{ driver.first_name }} {{ driver.last_name }}</h1>
+                    <p class="page-sub" style="margin-top: 4px;">Employee #{{ driver.employee_id }} · {{ driver.phone }}
+                    {% if driver.assigned_branch %} · {{ driver.assigned_branch.name }}{% endif %}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="page-head-actions">
+        <div class="chip-group">
+            {% if driver.status == 'available' %}<span class="chip" style="background: var(--success-bg); color: var(--success); border-color: var(--success-border);">Available</span>
+            {% elif driver.status == 'on_duty' %}<span class="chip" style="background: var(--secondary-bg); color: var(--secondary); border-color: var(--secondary-border);">On Duty</span>
+            {% elif driver.status == 'off_duty' %}<span class="chip">Off Duty</span>
+            {% else %}<span class="chip" style="background: var(--warning-bg); color: var(--warning); border-color: var(--warning-border);">On Leave</span>{% endif %}
+            <span class="chip">⭐ {{ driver.rating|default:"0" }} / 5</span>
+        </div>
+        <button class="btn btn-primary">
+            <svg class="icon"><use href="#i-edit"/></svg>
+            Edit Profile
+        </button>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-brand/10 text-brand"><svg class="icon"><use href="#i-route"/></svg></div></div><div class="stat-value">{{ driver.total_trips }}</div><div class="stat-label">Career Trips</div></div>
+    <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-secondary/10 text-secondary"><svg class="icon"><use href="#i-clock"/></svg></div></div><div class="stat-value">{{ driver.total_km }}</div><div class="stat-label">KM Driven</div></div>
+    <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-info/10 text-info"><svg class="icon"><use href="#i-truck"/></svg></div></div><div class="stat-value">{% if driver.assigned_vehicle %}{{ driver.assigned_vehicle.registration_number }}{% else %}—{% endif %}</div><div class="stat-label">Current Vehicle</div></div>
+    <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-warning/10 text-warning"><svg class="icon"><use href="#i-alert"/></svg></div></div><div class="stat-value">{{ driver.license_expiry|date:"M y" }}</div><div class="stat-label">License Expiry</div></div>
+</div>
+
+<div class="grid-main" style="margin-bottom: 22px;">
+    <div class="panel">
+        <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+            <div><h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Driver Credentials</h2><p class="text-xs text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">License and contact details</p></div>
+        </div>
+        <div class="p-5 space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+                <div class="p-4 rounded-[14px] bg-card-2 dark:bg-card-dark2">
+                    <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">License #</div>
+                    <div class="text-[14px] font-extrabold text-gray-900 dark:text-white font-mono">{{ driver.license_number }}</div>
+                </div>
+                <div class="p-4 rounded-[14px] bg-card-2 dark:bg-card-dark2">
+                    <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Class / Expiry</div>
+                    <div class="text-[14px] font-extrabold text-gray-900 dark:text-white">{{ driver.license_class|default:"—" }} · {{ driver.license_expiry|date:"d M Y" }}</div>
+                </div>
+                <div class="p-4 rounded-[14px] bg-card-2 dark:bg-card-dark2">
+                    <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Phone</div>
+                    <div class="text-[14px] font-extrabold text-gray-900 dark:text-white">{{ driver.phone }}</div>
+                </div>
+                <div class="p-4 rounded-[14px] bg-card-2 dark:bg-card-dark2">
+                    <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Email</div>
+                    <div class="text-[14px] font-extrabold text-gray-900 dark:text-white truncate">{{ driver.email|default:"—" }}</div>
+                </div>
+            </div>
+            {% if driver.assigned_vehicle %}
+            <a href="{% url 'transportation:vehicle_detail' pk=driver.assigned_vehicle.pk %}" class="flex items-center gap-4 p-4 rounded-[14px] bg-brand/5 dark:bg-brand/10 border border-brand/20 hover:border-brand transition-colors">
+                <div class="w-12 h-12 rounded-[13px] bg-brand/10 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6 text-brand"><use href="#i-truck"/></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-[10.5px] font-extrabold text-brand uppercase tracking-wider">Assigned Vehicle</div>
+                    <div class="text-[16px] font-black text-gray-900 dark:text-white font-mono">{{ driver.assigned_vehicle.registration_number }}</div>
+                    <div class="text-[11.5px] font-bold text-muted dark:text-[#B2ACD6]">{{ driver.assigned_vehicle.get_vehicle_type_display }} · {{ driver.assigned_vehicle.make|default:"" }} {{ driver.assigned_vehicle.model_name|default:"" }}</div>
+                </div>
+                <svg class="w-5 h-5 text-brand stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]"><div><h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Performance</h2><p class="text-xs text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Ratings and KPIs</p></div></div>
+        <div class="p-5 space-y-4">
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-[12px] font-extrabold text-muted dark:text-[#B2ACD6] uppercase tracking-wider">Overall Rating</span>
+                    <span class="text-[14px] font-black text-gray-900 dark:text-white">⭐ {{ driver.rating|default:"0" }} / 5.0</span>
+                </div>
+                <div class="h-3 rounded-full bg-card-2 dark:bg-card-dark2 overflow-hidden">
+                    <div class="h-full rounded-full bg-gradient-to-r from-warning to-brand" style="width: {% widthratio driver.rating|default:0 5 100 %}%;"></div>
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2.5">
+                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2 text-center">
+                    <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Trips</div>
+                    <div class="text-[16px] font-black text-gray-900 dark:text-white">{{ driver.total_trips }}</div>
+                </div>
+                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2 text-center">
+                    <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">KM</div>
+                    <div class="text-[16px] font-black text-gray-900 dark:text-white">{{ driver.total_km }}</div>
+                </div>
+                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2 text-center">
+                    <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Branch</div>
+                    <div class="text-[14px] font-black text-gray-900 dark:text-white truncate">{% if driver.assigned_branch %}{{ driver.assigned_branch.code }}{% else %}—{% endif %}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]"><div><h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Recent Trips</h2><p class="text-xs text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Last 10 assignments</p></div></div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left min-w-[640px]">
+            <thead><tr class="border-b border-gray-200 dark:border-[#291F55] bg-card-2 dark:bg-card-dark2">
+                <th class="px-5 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Trip #</th>
+                <th class="px-5 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Route</th>
+                <th class="px-5 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Vehicle</th>
+                <th class="px-5 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Status</th>
+                <th class="px-5 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide text-right">Departed</th>
+            </tr></thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-[#1E1548]">
+                {% for t in recent_trips %}
+                <tr class="hover:bg-card-2/60 dark:hover:bg-card-dark2/60">
+                    <td class="px-5 py-3"><a href="{% url 'transportation:trip_detail' pk=t.pk %}" class="text-[13px] font-extrabold text-gray-900 dark:text-white font-mono hover:text-brand">{{ t.trip_number }}</a></td>
+                    <td class="px-5 py-3 text-[12.5px] font-bold text-gray-900 dark:text-white">{% if t.route %}{{ t.route.name }}{% else %}—{% endif %}</td>
+                    <td class="px-5 py-3 text-[12.5px] font-bold text-muted dark:text-[#B2ACD6] font-mono">{% if t.vehicle %}{{ t.vehicle.registration_number }}{% else %}—{% endif %}</td>
+                    <td class="px-5 py-3"><span class="b-{% if t.status == 'completed' %}delivered{% elif t.status == 'in_transit' or t.status == 'active' %}transit{% elif t.status == 'cancelled' %}delayed{% else %}pending{% endif %}">{{ t.get_status_display }}</span></td>
+                    <td class="px-5 py-3 text-[12.5px] font-black text-gray-900 dark:text-white text-right whitespace-nowrap">{{ t.departed_at|default:t.created_at|date:"d M H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="px-5 py-10 text-center text-[12px] font-semibold text-faint dark:text-[#8981B8]">No trip history for this driver.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

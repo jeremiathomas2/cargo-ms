@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Document Numbering</h1>
+        <p>Prefixes, sequences and auto-increment formats</p>
+    </div>
+    <div class="page-head-actions">
+        <button class="btn btn-ghost"><svg class="icon"><use href="#i-rotate"/></svg> Reset All</button>
+        <a href="{% url 'self_service:dashboard' %}" class="btn btn-primary"><svg class="icon"><use href="#i-chevron-left"/></svg> Settings</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-file"/></svg></div>
+        </div>
+        <div class="stat-value">{{ sequences|length }}</div>
+        <div class="stat-label">Active Sequences</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-check"/></svg></div>
+        </div>
+        <div class="stat-value">{{ total_generated|default:0 }}</div>
+        <div class="stat-label">Numbers Issued</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--info-soft); color:var(--info);"><svg class="icon"><use href="#i-calendar"/></svg></div>
+        </div>
+        <div class="stat-value">{{ current_period|default:"YYYY" }}</div>
+        <div class="stat-label">Current Period</div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s; margin-bottom:20px;">
+    <div class="panel-head">
+        <div><h2>Sequences</h2><p class="sub">Configure per-document prefixes and counters</p></div>
+        <button class="chip" style="font-size:11.5px;">+ Add Custom Rule</button>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Document Type</th>
+                    <th>Prefix</th>
+                    <th>Pattern (Format)</th>
+                    <th>Separator</th>
+                    <th>Year</th>
+                    <th>Current #</th>
+                    <th>Padding</th>
+                    <th>Last Used</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in sequences %}
+                <tr>
+                    <td style="font-size:13px; font-weight:800; color:var(--text);">{{ s.name|default:s.document_type|title }}</td>
+                    <td><span class="chip" style="font-family:ui-monospace, monospace; font-size:11px;">{{ s.prefix }}</span></td>
+                    <td style="font-family:ui-monospace, monospace; font-size:12px; font-weight:700;">{{ s.format_pattern }}</td>
+                    <td style="font-weight:800;">{{ s.separator|default:"-" }}</td>
+                    <td>
+                        {% if s.reset_yearly %}<span class="badge b-info">Yearly</span>{% else %}<span class="badge b-warehouse">Never</span>{% endif %}
+                    </td>
+                    <td style="font-family:ui-monospace, monospace; font-size:14px; font-weight:900; color:var(--brand);">{{ s.current_number }}</td>
+                    <td>{{ s.padding }} digits</td>
+                    <td style="font-size:12px; font-weight:700;">{{ s.last_used_at|default:"—"|timesince }}</td>
+                    <td class="text-right">
+                        <div style="display:inline-flex; gap:6px;">
+                            <form method="post" action="{% url 'self_service:numbering_edit' pk=s.pk %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="chip" style="font-size:11px;">Edit</button>
+                            </form>
+                            <form method="post" action="{% url 'self_service:numbering_reset' pk=s.pk %}" style="display:inline;" onsubmit="return confirm('Reset this counter?');">
+                                {% csrf_token %}
+                                <button type="submit" class="chip" style="font-size:11px; background:var(--warning-soft); color:var(--warning); border-color:var(--warning);">Reset</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9">
+                        <div class="data-table-empty" style="padding-bottom:44px;">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-file"/></svg></div>
+                            <p style="margin-bottom:16px;">Using default numbering patterns. Configure explicit rules below:</p>
+                        </div>
+                    </td>
+                </tr>
+                {% for doc in default_patterns %}
+                <tr>
+                    <td style="font-size:13px; font-weight:800;">{{ doc.name }}</td>
+                    <td><span class="chip" style="font-family:ui-monospace, monospace; font-size:11px;">{{ doc.prefix }}</span></td>
+                    <td style="font-family:ui-monospace, monospace; font-size:12px; font-weight:700;">{{ doc.prefix }}-YYYY-######</td>
+                    <td style="font-weight:800;">-</td>
+                    <td><span class="badge b-info">Yearly</span></td>
+                    <td style="font-family:ui-monospace, monospace; font-size:14px; font-weight:900; color:var(--text-muted); opacity:.7;">{{ doc.seed }}</td>
+                    <td>6 digits</td>
+                    <td><span class="td-faint">—</span></td>
+                    <td class="text-right">
+                        <form method="post" style="display:inline;">{% csrf_token %}<button class="chip" style="font-size:11px;">Customize</button></form>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-5 reveal" style="animation-delay:.1s; max-width:1000px;">
+    <form method="post" class="panel card-shadow" style="padding:24px;">
+        {% csrf_token %}
+        <h2 style="font-size:16px; font-weight:800; color:var(--text); margin-bottom:4px;">Preview Generator</h2>
+        <p style="font-size:12.5px; color:var(--text-muted); font-weight:600; margin-bottom:20px;">Generate and preview sample numbers using current settings</p>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;">
+            <div>
+                <div class="td-faint" style="font-size:11px; margin-bottom:6px;">Document Type</div>
+                <select name="preview_type" class="input-field" onchange="previewNum()">
+                    <option value="SHIP">Shipment (SHIP)</option>
+                    <option value="INV">Invoice (INV)</option>
+                    <option value="QUO">Quotation (QUO)</option>
+                    <option value="REC">Receipt (REC)</option>
+                    <option value="EXP">Manifest (EXP)</option>
+                    <option value="CLM">Claim (CLM)</option>
+                    <option value="DEL">Delivery (DEL)</option>
+                </select>
+            </div>
+            <div>
+                <div class="td-faint" style="font-size:11px; margin-bottom:6px;">Count</div>
+                <input type="number" name="preview_count" id="preview_count" value="5" min="1" max="20" class="input-field" onchange="previewNum()">
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary" style="width:100%; justify-content:center; padding:12px; margin-bottom:16px;" onclick="previewNum()">
+            <svg class="icon"><use href="#i-eye"/></svg> Generate Preview
+        </button>
+        <div id="previewOut" style="padding:14px; border-radius:14px; background:var(--card-2); font-family:ui-monospace, monospace; font-size:12.5px; font-weight:700; line-height:2; color:var(--text);"></div>
+    </form>
+
+    <div class="panel card-shadow" style="padding:24px;">
+        <h2 style="font-size:16px; font-weight:800; color:var(--text); margin-bottom:4px;">Behavior</h2>
+        <p style="font-size:12.5px; color:var(--text-muted); font-weight:600; margin-bottom:20px;">Global counters & period rollover settings</p>
+
+        <div style="padding:14px; border-radius:14px; background:var(--card-2); margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
+            <div>
+                <div style="font-size:13.5px; font-weight:800;">Yearly Rollover</div>
+                <div class="td-faint" style="font-size:11.5px;">Reset counters on Jan 1</div>
+            </div>
+            <label style="position:relative; display:inline-block; width:52px; height:30px;">
+                <input type="checkbox" checked style="opacity:0; width:0; height:0;">
+                <span style="position:absolute; inset:0; background:var(--card); border:1px solid var(--border); border-radius:999px;">
+                    <span style="position:absolute; left:25px; top:3px; width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg,var(--info),#1E7FBE);"></span>
+                </span>
+            </label>
+        </div>
+        <div style="padding:14px; border-radius:14px; background:var(--card-2); margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
+            <div>
+                <div style="font-size:13.5px; font-weight:800;">Branch Prefix</div>
+                <div class="td-faint" style="font-size:11.5px;">Prepend branch code per sequence</div>
+            </div>
+            <label style="position:relative; display:inline-block; width:52px; height:30px;">
+                <input type="checkbox" style="opacity:0; width:0; height:0;">
+                <span style="position:absolute; inset:0; background:var(--card); border:1px solid var(--border); border-radius:999px;">
+                    <span style="position:absolute; left:3px; top:3px; width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg,var(--brand),#F0954B);"></span>
+                </span>
+            </label>
+        </div>
+        <div style="padding:14px; border-radius:14px; background:var(--card-2); margin-bottom:20px; display:flex; align-items:center; justify-content:space-between;">
+            <div>
+                <div style="font-size:13.5px; font-weight:800;">Lock Sequences</div>
+                <div class="td-faint" style="font-size:11.5px;">Prevent manual edits after approval</div>
+            </div>
+            <label style="position:relative; display:inline-block; width:52px; height:30px;">
+                <input type="checkbox" style="opacity:0; width:0; height:0;">
+                <span style="position:absolute; inset:0; background:var(--card); border:1px solid var(--border); border-radius:999px;">
+                    <span style="position:absolute; left:3px; top:3px; width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg,var(--brand),#F0954B);"></span>
+                </span>
+            </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:12px;">
+            <svg class="icon"><use href="#i-check"/></svg> Save Global Behavior
+        </button>
+    </div>
+</div>
+
+<script>
+function previewNum(){
+    var type = document.querySelector('[name=preview_type]').value;
+    var n = parseInt(document.getElementById('preview_count').value,10)||5;
+    var y = new Date().getFullYear();
+    var pad = function(v,l){v=String(v); while(v.length<l) v='0'+v; return v;};
+    var rows = [];
+    for (var i=1; i<=n; i++) rows.push(type+'-'+y+'-'+pad(i,6));
+    var out = document.getElementById('previewOut');
+    if (out) out.innerHTML = rows.join('<br>');
+}
+previewNum();
+</script>
+{% endblock %}

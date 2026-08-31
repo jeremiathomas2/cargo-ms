@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Notifications</h1>
+        <p>System alerts, shipment updates and announcements</p>
+    </div>
+    <div class="page-head-actions">
+        <form method="post" action="{% url 'notifications:mark_all_read' %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-ghost"><svg class="icon"><use href="#i-check"/></svg> Mark all read</button>
+        </form>
+        <a href="{% url 'notifications:preferences' %}" class="btn btn-primary"><svg class="icon"><use href="#i-gear"/></svg> Preferences</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-bell"/></svg></div>
+        </div>
+        <div class="stat-value">{{ notifications|length }}</div>
+        <div class="stat-label">Total Notifications</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--danger-soft); color:var(--danger);"><svg class="icon"><use href="#i-alert"/></svg></div>
+        </div>
+        <div class="stat-value">{{ unread_count }}</div>
+        <div class="stat-label">Unread</div>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.08s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'notifications:list' %}" class="chip {% if not status_filter %}active{% endif %}">All</a>
+            <a href="?status=unread" class="chip {% if status_filter == 'unread' %}active{% endif %}">Unread</a>
+            <a href="?status=read" class="chip {% if status_filter == 'read' %}active{% endif %}">Read</a>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.1s">
+    <div style="padding:6px 10px;">
+        {% for n in notifications %}
+        <div style="display:flex; gap:12px; align-items:flex-start; padding:14px 10px; border-radius:14px; margin:2px 0; {% if n.status == 'unread' %}background:var(--info-soft);{% endif %}{% if n.status == 'unread' %}border-left:3px solid var(--info);{% endif %}"
+             class="hover:bg-card-2 transition-colors cursor-pointer"
+             onclick="window.location='{% url 'notifications:mark_read' pk=n.pk %}?next={% if n.shipment %}{% url 'cargo:detail' pk=n.shipment.pk %}{% else %}{% url 'notifications:list' %}{% endif %}'">
+            <div style="width:42px; height:42px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+                {% if n.notification_type == 'alert' or n.notification_type == 'warning' %}background:var(--danger-soft);
+                {% elif n.notification_type == 'info' or n.notification_type == 'update' %}background:var(--info-soft);
+                {% elif n.notification_type == 'success' %}background:var(--success-soft);
+                {% else %}background:var(--card-2);{% endif %}">
+                {% if n.notification_type == 'alert' or n.notification_type == 'warning' %}
+                <svg class="icon" style="color:var(--danger);"><use href="#i-alert"/></svg>
+                {% elif n.notification_type == 'success' %}
+                <svg class="icon" style="color:var(--success);"><use href="#i-check"/></svg>
+                {% elif n.notification_type == 'payment' %}
+                <svg class="icon" style="color:var(--warning);"><use href="#i-cash"/></svg>
+                {% else %}
+                <svg class="icon" style="color:var(--info);"><use href="#i-bell"/></svg>
+                {% endif %}
+            </div>
+            <div style="flex:1; min-width:0;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                    <div style="font-size:13px; font-weight:800; color:var(--text); line-height:1.4;">
+                        {% if n.status == 'unread' %}<span style="display:inline-block; width:8px; height:8px; background:var(--info); border-radius:50%; margin-right:8px; vertical-align:middle;"></span>{% endif %}
+                        {{ n.title }}
+                    </div>
+                    <div style="font-size:11px; font-weight:700; color:var(--text-faint); white-space:nowrap;">
+                        {% if n.created_at %}{{ n.created_at|timesince }} ago{% endif %}
+                    </div>
+                </div>
+                <p style="font-size:12.5px; font-weight:600; color:var(--text-muted); margin-top:4px; line-height:1.45;">
+                    {{ n.message }}
+                </p>
+                {% if n.shipment %}
+                <div style="margin-top:8px;">
+                    <span class="chip" style="font-size:11px; font-family:ui-monospace, monospace;">{{ n.shipment.tracking_id }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="data-table-empty" style="padding:56px 22px;">
+            <div class="empty-icon"><svg class="icon"><use href="#i-bell"/></svg></div>
+            <p>{% if status_filter %}No {{ status_filter }} notifications.{% else %}You're all caught up! No notifications yet.{% endif %}</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

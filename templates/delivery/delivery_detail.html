@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Delivery Detail</h1>
+        <p>Full manifest, route info and consignee details</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'delivery:proof' pk=delivery.pk %}" class="btn btn-ghost"><svg class="icon"><use href="#i-file"/></svg> Proof of Delivery</a>
+        <a href="{% url 'delivery:list' %}" class="btn btn-primary"><svg class="icon"><use href="#i-chevron-left"/></svg> Back</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-route"/></svg></div>
+        </div>
+        <div class="stat-value" style="font-size:18px;">{{ delivery.delivery_number|default:"DLV-"|slice:":-1" }}{{ delivery.pk }}</div>
+        <div class="stat-label">Delivery Number</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:{% if delivery.status == 'delivered' or delivery.status == 'completed' %}var(--success-soft); color:var(--success);{% elif delivery.status == 'in_transit' %}var(--info-soft); color:var(--info);{% elif delivery.status == 'failed' or delivery.status == 'returned' %}var(--danger-soft); color:var(--danger);{% else %}var(--warning-soft); color:var(--warning);{% endif %}"><svg class="icon"><use href="#i-signal"/></svg></div>
+        </div>
+        <div class="stat-value">{{ delivery.get_status_display|title }}</div>
+        <div class="stat-label">Status</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-box"/></svg></div>
+        </div>
+        <div class="stat-value">{% if delivery.package_count %}{{ delivery.package_count }}{% else %}1{% endif %}</div>
+        <div class="stat-label">Packages</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-clock"/></svg></div>
+        </div>
+        <div class="stat-value" style="font-size:16px;">{% if delivery.scheduled_date %}{{ delivery.scheduled_date|date:"d M Y" }}{% else %}—{% endif %}</div>
+        <div class="stat-label">Scheduled</div>
+    </div>
+</div>
+
+<div class="grid-secondary reveal" style="animation-delay:.08s">
+    <div style="display:flex; flex-direction:column; gap:18px;">
+        <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head"><div><h2>Consignee & Destination</h2><p class="sub">Hand-off information</p></div></div>
+            <div style="padding:4px 20px 20px;">
+                <div class="grid grid-cols-2 gap-y-4 gap-x-5">
+                    <div><div class="td-faint" style="font-size:11px;">Consignee Name</div><div style="font-size:13.5px; font-weight:800;">{{ delivery.consignee_name|default:"—" }}</div></div>
+                    <div><div class="td-faint" style="font-size:11px;">Phone</div><div style="font-size:13px; font-weight:800; font-family:ui-monospace, monospace;">{{ delivery.consignee_phone|default:"—" }}</div></div>
+                    <div><div class="td-faint" style="font-size:11px;">Email</div><div style="font-size:12.5px; font-weight:700;">{{ delivery.consignee_email|default:"—" }}</div></div>
+                    <div><div class="td-faint" style="font-size:11px;">ID / Passport</div><div style="font-size:12.5px; font-weight:800; font-family:ui-monospace, monospace;">{{ delivery.consignee_id|default:"—" }}</div></div>
+                    <div class="col-span-2" style="margin-top:10px; padding-top:12px; border-top:1px solid var(--border);">
+                        <div class="td-faint" style="font-size:11px;">Delivery Address</div>
+                        <div style="font-size:13px; font-weight:700; color:var(--text); margin-top:4px;">
+                            {{ delivery.delivery_address|default:"—" }}
+                            {% if delivery.delivery_city %}, {{ delivery.delivery_city }}{% endif %}
+                            {% if delivery.delivery_region %}, {{ delivery.delivery_region }}{% endif %}
+                            {% if delivery.delivery_country %}, {{ delivery.delivery_country }}{% endif %}
+                        </div>
+                        <div class="td-faint" style="margin-top:6px;">
+                            {% if delivery.delivery_latitude %}Coords: {{ delivery.delivery_latitude|floatformat:5 }}, {{ delivery.delivery_longitude|floatformat:5 }}{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head"><div><h2>Assigned Resources</h2><p class="sub">Driver and vehicle</p></div></div>
+            <div style="padding:4px 10px;">
+                <div class="fleet-row">
+                    <div class="fleet-icon" style="background:var(--info-soft); border:none;"><svg class="icon" style="color:var(--info);"><use href="#i-users"/></svg></div>
+                    <div class="fleet-body">
+                        <strong>{% if delivery.assigned_driver %}{{ delivery.assigned_driver.first_name|default:"" }} {{ delivery.assigned_driver.last_name|default:"" }}{% else %}Unassigned{% endif %}</strong>
+                        <span>{% if delivery.assigned_driver %}{{ delivery.assigned_driver.license_number|default:"" }} · {{ delivery.assigned_driver.phone|default:"—" }}{% else %}Assign a driver in the dispatch panel.{% endif %}</span>
+                    </div>
+                    {% if delivery.assigned_driver %}<span class="badge b-delivered">Assigned</span>{% else %}<span class="badge b-pending">Pending</span>{% endif %}
+                </div>
+                <div class="fleet-row">
+                    <div class="fleet-icon" style="background:var(--success-soft); border:none;"><svg class="icon" style="color:var(--success);"><use href="#i-truck"/></svg></div>
+                    <div class="fleet-body">
+                        <strong style="font-family:ui-monospace, monospace;">{% if delivery.assigned_vehicle %}{{ delivery.assigned_vehicle.registration_number }}{% else %}No vehicle{% endif %}</strong>
+                        <span>{% if delivery.assigned_vehicle %}{{ delivery.assigned_vehicle.make|default:"" }} {{ delivery.assigned_vehicle.model|default:"" }} · {{ delivery.assigned_vehicle.get_type_display|default:"Truck" }}{% else %}Link a vehicle to this delivery.{% endif %}</span>
+                    </div>
+                    {% if delivery.assigned_vehicle %}<span class="badge b-delivered">Assigned</span>{% else %}<span class="badge b-pending">Pending</span>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head"><div><h2>Shipment Details</h2><p class="sub">Cargo manifest</p></div></div>
+            <div style="padding:4px 20px 20px;">
+                <div class="grid grid-cols-2 gap-y-4 gap-x-5">
+                    <div><div class="td-faint" style="font-size:11px;">Tracking ID</div>
+                        <div style="font-weight:800; font-family:ui-monospace, monospace;">
+                            {% if delivery.shipment %}<a href="{% url 'cargo:detail' pk=delivery.shipment.pk %}" style="color:var(--text);">{{ delivery.shipment.tracking_id }}</a>{% else %}—{% endif %}
+                        </div>
+                    </div>
+                    <div><div class="td-faint" style="font-size:11px;">Description</div><div style="font-size:12.5px; font-weight:700;">{{ delivery.shipment.description|default:"—"|truncatechars:60 }}</div></div>
+                    <div><div class="td-faint" style="font-size:11px;">Packages</div><div style="font-size:13px; font-weight:800;">{{ delivery.package_count|default:delivery.shipment.package_count|default:1 }}</div></div>
+                    <div><div class="td-faint" style="font-size:11px;">Weight</div><div style="font-size:13px; font-weight:800;">{{ delivery.shipment.weight_kg|default:"—" }} kg</div></div>
+                    <div><div class="td-faint" style="font-size:11px;">Dimensions</div><div style="font-size:12.5px; font-weight:700;">{{ delivery.shipment.length_cm|default:"" }} × {{ delivery.shipment.width_cm|default:"" }} × {{ delivery.shipment.height_cm|default:"" }} cm</div></div>
+                    <div><div class="td-faint" style="font-size:11px;">Value</div><div style="font-size:13px; font-weight:800; color:var(--success);">{% if delivery.shipment.declared_value %}{{ delivery.shipment.currency|default:"TZS" }} {{ delivery.shipment.declared_value|floatformat:2 }}{% else %}—{% endif %}</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head"><div><h2>Tracking Timeline</h2><p class="sub">Progress events</p></div></div>
+            <div class="timeline" style="padding:6px 10px;">
+                <div class="tl-item">
+                    <div class="tl-dot"></div>
+                    <div class="tl-meta"><span>{% now "d M Y H:i" %}</span><span class="badge b-delivered">Event</span></div>
+                    <div class="tl-title">Delivery Recorded</div>
+                    <div class="tl-body">New delivery manifest generated and awaiting dispatch.</div>
+                </div>
+                <div class="tl-item">
+                    <div class="tl-dot" style="background:var(--info);"></div>
+                    <div class="tl-meta"><span>{% if delivery.dispatched_at %}{{ delivery.dispatched_at|date:"d M H:i" }}{% else %}Pending{% endif %}</span><span class="badge b-transit">Transit</span></div>
+                    <div class="tl-title">Dispatched</div>
+                    <div class="tl-body">Package handed off to driver and en route to destination.</div>
+                </div>
+                <div class="tl-item">
+                    <div class="tl-dot" style="background:var(--success);"></div>
+                    <div class="tl-meta"><span>{% if delivery.delivered_at %}{{ delivery.delivered_at|date:"d M H:i" }}{% else %}Pending{% endif %}</span><span class="badge b-delivered">Delivered</span></div>
+                    <div class="tl-title">Delivered</div>
+                    <div class="tl-body">Hand-off completed with consignee signature.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel map-panel" style="margin-bottom:0;">
+        <div class="panel-head">
+            <div><h2>Route View</h2><p class="sub">Current location vs destination</p></div>
+            <span class="badge {% if delivery.status == 'delivered' or delivery.status == 'completed' %}b-delivered{% elif delivery.status == 'in_transit' or delivery.status == 'dispatched' %}b-transit{% else %}b-pending{% endif %}">{{ delivery.get_status_display|title }}</span>
+        </div>
+        <div class="leaflet-wrap" style="height:320px; border-radius:14px; overflow:hidden;">
+            <div id="deliveryMap" style="width:100%; height:100%;"></div>
+        </div>
+        <div class="map-stats">
+            <div class="map-stat"><span>ETA</span><strong>{% if delivery.eta_date %}{{ delivery.eta_date|date:"d M H:i" }}{% else %}—{% endif %}</strong></div>
+            <div class="map-stat"><span>Distance Left</span><strong>{{ distance_left|default:"—" }}</strong></div>
+            <div class="map-stat"><span>Progress</span><strong>{{ progress_pct|default:0 }}%</strong></div>
+        </div>
+
+        <div style="margin:14px 4px 0; padding:14px; border-radius:14px; background:var(--card-2);">
+            <div class="td-faint" style="font-size:11px; margin-bottom:6px;">Delivery Notes</div>
+            <div style="font-size:12.5px; font-weight:700; color:var(--text); line-height:1.5;">{{ delivery.special_instructions|default:"No special handling instructions." }}</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    if (window.L) {
+        var lat = {% if delivery.delivery_latitude %}{{ delivery.delivery_latitude }}{% else %}-6.8220733{% endif %};
+        var lng = {% if delivery.delivery_longitude %}{{ delivery.delivery_longitude }}{% else %}39.2821518{% endif %};
+        var map = L.map('deliveryMap').setView([lat, lng], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'&copy; OpenStreetMap'}).addTo(map);
+        var dest = L.divIcon({className:'', html:'<div style="width:34px;height:34px;border-radius:50%;background:var(--success);border:3px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;color:#fff;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>', iconSize:[34,34], iconAnchor:[17,17]});
+        L.marker([lat, lng], {icon:dest}).addTo(map).bindPopup('<b>Destination</b><br>{{ delivery.delivery_address|default:"" }}');
+    }
+})();
+</script>
+{% endblock %}

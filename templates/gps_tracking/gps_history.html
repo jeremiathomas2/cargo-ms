@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>GPS History Playback</h1>
+        <p>Replay route traces and historical telemetry</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'gps_tracking:live_tracking' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-map"/></svg> Live View</a>
+        <a href="{% url 'gps_tracking:dashboard' %}" class="btn btn-primary"><svg class="icon"><use href="#i-chevron-left"/></svg> Tracking Overview</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom:20px; animation-delay:.05s;">
+    <div class="filter-row">
+        <form method="get" class="flex items-center gap-2 flex-wrap" style="width:100%; justify-content:space-between;">
+            <div class="chip-group">
+                <select name="hours" class="chip" onchange="this.form.submit()" style="padding:10px 14px;">
+                    <option value="1" {% if hours == 1 %}selected{% endif %}>Last 1 hour</option>
+                    <option value="6" {% if hours == 6 %}selected{% endif %}>Last 6 hours</option>
+                    <option value="24" {% if hours == 24 %}selected{% endif %}>Last 24 hours</option>
+                    <option value="72" {% if hours == 72 %}selected{% endif %}>Last 3 days</option>
+                    <option value="168" {% if hours == 168 %}selected{% endif %}>Last week</option>
+                </select>
+                <select name="device" class="chip" onchange="this.form.submit()" style="padding:10px 14px;">
+                    <option value="">All Devices</option>
+                    {% for d in all_devices %}
+                    <option value="{{ d.pk }}" {% if device_filter == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.tracker_id }} · {{ d.assigned_vehicle.registration_number|default:"Unassigned" }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="date" name="from" value="{{ from_date }}" onchange="this.form.submit()" class="chip" style="padding:10px 14px;">
+                <input type="date" name="to" value="{{ to_date }}" onchange="this.form.submit()" class="chip" style="padding:10px 14px;">
+                <button type="submit" class="btn btn-ghost" style="margin:0;"><svg class="icon"><use href="#i-filter"/></svg> Apply</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.08s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-route"/></svg></div>
+        </div>
+        <div class="stat-value">{{ positions|length }}</div>
+        <div class="stat-label">Position Samples</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--info-soft); color:var(--info);"><svg class="icon"><use href="#i-map"/></svg></div>
+        </div>
+        <div class="stat-value">{% if distance_km %}{{ distance_km|floatformat:2 }}{% else %}0{% endif %}</div>
+        <div class="stat-label">Distance (km)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-signal"/></svg></div>
+        </div>
+        <div class="stat-value">{% if max_speed %}{{ max_speed }}{% else %}0{% endif %}</div>
+        <div class="stat-label">Top Speed (km/h)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-clock"/></svg></div>
+        </div>
+        <div class="stat-value">{{ hours }}h</div>
+        <div class="stat-label">Playback Window</div>
+    </div>
+</div>
+
+<div class="grid-main reveal" style="animation-delay:.1s">
+    <div class="panel map-panel" style="margin-bottom:0;">
+        <div class="panel-head">
+            <div><h2>Route Trace</h2><p class="sub">Historical positions rendered as path</p></div>
+            <span class="chip" style="font-size:11.5px; background:var(--info-soft); color:var(--info); border-color:var(--info);">{{ positions|length }} points</span>
+        </div>
+        <div class="leaflet-wrap" style="height:540px; border-radius:14px; overflow:hidden;">
+            <div id="historyMap" style="width:100%; height:100%;"></div>
+        </div>
+        <div class="map-stats">
+            <div class="map-stat"><span>Start</span><strong>{% if positions %}{{ positions.0.timestamp|date:"H:i" }}{% else %}—{% endif %}</strong></div>
+            <div class="map-stat"><span>End</span><strong>{% if positions %}{{ positions|last|default:positions.0|yesno }}{% if positions.reverse %}{{ positions|first }}{% endif %}</strong></div>
+            <div class="map-stat"><span>Avg Speed</span><strong>{{ avg_speed|default:0 }} km/h</strong></div>
+            <div class="map-stat"><span>Distance</span><strong>{% if distance_km %}{{ distance_km|floatformat:2 }} km{% else %}0 km{% endif %}</strong></div>
+        </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:18px;">
+        <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head">
+                <div><h2>Speed Profile</h2><p class="sub">Telemetry over time</p></div>
+            </div>
+            <div class="chart-wrap chart-sm"><canvas id="speedChart"></canvas></div>
+        </div>
+
+        <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head">
+                <div><h2>Per-Device Summary</h2><p class="sub">Aggregated per tracker</p></div>
+            </div>
+            <div style="padding:4px 10px;">
+                {% for sum in device_summary %}
+                <div class="fleet-row">
+                    <div class="fleet-icon" style="background:var(--brand-soft); border:none;">
+                        <svg class="icon" style="color:var(--brand);"><use href="#i-route"/></svg>
+                    </div>
+                    <div class="fleet-body">
+                        <strong>{{ sum.tracker_id }}</strong>
+                        <span>{{ sum.count }} pts · Avg {{ sum.avg_speed|default:0 }} km/h</span>
+                    </div>
+                    <div style="font-size:12.5px; font-weight:800; color:var(--success);">{{ sum.distance_km|floatformat:2 }} km</div>
+                </div>
+                {% empty %}
+                <div class="data-table-empty" style="padding:32px 20px;">
+                    <div class="empty-icon"><svg class="icon"><use href="#i-clock"/></svg></div>
+                    <p>No position samples in this window.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.12s; margin-top:18px;">
+    <div class="panel-head">
+        <div><h2>Position Samples</h2><p class="sub">Raw GPS history (paginated)</p></div>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Tracker</th>
+                    <th>Vehicle</th>
+                    <th>Coords</th>
+                    <th>Speed</th>
+                    <th>Heading</th>
+                    <th>Altitude</th>
+                    <th>Battery</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in positions %}
+                <tr>
+                    <td style="font-size:12.5px; font-weight:700; white-space:nowrap;">{{ p.timestamp|date:"d M H:i:s" }}</td>
+                    <td style="font-size:12.5px; font-weight:800; font-family:ui-monospace, monospace;">{{ p.device.tracker_id }}</td>
+                    <td style="font-size:12px; font-weight:700;">{% if p.device.assigned_vehicle %}{{ p.device.assigned_vehicle.registration_number }}{% else %}—{% endif %}</td>
+                    <td style="font-family:ui-monospace, monospace; font-size:11.5px;">{{ p.latitude|floatformat:5 }}, {{ p.longitude|floatformat:5 }}</td>
+                    <td style="font-weight:800;">{{ p.speed|default:0 }} km/h</td>
+                    <td>{{ p.heading|default:0 }}°</td>
+                    <td>{{ p.altitude|default:0 }} m</td>
+                    <td>{% if p.battery_level %}{{ p.battery_level }}%{% else %}—{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-route"/></svg></div>
+                            <p>No historical data for this selection.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    var pts = {{ positions_json|safe }};
+    if (window.L && (pts||[]).length) {
+        var map = L.map('historyMap').setView([pts[0].lat, pts[0].lng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'&copy; OpenStreetMap'}).addTo(map);
+        var colors = ['#D96A16','#1DA36B','#38AEF2','#6D5BD0'];
+        var latlngs = [];
+        var b = [];
+        pts.forEach(function(p){ latlngs.push([p.lat, p.lng]); b.push([p.lat, p.lng]); });
+        if (latlngs.length > 1) L.polyline(latlngs, {color:colors[0], weight:5, opacity:.85, lineCap:'round', lineJoin:'round'}).addTo(map);
+        pts.forEach(function(p, i){
+            if (i === 0 || i === pts.length-1 || i % Math.ceil(pts.length/6) === 0) {
+                L.marker([p.lat, p.lng]).addTo(map).bindPopup(p.t + '<br>' + (p.speed||0) + ' km/h');
+            }
+        });
+        if (b.length) { try { map.fitBounds(b, {padding:[40,40]}); } catch(e){} }
+    }
+    var ctx = document.getElementById('speedChart');
+    if (ctx && (pts||[]).length) {
+        new Chart(ctx, {
+            type:'line',
+            data:{labels:pts.map(function(p){return p.t_short||''}), datasets:[{
+                label:'Speed km/h', data:pts.map(function(p){return p.speed||0}),
+                borderColor:'#D96A16', backgroundColor:'rgba(217,106,22,.12)', fill:true, tension:.3, borderWidth:2.5, pointRadius:0
+            }]},
+            options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+                scales:{x:{grid:{display:false}, ticks:{font:{family:'Nunito Sans', size:10, weight:'700'}, maxRotation:0, autoSkip:true, maxTicksLimit:8}},
+                        y:{beginAtZero:true, grid:{color:'rgba(230,231,240,.5)'}, ticks:{font:{family:'Nunito Sans', size:11, weight:'700'}}}}}
+        });
+    }
+})();
+</script>
+{% endblock %}

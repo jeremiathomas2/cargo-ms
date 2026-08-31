@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Proof of Delivery</h1>
+        <p>Consignee acknowledgment & digital signature certificate</p>
+    </div>
+    <div class="page-head-actions">
+        <button class="btn btn-ghost" onclick="window.print()"><svg class="icon"><use href="#i-file"/></svg> Print / Save PDF</button>
+        <a href="{% url 'delivery:detail' pk=delivery.pk %}" class="btn btn-primary"><svg class="icon"><use href="#i-chevron-left"/></svg> Back to Delivery</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.05s; max-width:920px; margin:0 auto;">
+    <div style="padding:30px 32px;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:20px; padding-bottom:22px; border-bottom:1px solid var(--border); flex-wrap:wrap;">
+            <div>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                    <div style="width:46px; height:46px; border-radius:14px; background:linear-gradient(135deg, var(--brand), #F0954B); display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:var(--shadow-2);">
+                        <svg class="icon"><use href="#i-truck"/></svg>
+                    </div>
+                    <div>
+                        <div style="font-size:20px; font-weight:900; color:var(--text); letter-spacing:-0.5px;">SHEHENA CARGO</div>
+                        <div style="font-size:12px; font-weight:700; color:var(--text-muted);">Proof of Delivery · Certificate of Receipt</div>
+                    </div>
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <div class="td-faint" style="font-size:11px;">POD Reference</div>
+                <div style="font-size:16px; font-weight:900; font-family:ui-monospace, monospace; color:var(--brand);">POD-{{ delivery.pk|stringformat:"06d" }}</div>
+                <div class="td-faint" style="font-size:11.5px; margin-top:6px;">Issued: {% now "d M Y, H:i" %}</div>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; padding:24px 0; border-bottom:1px solid var(--border);" class="md:grid-cols-2 gap-y-6">
+            <div>
+                <div class="td-faint" style="font-size:11px; margin-bottom:6px;">Delivery Number</div>
+                <div style="font-size:14px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ delivery.delivery_number|default:"DLV-"|slice:":-1" }}{{ delivery.pk }}</div>
+            </div>
+            <div>
+                <div class="td-faint" style="font-size:11px; margin-bottom:6px;">Shipment Tracking ID</div>
+                <div style="font-size:14px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{% if delivery.shipment %}{{ delivery.shipment.tracking_id }}{% else %}—{% endif %}</div>
+            </div>
+            <div>
+                <div class="td-faint" style="font-size:11px; margin-bottom:6px;">Status</div>
+                <span class="badge {% if delivery.status == 'delivered' or delivery.status == 'completed' %}b-delivered{% elif delivery.status == 'failed' or delivery.status == 'returned' %}b-delayed{% elif delivery.status == 'in_transit' or delivery.status == 'dispatched' %}b-transit{% else %}b-pending{% endif %}">{{ delivery.get_status_display|title }}</span>
+            </div>
+            <div>
+                <div class="td-faint" style="font-size:11px; margin-bottom:6px;">Delivery Date / Time</div>
+                <div style="font-size:13.5px; font-weight:800;">
+                    {% if delivery.delivered_at %}{{ delivery.delivered_at|date:"l, d F Y · H:i" }}{% else %}—{% endif %}
+                </div>
+            </div>
+            <div style="grid-column: span 2; display:grid; grid-template-columns:1fr 1fr; gap:24px; padding-top:4px;">
+                <div>
+                    <div class="td-faint" style="font-size:11px; margin-bottom:6px;">Consignee (Receiver)</div>
+                    <div style="font-size:14px; font-weight:800;">{{ delivery.consignee_name|default:"—" }}</div>
+                    <div style="font-size:12.5px; font-weight:700; color:var(--text-muted); font-family:ui-monospace, monospace;">{{ delivery.consignee_phone|default:"—" }}</div>
+                    <div style="font-size:12.5px; font-weight:700; color:var(--text-muted);">{{ delivery.consignee_email|default:"" }}</div>
+                </div>
+                <div>
+                    <div class="td-faint" style="font-size:11px; margin-bottom:6px;">Destination Address</div>
+                    <div style="font-size:13px; font-weight:700; line-height:1.45;">
+                        {{ delivery.delivery_address|default:"—" }}
+                        {% if delivery.delivery_city %}, {{ delivery.delivery_city }}{% endif %}
+                        {% if delivery.delivery_region %}, {{ delivery.delivery_region }}{% endif %}
+                        {% if delivery.delivery_country %}, {{ delivery.delivery_country }}{% endif %}
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="td-faint" style="font-size:11px; margin-bottom:6px;">Driver</div>
+                <div style="font-size:13.5px; font-weight:800;">{% if delivery.assigned_driver %}{{ delivery.assigned_driver.first_name|default:"" }} {{ delivery.assigned_driver.last_name|default:"" }}{% else %}—{% endif %}</div>
+                <div style="font-size:12px; font-weight:700; color:var(--text-muted); font-family:ui-monospace, monospace;">{% if delivery.assigned_driver and delivery.assigned_driver.license_number %}Lic: {{ delivery.assigned_driver.license_number }}{% endif %}</div>
+            </div>
+            <div>
+                <div class="td-faint" style="font-size:11px; margin-bottom:6px;">Vehicle</div>
+                <div style="font-size:14px; font-weight:800; font-family:ui-monospace, monospace;">{% if delivery.assigned_vehicle %}{{ delivery.assigned_vehicle.registration_number }}{% else %}—{% endif %}</div>
+                <div style="font-size:12px; font-weight:700; color:var(--text-muted);">{% if delivery.assigned_vehicle %}{{ delivery.assigned_vehicle.make|default:"" }} {{ delivery.assigned_vehicle.model|default:"" }}{% endif %}</div>
+            </div>
+        </div>
+
+        <div style="padding:22px 0; border-bottom:1px solid var(--border);">
+            <h3 style="font-size:14px; font-weight:800; color:var(--text); margin-bottom:12px;">Manifest & Package Items</h3>
+            <div class="table-wrap">
+                <table class="data-table" style="margin:0;">
+                    <thead>
+                        <tr><th>#</th><th>Description</th><th>Packages</th><th>Weight (kg)</th><th>Condition</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="font-weight:800;">1</td>
+                            <td style="font-size:12.5px; font-weight:700;">{{ delivery.shipment.description|default:"Cargo shipment" }}</td>
+                            <td style="font-weight:800;">{{ delivery.package_count|default:delivery.shipment.package_count|default:1 }}</td>
+                            <td style="font-weight:800;">{{ delivery.shipment.weight_kg|default:"—" }}</td>
+                            <td><span class="badge b-delivered">Good</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="padding:22px 0; border-bottom:1px solid var(--border);">
+            <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted); margin-bottom:10px;">Consignee Declaration</div>
+            <p style="font-size:12.5px; font-weight:600; color:var(--text-muted); line-height:1.6; margin:0 0 18px;">
+                I, the undersigned, confirm that the above listed goods have been received in good order and condition at the specified delivery address. I acknowledge that the number of packages and visible condition match the manifest. Damage or shortage must be noted in writing below at time of delivery.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <div class="td-faint" style="font-size:11px; margin-bottom:6px;">Receiver Full Name (Print)</div>
+                    <div style="padding:14px 16px; border-radius:12px; background:var(--card-2); font-weight:700;">{{ delivery.consignee_name|default:"" }}</div>
+                </div>
+                <div>
+                    <div class="td-faint" style="font-size:11px; margin-bottom:6px;">ID / Passport No.</div>
+                    <div style="padding:14px 16px; border-radius:12px; background:var(--card-2); font-weight:700; font-family:ui-monospace, monospace;">{{ delivery.consignee_id|default:"—" }}</div>
+                </div>
+                <div class="md:col-span-2">
+                    <div class="td-faint" style="font-size:11px; margin-bottom:6px;">Digital Signature</div>
+                    <div style="padding:28px 16px; border-radius:12px; background:var(--card-2); min-height:96px; display:flex; align-items:center; justify-content:center; gap:14px;">
+                        {% if delivery.proof_signature %}
+                        <img src="{{ delivery.proof_signature.url }}" style="max-height:70px;" alt="Signature">
+                        {% else %}
+                        <svg class="icon" style="width:26px; height:26px; color:var(--text-muted); opacity:.6;"><use href="#i-file"/></svg>
+                        <span style="font-size:13px; font-weight:700; color:var(--text-muted);">Signature captured at time of delivery.</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <div class="td-faint" style="font-size:11px; margin-bottom:6px;">Date Signed</div>
+                    <div style="padding:14px 16px; border-radius:12px; background:var(--card-2); font-weight:700;">{% if delivery.delivered_at %}{{ delivery.delivered_at|date:"d M Y · H:i" }}{% else %}—{% endif %}</div>
+                </div>
+                <div>
+                    <div class="td-faint" style="font-size:11px; margin-bottom:6px;">GPS Coordinates</div>
+                    <div style="padding:14px 16px; border-radius:12px; background:var(--card-2); font-weight:700; font-family:ui-monospace, monospace; font-size:12px;">
+                        {% if delivery.delivery_latitude %}{{ delivery.delivery_latitude|floatformat:5 }}, {{ delivery.delivery_longitude|floatformat:5 }}{% else %}—{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="padding-top:22px;">
+            <h3 style="font-size:12px; font-weight:800; color:var(--text-muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:.6px;">Files & Attachments</h3>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                {% if delivery.proof_photo %}
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--card-2); border-radius:12px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:34px; height:34px; border-radius:10px; background:var(--success-soft); display:flex; align-items:center; justify-content:center;">
+                            <svg class="icon" style="color:var(--success);"><use href="#i-file"/></svg>
+                        </div>
+                        <div style="font-size:12.5px; font-weight:800;">Proof Photo</div>
+                    </div>
+                    <a href="{{ delivery.proof_photo.url }}" class="chip" style="font-size:11px;">Download</a>
+                </div>
+                {% endif %}
+                {% if delivery.proof_document %}
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--card-2); border-radius:12px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:34px; height:34px; border-radius:10px; background:var(--info-soft); display:flex; align-items:center; justify-content:center;">
+                            <svg class="icon" style="color:var(--info);"><use href="#i-file"/></svg>
+                        </div>
+                        <div style="font-size:12.5px; font-weight:800;">Signed Delivery Note (PDF)</div>
+                    </div>
+                    <a href="{{ delivery.proof_document.url }}" class="chip" style="font-size:11px;">Download</a>
+                </div>
+                {% endif %}
+                {% if not delivery.proof_photo and not delivery.proof_document %}
+                <div style="padding:16px; background:var(--card-2); border-radius:12px; text-align:center; font-size:12.5px; font-weight:700; color:var(--text-muted);">
+                    No supporting files uploaded for this delivery.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

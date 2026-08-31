@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Live Tracking</h1>
+        <p>Real-time fleet visibility across active zones</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'gps_tracking:device_list' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-list"/></svg> All Devices</a>
+        <a href="{% url 'gps_tracking:geofence_list' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-shield"/></svg> Zones</a>
+        <button class="btn btn-primary" onclick="if(window.map){window.map.setView([-6.8220733, 39.2821518], 12);}"><svg class="icon"><use href="#i-upload"/></svg> Fit View</button>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-signal"/></svg></div>
+        </div>
+        <div class="stat-value">{{ devices|length }}</div>
+        <div class="stat-label">Active Trackers</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--info-soft); color:var(--info);"><svg class="icon"><use href="#i-route"/></svg></div>
+        </div>
+        <div class="stat-value">{% if active_trips %}{{ active_trips }}{% else %}0{% endif %}</div>
+        <div class="stat-label">Active Trips</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-alert"/></svg></div>
+        </div>
+        <div class="stat-value">{{ alerts_count }}</div>
+        <div class="stat-label">Active Alerts</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-shield"/></svg></div>
+        </div>
+        <div class="stat-value">{{ geofences|length }}</div>
+        <div class="stat-label">Zones Monitored</div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s; margin-bottom:20px;">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'gps_tracking:live_tracking' %}" class="chip active">All</a>
+            {% for val,label in status_choices %}
+            <a href="?status={{ val }}" class="chip {% if status_filter == val %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2">
+                <select name="device" class="chip" onchange="this.form.submit()">
+                    <option value="">All Devices</option>
+                    {% for d in all_devices %}
+                    <option value="{{ d.pk }}" {% if selected_device == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.tracker_id }}</option>
+                    {% endfor %}
+                </select>
+                <select name="geofence" class="chip" onchange="this.form.submit()">
+                    <option value="">All Zones</option>
+                    {% for g in geofences %}
+                    <option value="{{ g.pk }}">{{ g.name }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="grid-main reveal" style="animation-delay:.1s">
+    <div class="panel map-panel" style="margin-bottom:0;">
+        <div class="panel-head">
+            <div><h2>Live Fleet Map</h2><p class="sub">Latest known positions</p></div>
+            <span class="chip" style="font-size:11.5px; background:var(--success-soft); color:var(--success); border-color:var(--success);"><span style="width:8px;height:8px;background:var(--success);border-radius:50%;display:inline-block;margin-right:6px;animation: pulse 1.6s infinite;"></span> Live</span>
+        </div>
+        <div class="leaflet-wrap" style="height:560px; border-radius:14px; overflow:hidden;">
+            <div id="liveMap" style="width:100%; height:100%;"></div>
+        </div>
+        <div class="map-stats">
+            <div class="map-stat"><span>Trackers</span><strong>{{ devices|length }}</strong></div>
+            <div class="map-stat"><span>Avg Speed</span><strong>{{ avg_speed|default:0 }} km/h</strong></div>
+            <div class="map-stat"><span>Active Trips</span><strong>{% if active_trips %}{{ active_trips }}{% else %}0{% endif %}</strong></div>
+            <div class="map-stat"><span>Refresh</span><strong>Auto (60s)</strong></div>
+        </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:18px;">
+        <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head">
+                <div><h2>On The Road</h2><p class="sub">Currently reporting devices</p></div>
+            </div>
+            <div style="padding:6px 10px;">
+                {% for d in devices %}
+                <div class="fleet-row" onclick="window.location='{% url 'gps_tracking:device_detail' pk=d.pk %}'" style="cursor:pointer;">
+                    <div class="fleet-icon" style="background:{% if d.status == 'online' %}var(--success-soft); border:none;{% elif d.status == 'offline' %}var(--danger-soft); border:none;{% else %}var(--warning-soft); border:none;{% endif %}">
+                        <svg class="icon" style="color:{% if d.status == 'online' %}var(--success);{% elif d.status == 'offline' %}var(--danger);{% else %}var(--warning);{% endif %};"><use href="#i-truck"/></svg>
+                    </div>
+                    <div class="fleet-body">
+                        <strong style="font-family:ui-monospace, monospace;">{{ d.tracker_id }}</strong>
+                        <span>
+                            {% if d.assigned_vehicle %}{{ d.assigned_vehicle.registration_number }} · {% endif %}
+                            {{ d.get_status_display }} · {% if d.last_update %}{{ d.last_update|timesince }} ago{% else %}Never{% endif %}
+                        </span>
+                    </div>
+                    <span class="badge {% if d.status == 'online' %}b-delivered{% elif d.status == 'offline' %}b-delayed{% else %}b-pending{% endif %}" style="font-size:11px;">{{ d.get_status_display }}</span>
+                </div>
+                {% empty %}
+                <div class="data-table-empty" style="padding:36px 20px;">
+                    <div class="empty-icon"><svg class="icon"><use href="#i-signal"/></svg></div>
+                    <p>No devices reporting. Check status filters.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head">
+                <div><h2>Active Alerts</h2><p class="sub">Awaiting acknowledgment</p></div>
+            </div>
+            <div style="padding:6px 10px;">
+                {% for a in alerts %}
+                <div class="fleet-row">
+                    <div class="fleet-icon" style="background:{% if a.alert_type == 'low_battery' %}var(--warning-soft);{% elif a.alert_type == 'tamper' or a.alert_type == 'overspeed' %}var(--danger-soft);{% else %}var(--info-soft);{% endif %} border:none;">
+                        <svg class="icon" style="color:{% if a.alert_type == 'low_battery' %}var(--warning);{% elif a.alert_type == 'tamper' or a.alert_type == 'overspeed' %}var(--danger);{% else %}var(--info);{% endif %};"><use href="#i-alert"/></svg>
+                    </div>
+                    <div class="fleet-body">
+                        <strong>{{ a.get_alert_type_display }}</strong>
+                        <span>{{ a.device.tracker_id }} · {{ a.created_at|timesince }} ago</span>
+                    </div>
+                    <span class="badge b-pending" style="font-size:11px;">New</span>
+                </div>
+                {% empty %}
+                <div class="data-table-empty" style="padding:36px 20px;">
+                    <div class="empty-icon"><svg class="icon"><use href="#i-check"/></svg></div>
+                    <p>All clear! No active alerts.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head">
+                <div><h2>Geo Zones</h2><p class="sub">Fenced areas on map</p></div>
+                <a href="{% url 'gps_tracking:geofence_list' %}" class="chip" style="font-size:11.5px;">Manage</a>
+            </div>
+            <div style="padding:6px 10px;">
+                {% for g in geofences %}
+                <div class="fleet-row">
+                    <div class="fleet-icon" style="background:var(--secondary-soft); border:none;">
+                        <svg class="icon" style="color:var(--secondary);"><use href="#i-shield"/></svg>
+                    </div>
+                    <div class="fleet-body">
+                        <strong>{{ g.name }}</strong>
+                        <span>{{ g.get_zone_type_display|default:"Custom" }} · Radius: {{ g.radius|default:"—" }} m</span>
+                    </div>
+                    <span class="chip" style="font-size:11px;">{{ g.radius|default:"—" }}m</span>
+                </div>
+                {% empty %}
+                <div class="data-table-empty" style="padding:36px 20px;">
+                    <div class="empty-icon"><svg class="icon"><use href="#i-shield"/></svg></div>
+                    <p>No geofence zones created yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    var positions = {{ devices_json|safe }};
+    var fences = {{ geofences_json|safe }};
+    if (window.L) {
+        window.map = L.map('liveMap').setView([-6.8220733, 39.2821518], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'&copy; OpenStreetMap'}).addTo(window.map);
+        var colors = ['#D96A16','#1DA36B','#38AEF2','#6D5BD0','#E19A1C','#E5484D'];
+        (positions||[]).forEach(function(pos, i){
+            if (pos.lat && pos.lng) {
+                var c = colors[i % colors.length];
+                var icon = L.divIcon({
+                    className:'',
+                    html:'<div style="width:32px;height:32px;border-radius:50%;background:'+c+';border:3px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:11px;">'+(i+1)+'</div>',
+                    iconSize:[32,32], iconAnchor:[16,16]
+                });
+                L.marker([pos.lat, pos.lng], {icon:icon}).addTo(window.map)
+                    .bindPopup('<b>'+(pos.tracker_id||pos.name)+'</b><br>'+(pos.vehicle||'Unassigned')+'<br>'+((pos.speed||0)+' km/h')+' · '+((pos.time||'Live')));
+            }
+        });
+        (fences||[]).forEach(function(f, i){
+            if (f.lat && f.lng && f.radius) {
+                L.circle([f.lat, f.lng], {
+                    radius: parseInt(f.radius, 10)||500,
+                    color: colors[i%colors.length], fillColor: colors[i%colors.length], fillOpacity:0.1, weight:2
+                }).addTo(window.map).bindTooltip(f.name||('Zone '+(i+1)));
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head">
+    <div><h1 class="page-title">Routes & Corridors</h1><p class="page-sub">Network definitions, distances and pricing</p></div>
+    <div class="page-head-actions"><button class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg> New Route</button></div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-brand/10 text-brand"><svg class="icon"><use href="#i-route"/></svg></div></div><div class="stat-value">{{ routes.paginator.count }}</div><div class="stat-label">Total Routes</div></div>
+    <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-secondary/10 text-secondary"><svg class="icon"><use href="#i-truck"/></svg></div></div><div class="stat-value">{% for r in routes %}{% if r.route_type == 'domestic' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not routes %}0{% endif %}</div><div class="stat-label">Domestic</div></div>
+    <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-info/10 text-info"><svg class="icon"><use href="#i-layers"/></svg></div></div><div class="stat-value">{% for r in routes %}{% if r.route_type == 'cross_border' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not routes %}0{% endif %}</div><div class="stat-label">Cross-Border</div></div>
+    <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-success/10 text-success"><svg class="icon"><use href="#i-bar"/></svg></div></div><div class="stat-value">$0</div><div class="stat-label">Avg Base Price</div></div>
+</div>
+
+<div class="panel" style="margin-bottom: 20px;">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'transportation:route_list' %}" class="chip {% if not type_filter %}active{% endif %}">All Routes</a>
+            {% for val,label in route_types %}
+            <a href="?type={{ val }}" class="chip {% if type_filter == val %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2">
+                <div class="search-field" style="width: 300px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Search route name, origin, destination...">
+                </div>
+                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    {% for r in routes %}
+    <div class="panel card-shadow hover:shadow-lg transition-shadow overflow-hidden">
+        <div class="p-5 pb-0 flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <div class="flex items-center gap-2 mb-2 flex-wrap">
+                    <span class="chip" style="font-size: 11px;">{{ r.code }}</span>
+                    {% if r.route_type == 'domestic' %}<span class="chip" style="font-size: 11px;">Domestic</span>
+                    {% elif r.route_type == 'cross_border' %}<span class="chip" style="font-size: 11px; background: var(--secondary-bg); color: var(--secondary); border-color: var(--secondary-border);">Cross-Border</span>
+                    {% else %}<span class="chip" style="font-size: 11px; background: var(--info-bg); color: var(--info); border-color: var(--info-border);">Transit</span>{% endif %}
+                    {% if r.is_active %}<span class="b-delivered">Active</span>{% else %}<span class="b-delayed">Inactive</span>{% endif %}
+                </div>
+                <h3 class="text-[18px] font-black text-gray-900 dark:text-white tracking-tight mb-1">{{ r.name }}</h3>
+                {% if r.corridor %}<div class="text-[12px] font-bold text-muted dark:text-[#B2ACD6] mb-3">{{ r.corridor }}</div>{% endif %}
+            </div>
+            <div class="w-12 h-12 rounded-[14px] bg-brand/10 flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-brand"><use href="#i-route"/></svg>
+            </div>
+        </div>
+        <div class="p-5 pb-3">
+            <div class="flex items-center gap-3 p-4 rounded-[14px] bg-card-2 dark:bg-card-dark2 mb-4">
+                <div class="flex flex-col items-center gap-0.5">
+                    <div class="w-5 h-5 rounded-full bg-success/20 flex items-center justify-center"><div class="w-2.5 h-2.5 rounded-full bg-success"></div></div>
+                    <div class="w-px h-6 bg-border dark:bg-[#291F55]"></div>
+                    <svg class="w-4 h-4 text-danger" viewBox="0 0 24 24" fill="none"><path d="M12 22s-8-7.2-8-13a8 8 0 1 1 16 0c0 5.8-8 13-8 13Z" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="12" cy="9" r="2.5" fill="currentColor"/></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-[13px] font-extrabold text-gray-900 dark:text-white">{{ r.origin }}</div>
+                    <div class="h-px my-2 bg-gradient-to-r from-success via-brand to-danger"></div>
+                    <div class="text-[13px] font-extrabold text-gray-900 dark:text-white">{{ r.destination }}</div>
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2 text-center">
+                    <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Distance</div>
+                    <div class="text-[14px] font-black text-gray-900 dark:text-white">{{ r.distance_km }}<span class="text-[10px] ml-0.5 text-faint dark:text-[#8981B8] font-bold">km</span></div>
+                </div>
+                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2 text-center">
+                    <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">ETA</div>
+                    <div class="text-[14px] font-black text-gray-900 dark:text-white">{{ r.estimated_duration_hours }}<span class="text-[10px] ml-0.5 text-faint dark:text-[#8981B8] font-bold">hrs</span></div>
+                </div>
+                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2 text-center">
+                    <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Base Price</div>
+                    <div class="text-[14px] font-black text-brand">${{ r.base_price }}</div>
+                </div>
+            </div>
+            {% if r.stops.all %}
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-[#291F55]">
+                <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-2">Waypoints ({{ r.stops.count }})</div>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    {% for s in r.stops.all %}
+                    <span class="chip" style="font-size: 11px; padding: 3px 10px;">{{ s.sequence }}. {{ s.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="panel md:col-span-2">
+        <div class="px-6 py-14 text-center">
+            <div class="flex flex-col items-center gap-3">
+                <div class="w-14 h-14 rounded-full bg-card-2 dark:bg-card-dark2 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-faint dark:text-[#8981B8] stroke-current fill-none stroke-[1.8]" viewBox="0 0 24 24"><path d="M20 10c0 7-8 12-8 12s-8-5-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <p class="text-sm font-semibold text-faint dark:text-[#8981B8]">No routes defined yet. Set up your first corridor.</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if routes.has_other_pages %}
+<nav class="mt-5 flex items-center justify-between gap-3 px-5 py-3.5 panel flex-wrap">
+    <p class="text-xs font-semibold text-muted dark:text-[#B2ACD6]">Page {{ routes.number }} of {{ routes.paginator.num_pages }}</p>
+    <div class="flex items-center gap-1.5">
+        <a href="{% if routes.has_previous %}?page={{ routes.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% else %}#{% endif %}" class="inline-flex items-center gap-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-muted dark:text-[#B2ACD6] hover:border-info {% if not routes.has_previous %}opacity-50 pointer-events-none{% endif %}">
+            <svg class="w-3.5 h-3.5 stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Prev
+        </a>
+        <a href="{% if routes.has_next %}?page={{ routes.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% else %}#{% endif %}" class="inline-flex items-center gap-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-muted dark:text-[#B2ACD6] hover:border-info {% if not routes.has_next %}opacity-50 pointer-events-none{% endif %}">
+            Next <svg class="w-3.5 h-3.5 stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+        </a>
+    </div>
+</nav>
+{% endif %}
+{% endblock %}

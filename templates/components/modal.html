@@ -1,0 +1,44 @@
+{% comment %}
+Modal dialog (Alpine.js powered).
+Accepts via include params:
+  modal_id - unique id (default "modal")
+  title - header text (default "Title")
+  size  - sm | md | lg | xl (default md)
+  footer_slot - rendered in the footer area (optional)
+The content of the modal is provided via the `modal_content` variable.
+Wrap the include in a block and pass `modal_open` = True to auto-open.
+Use with Alpine: <div x-data="{ ... }"> and bind @click to open modal by id via window.openModal(id).
+{% endcomment %}
+{% if size == 'sm' %}{% with width='max-w-sm' %}
+{% elif size == 'lg' %}{% with width='max-w-2xl' %}
+{% elif size == 'xl' %}{% with width='max-w-4xl' %}
+{% else %}{% with width='max-w-lg' %}
+{% endwith %}{% endwith %}{% endwith %}{% endwith %}
+<div id="{{ modal_id|default:'modal' }}" x-data="{ open: {% if modal_open|default:False %}true{% else %}false{% endif %} }"
+     x-show="open" x-cloak
+     x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-100"
+     x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+     class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-navy/60 backdrop-blur-sm"
+     @keydown.escape.window="open = false" @click.self="open = false">
+    <div class="bg-card dark:bg-card-dark border border-gray-200 dark:border-[#291F55] rounded-[18px] card-shadow-lg w-full {{ width }} max-h-[90vh] flex flex-col overflow-hidden"
+         x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
+        <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-200 dark:border-[#291F55]">
+            <h3 class="text-[15px] font-extrabold text-gray-900 dark:text-white">{{ title|default:"Title" }}</h3>
+            <button @click="open = false" class="w-8 h-8 rounded-[9px] border border-gray-200 dark:border-[#291F55] bg-card-2 dark:bg-card-dark2 flex items-center justify-center text-muted dark:text-[#B2ACD6] hover:text-danger" aria-label="Close">
+                <svg class="w-4 h-4 stroke-current fill-none stroke-2 stroke-linecap-round" viewBox="0 0 24 24"><path d="M6 6l12 12" fill="none"/><path d="M18 6L6 18" fill="none"/></svg>
+            </button>
+        </div>
+        <div class="px-5 py-5 flex-1 overflow-y-auto">
+            {{ modal_content|safe }}
+        </div>
+        {% if footer_slot %}
+        <div class="flex items-center justify-end gap-2.5 px-5 py-3.5 border-t border-gray-200 dark:border-[#291F55] bg-card-2 dark:bg-card-dark2">
+            {{ footer_slot|safe }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endwith %}

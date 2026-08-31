@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Invoices</h1>
+        <p>Track receivables, issue bills and monitor payment status</p>
+    </div>
+    <div class="page-head-actions">
+        <button class="btn btn-ghost"><svg class="icon"><use href="#i-download"/></svg> Export</button>
+        <button class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg> New Invoice</button>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-receipt"/></svg></div>
+        </div>
+        <div class="stat-value">{{ invoices.paginator.count }}</div>
+        <div class="stat-label">Total Invoices</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-cash"/></svg></div>
+        </div>
+        <div class="stat-value">{% for inv in invoices %}{% if inv.status == 'paid' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not invoices %}0{% endif %}</div>
+        <div class="stat-label">Paid</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-clock"/></svg></div>
+        </div>
+        <div class="stat-value">{% for inv in invoices %}{% if inv.status == 'unpaid' or inv.status == 'partially_paid' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not invoices %}0{% endif %}</div>
+        <div class="stat-label">Outstanding</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--danger-soft); color:var(--danger);"><svg class="icon"><use href="#i-alert"/></svg></div>
+        </div>
+        <div class="stat-value">{% for inv in invoices %}{% if inv.status == 'overdue' or inv.status == 'cancelled' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not invoices %}0{% endif %}</div>
+        <div class="stat-label">Overdue / Cancelled</div>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.08s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'billing:invoice_list' %}" class="chip {% if not status_filter %}active{% endif %}">All</a>
+            {% for val,label in status_choices %}
+            <a href="?status={{ val }}" class="chip {% if status_filter == val %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2 flex-wrap">
+                <div class="search-field" style="width: 300px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Invoice #, customer, tracking...">
+                </div>
+                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.1s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Customer</th>
+                    <th>Shipment</th>
+                    <th>Total</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
+                    <th>Status</th>
+                    <th class="text-right">Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div class="fleet-icon" style="background:var(--brand-soft); border:none;">
+                                <svg class="icon" style="color:var(--brand);"><use href="#i-receipt"/></svg>
+                            </div>
+                            <a href="{% url 'billing:invoice_detail' pk=inv.pk %}" style="font-size:13px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ inv.invoice_number }}</a>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-size:13px; font-weight:800; color:var(--text);">{{ inv.customer.full_name|default:"—" }}</div>
+                        <div class="td-faint">{{ inv.customer.phone|default:"" }}</div>
+                    </td>
+                    <td>
+                        {% if inv.shipment %}
+                        <a href="{% url 'cargo:detail' pk=inv.shipment.pk %}" style="font-size:12.5px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text-muted);">{{ inv.shipment.tracking_id }}</a>
+                        {% else %}
+                        <span class="td-faint">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="font-size:13px; font-weight:800; color:var(--text);">{{ inv.currency|default:"TZS" }} {{ inv.total|default:0|floatformat:2 }}</div>
+                    </td>
+                    <td>
+                        <div style="font-size:13px; font-weight:800; color:var(--success);">{{ inv.currency|default:"TZS" }} {{ inv.amount_paid|default:0|floatformat:2 }}</div>
+                    </td>
+                    <td>
+                        <div style="font-size:13px; font-weight:800; color:{% if inv.balance > 0 %}var(--warning){% else %}var(--success){% endif %};">{{ inv.currency|default:"TZS" }} {{ inv.balance|default:0|floatformat:2 }}</div>
+                    </td>
+                    <td>
+                        <span class="badge {% if inv.status == 'paid' %}b-delivered{% elif inv.status == 'partially_paid' %}b-transit{% elif inv.status == 'unpaid' %}b-pending{% elif inv.status == 'overdue' %}b-delayed{% elif inv.status == 'cancelled' %}b-danger{% else %}b-warehouse{% endif %}">{{ inv.get_status_display }}</span>
+                    </td>
+                    <td class="text-right">
+                        <div style="font-size:13px; font-weight:800; color:var(--text); white-space:nowrap;">{{ inv.created_at|date:"d M Y" }}</div>
+                        {% if inv.due_date %}<div class="td-faint">Due: {{ inv.due_date|date:"d M Y" }}</div>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-receipt"/></svg></div>
+                            <p>No invoices found matching your filters.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if invoices.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ invoices.number }} of {{ invoices.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if invoices.has_previous %}?page={{ invoices.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not invoices.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            {% for num in invoices.paginator.page_range %}
+                {% if forloop.first or forloop.last or num >= invoices.number|add:"-2" and num <= invoices.number|add:"2" %}
+                <a href="?page={{ num }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+                   class="page-btn {% if num == invoices.number %}active{% endif %}">{{ num }}</a>
+                {% elif num == invoices.number|add:"-3" or num == invoices.number|add:"3" %}
+                <span class="page-dots">…</span>
+                {% endif %}
+            {% endfor %}
+            <a href="{% if invoices.has_next %}?page={{ invoices.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not invoices.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

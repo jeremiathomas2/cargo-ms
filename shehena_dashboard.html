@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shehena — Cargo Management &amp; Logistics Tracking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;0,6..12,800;0,6..12,900;1,6..12,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  /* ============ TOKENS ============ */
+  :root{
+    --navy:#0B0524;
+    --navy-2:#150E33;
+    --navy-3:#1E1548;
+    --orange:#D96A16;
+    --orange-ink:#7A3B0C;
+    --orange-soft:#FCEEE3;
+    --blue:#38AEF2;
+    --blue-soft:#EAF6FE;
+    --success:#1DA36B;
+    --success-soft:#E4F7EE;
+    --warning:#E19A1C;
+    --warning-soft:#FCF2DD;
+    --danger:#E5484D;
+    --danger-soft:#FCE8E8;
+    --indigo:#6D5BD0;
+    --indigo-soft:#EEEBFB;
+
+    --surface:#F3F4F9;
+    --card:#FFFFFF;
+    --card-2:#FAFAFD;
+    --border:#E6E7F0;
+    --text:#171425;
+    --text-muted:#6B6A80;
+    --text-faint:#9694A8;
+    --sidebar-w:264px;
+    --sidebar-w-collapsed:84px;
+    --radius-lg:18px;
+    --radius-md:14px;
+    --radius-sm:10px;
+    --radius-pill:999px;
+    --shadow-1:0 1px 2px rgba(11,5,36,.05), 0 1px 1px rgba(11,5,36,.04);
+    --shadow-2:0 10px 24px -8px rgba(11,5,36,.12), 0 2px 6px rgba(11,5,36,.06);
+    --shadow-3:0 24px 48px -12px rgba(11,5,36,.28), 0 4px 12px rgba(11,5,36,.1);
+    --tile-url:'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+  }
+
+  html[data-theme="dark"]{
+    --surface:#0A0620;
+    --card:#150E33;
+    --card-2:#1A1240;
+    --border:#291F55;
+    --text:#F1EFFB;
+    --text-muted:#B2ACD6;
+    --text-faint:#8981B8;
+    --orange-soft:#3A2412;
+    --blue-soft:#0F2C3D;
+    --success-soft:#0E2B22;
+    --warning-soft:#332508;
+    --danger-soft:#3A1418;
+    --indigo-soft:#221A44;
+    --shadow-1:0 1px 2px rgba(0,0,0,.3);
+    --shadow-2:0 10px 24px -8px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.35);
+    --shadow-3:0 24px 48px -12px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Nunito Sans', system-ui, -apple-system, sans-serif;
+    background:var(--surface);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    font-size:15px;
+    line-height:1.5;
+    transition:background .25s ease, color .25s ease;
+  }
+  h1,h2,h3,h4{margin:0; font-weight:800; letter-spacing:-.01em;}
+  p{margin:0;}
+  a{color:inherit; text-decoration:none;}
+  button{font-family:inherit; cursor:pointer;}
+  ul{list-style:none; margin:0; padding:0;}
+  img{max-width:100%; display:block;}
+  ::selection{background:var(--orange); color:#fff;}
+
+  :focus-visible{outline:2px solid var(--blue); outline-offset:2px; border-radius:6px;}
+
+  svg.icon{width:19px; height:19px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0;}
+
+  ::-webkit-scrollbar{width:8px; height:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--border); border-radius:8px;}
+
+  /* ============ APP SHELL ============ */
+  .app{display:flex; min-height:100vh;}
+
+  /* ---- Sidebar ---- */
+  .sidebar{
+    width:var(--sidebar-w);
+    flex-shrink:0;
+    background:linear-gradient(180deg, var(--navy) 0%, var(--navy-2) 100%);
+    color:#DCD8F5;
+    display:flex;
+    flex-direction:column;
+    position:fixed;
+    top:0; left:0; bottom:0;
+    z-index:60;
+    transition:width .2s ease, transform .25s ease;
+  }
+  .sidebar.collapsed{width:var(--sidebar-w-collapsed);}
+  .sidebar-brand{
+    display:flex; align-items:center; gap:11px;
+    padding:22px 20px 18px;
+    white-space:nowrap;
+    overflow:hidden;
+  }
+  .brand-mark{
+    width:38px; height:38px; flex-shrink:0; border-radius:11px;
+    background:linear-gradient(135deg, var(--orange), #F0954B);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 6px 16px -4px rgba(217,106,22,.55);
+  }
+  .brand-mark svg{width:21px; height:21px; stroke:#fff; fill:none; stroke-width:2;}
+  .brand-text{display:flex; flex-direction:column; line-height:1.15;}
+  .brand-text strong{font-size:17.5px; font-weight:800; color:#fff; letter-spacing:-.01em;}
+  .brand-text span{font-size:11px; color:#9C95C9; font-weight:600;}
+  .sidebar.collapsed .brand-text{display:none;}
+
+  .sidebar-nav{flex:1; overflow-y:auto; padding:6px 12px;}
+  .nav-group-label{
+    font-size:11px; font-weight:700; color:#726BA0;
+    padding:16px 12px 6px; letter-spacing:.02em;
+  }
+  .sidebar.collapsed .nav-group-label{display:none;}
+  .nav-item{
+    display:flex; align-items:center; gap:12px;
+    padding:10px 12px; margin:2px 0;
+    border-radius:11px;
+    color:#C4BFE6;
+    font-weight:600; font-size:14px;
+    position:relative;
+    transition:background .15s ease, color .15s ease;
+  }
+  .nav-item svg{opacity:.85;}
+  .nav-item:hover{background:rgba(255,255,255,.06); color:#fff;}
+  .nav-item.active{background:rgba(217,106,22,.16); color:#fff;}
+  .nav-item.active svg{stroke:var(--orange); opacity:1;}
+  .nav-item.active::before{
+    content:''; position:absolute; left:-12px; top:8px; bottom:8px; width:3px;
+    background:var(--orange); border-radius:0 4px 4px 0;
+  }
+  .nav-item .label{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sidebar.collapsed .nav-item{justify-content:center;}
+  .sidebar.collapsed .nav-item .label{display:none;}
+  .nav-badge{
+    margin-left:auto; background:var(--danger); color:#fff; font-size:10.5px;
+    font-weight:800; padding:1px 6px; border-radius:99px;
+  }
+  .sidebar.collapsed .nav-badge{display:none;}
+
+  .sidebar-footer{padding:14px; border-top:1px solid rgba(255,255,255,.08);}
+  .help-card{
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:var(--radius-md);
+    padding:14px;
+    text-align:center;
+  }
+  .sidebar.collapsed .help-card{padding:10px 6px;}
+  .sidebar.collapsed .help-card .help-copy{display:none;}
+  .help-card svg{width:26px; height:26px; stroke:var(--blue); margin:0 auto 8px;}
+  .help-card p{font-size:12.5px; color:#B7B1DE; margin-bottom:10px; line-height:1.4;}
+  .help-btn{
+    display:block; width:100%; background:var(--orange); color:#fff; border:none;
+    padding:8px 10px; border-radius:var(--radius-sm); font-weight:700; font-size:12.5px;
+  }
+  .collapse-toggle{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%; margin-top:10px; padding:8px; border:none; background:transparent;
+    color:#8F87BC; font-size:12px; font-weight:700; border-radius:var(--radius-sm);
+  }
+  .collapse-toggle:hover{background:rgba(255,255,255,.06); color:#fff;}
+  .collapse-toggle svg{transition:transform .2s ease;}
+  .sidebar.collapsed .collapse-toggle svg{transform:rotate(180deg);}
+  .sidebar.collapsed .collapse-toggle .label{display:none;}
+
+  .sidebar-backdrop{
+    display:none; position:fixed; inset:0; background:rgba(8,4,24,.5);
+    z-index:55; backdrop-filter:blur(2px);
+  }
+
+  /* ---- Main ---- */
+  .main{
+    flex:1; min-width:0;
+    margin-left:var(--sidebar-w);
+    transition:margin-left .2s ease;
+    display:flex; flex-direction:column;
+  }
+  .sidebar.collapsed ~ .main{margin-left:var(--sidebar-w-collapsed);}
+
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    display:flex; align-items:center; gap:14px;
+    padding:14px 28px;
+    background:var(--card);
+    border-bottom:1px solid var(--border);
+  }
+  .icon-btn{
+    width:38px; height:38px; border-radius:11px; border:1px solid var(--border);
+    background:var(--card-2); display:flex; align-items:center; justify-content:center;
+    color:var(--text-muted); flex-shrink:0; position:relative;
+  }
+  .icon-btn:hover{color:var(--text); border-color:var(--blue);}
+  .menu-toggle{display:none;}
+
+  .search-field{
+    flex:1; max-width:420px;
+    display:flex; align-items:center; gap:9px;
+    background:var(--card-2); border:1px solid var(--border); border-radius:var(--radius-pill);
+    padding:9px 16px;
+  }
+  .search-field svg{color:var(--text-faint); width:17px; height:17px;}
+  .search-field input{
+    border:none; outline:none; background:transparent; width:100%;
+    font-family:inherit; font-size:13.5px; color:var(--text);
+  }
+  .search-field input::placeholder{color:var(--text-faint);}
+
+  .topbar-spacer{flex:1;}
+  .topbar-actions{display:flex; align-items:center; gap:10px;}
+
+  .btn{
+    display:inline-flex; align-items:center; gap:8px;
+    border:none; border-radius:var(--radius-pill); font-weight:700; font-size:13.5px;
+    padding:10px 18px; white-space:nowrap;
+  }
+  .btn-primary{background:var(--orange); color:#fff; box-shadow:0 8px 18px -6px rgba(217,106,22,.55);}
+  .btn-primary:hover{background:#C25F12;}
+  .btn-ghost{background:var(--card-2); color:var(--text); border:1px solid var(--border);}
+  .btn-ghost:hover{border-color:var(--blue);}
+  .btn svg{width:16px; height:16px;}
+
+  .theme-toggle{
+    width:52px; height:30px; border-radius:99px; background:var(--card-2);
+    border:1px solid var(--border); position:relative; flex-shrink:0;
+  }
+  .theme-toggle .knob{
+    position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%;
+    background:linear-gradient(135deg, var(--orange), #F0954B);
+    display:flex; align-items:center; justify-content:center; color:#fff;
+    transition:left .2s ease; box-shadow:var(--shadow-1);
+  }
+  .theme-toggle .knob svg{width:13px; height:13px; stroke:#fff;}
+  html[data-theme="dark"] .theme-toggle .knob{left:27px; background:linear-gradient(135deg, var(--blue), #1E7FBE);}
+
+  .notif-wrap, .user-wrap{position:relative;}
+  .notif-dot{
+    position:absolute; top:6px; right:7px; width:8px; height:8px; border-radius:50%;
+    background:var(--danger); border:2px solid var(--card);
+  }
+  .dropdown{
+    position:absolute; top:calc(100% + 10px); right:0; width:320px;
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+    box-shadow:var(--shadow-3); padding:8px; z-index:70;
+    opacity:0; transform:translateY(-6px); pointer-events:none;
+    transition:opacity .16s ease, transform .16s ease;
+  }
+  .dropdown.open{opacity:1; transform:translateY(0); pointer-events:auto;}
+  .dropdown-title{font-size:13px; font-weight:800; padding:8px 10px 6px; color:var(--text);}
+  .notif-row{
+    display:flex; gap:10px; padding:9px 10px; border-radius:var(--radius-sm);
+  }
+  .notif-row:hover{background:var(--card-2);}
+  .notif-icon{
+    width:32px; height:32px; border-radius:9px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .notif-icon svg{width:16px; height:16px;}
+  .notif-row p{font-size:12.5px; font-weight:700; color:var(--text);}
+  .notif-row span{font-size:11.5px; color:var(--text-faint); font-weight:600;}
+
+  .user-btn{display:flex; align-items:center; gap:9px; border:none; background:transparent; padding:2px;}
+  .avatar{
+    width:36px; height:36px; border-radius:50%; flex-shrink:0;
+    background:linear-gradient(135deg, var(--blue), var(--indigo));
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:13px;
+  }
+  .user-meta{text-align:left; display:none;}
+  .user-meta strong{display:block; font-size:13px; font-weight:800;}
+  .user-meta span{font-size:11.5px; color:var(--text-muted); font-weight:600;}
+  @media(min-width:860px){.user-meta{display:block;}}
+  .user-dropdown{width:220px;}
+  .user-item{
+    display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:var(--radius-sm);
+    font-size:13px; font-weight:700; color:var(--text);
+  }
+  .user-item:hover{background:var(--card-2);}
+  .user-item svg{width:16px; height:16px; color:var(--text-muted);}
+
+  /* ---- Content ---- */
+  .content{padding:26px 28px 60px; max-width:1520px; width:100%; margin:0 auto;}
+  .page-head{
+    display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    margin-bottom:22px;
+  }
+  .page-head h1{font-size:25px;}
+  .page-head p{color:var(--text-muted); font-size:13.5px; margin-top:4px; font-weight:600;}
+  .range-select{
+    display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--border);
+    padding:9px 14px; border-radius:var(--radius-pill); font-size:13px; font-weight:700; color:var(--text);
+  }
+  .range-select svg{width:15px; height:15px; color:var(--text-muted);}
+
+  .reveal{opacity:0; transform:translateY(10px); animation:reveal .5s ease forwards;}
+  @keyframes reveal{to{opacity:1; transform:translateY(0);}}
+
+  /* ---- Stat cards ---- */
+  .stat-grid{
+    display:grid; grid-template-columns:repeat(6, 1fr); gap:16px; margin-bottom:22px;
+  }
+  .stat-card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+    padding:18px; box-shadow:var(--shadow-1);
+  }
+  .stat-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .stat-icon{
+    width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+  }
+  .stat-icon svg{width:18px; height:18px;}
+  .stat-trend{
+    display:flex; align-items:center; gap:3px; font-size:11.5px; font-weight:800; padding:3px 7px; border-radius:99px;
+  }
+  .stat-trend svg{width:11px; height:11px;}
+  .trend-up{color:var(--success); background:var(--success-soft);}
+  .trend-down{color:var(--danger); background:var(--danger-soft);}
+  .stat-value{font-size:23px; font-weight:800; letter-spacing:-.01em;}
+  .stat-label{font-size:12.5px; color:var(--text-muted); font-weight:700; margin-top:3px;}
+
+  /* ---- Panels / grid ---- */
+  .grid-main{display:grid; grid-template-columns:minmax(320px, 400px) 1fr; gap:18px; margin-bottom:18px; align-items:start;}
+  .panel{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-1); overflow:hidden;
+  }
+  .panel-head{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:18px 20px 14px;
+  }
+  .panel-head h2{font-size:16px;}
+  .panel-head .sub{font-size:12px; color:var(--text-muted); font-weight:600; margin-top:2px;}
+  .panel-more{width:30px; height:30px; border-radius:9px; border:1px solid var(--border); background:var(--card-2); display:flex; align-items:center; justify-content:center; color:var(--text-muted);}
+
+  /* Shipment list panel */
+  .filter-row{display:flex; gap:7px; padding:0 20px 14px; flex-wrap:wrap;}
+  .chip{
+    padding:6px 13px; border-radius:99px; font-size:12px; font-weight:700; border:1px solid var(--border);
+    background:var(--card-2); color:var(--text-muted);
+  }
+  .chip.active{background:var(--navy); border-color:var(--navy); color:#fff;}
+  html[data-theme="dark"] .chip.active{background:var(--orange); border-color:var(--orange);}
+
+  .shipment-list{max-height:520px; overflow-y:auto; padding:0 10px 14px;}
+  .ship-row{
+    display:flex; gap:12px; align-items:center; padding:12px 10px; border-radius:var(--radius-md);
+    cursor:pointer; border:1px solid transparent;
+  }
+  .ship-row:hover{background:var(--card-2);}
+  .ship-row.active{background:var(--orange-soft); border-color:var(--orange);}
+  .ship-thumb{
+    width:42px; height:42px; border-radius:11px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .ship-thumb svg{width:20px; height:20px;}
+  .ship-body{flex:1; min-width:0;}
+  .ship-top{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .ship-id{font-size:13px; font-weight:800; color:var(--text);}
+  .ship-route{font-size:12px; color:var(--text-muted); font-weight:600; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .ship-cust{font-size:11.5px; color:var(--text-faint); font-weight:600; margin-top:1px;}
+
+  .badge{
+    font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:99px; white-space:nowrap;
+  }
+  .b-transit{color:var(--blue); background:var(--blue-soft);}
+  .b-warehouse{color:var(--indigo); background:var(--indigo-soft);}
+  .b-pending{color:var(--warning); background:var(--warning-soft);}
+  .b-delivered{color:var(--success); background:var(--success-soft);}
+  .b-delayed{color:var(--danger); background:var(--danger-soft);}
+
+  /* Map panel */
+  .map-panel{position:relative; display:flex; flex-direction:column;}
+  #map{height:340px; width:100%; background:var(--card-2);}
+  html[data-theme="dark"] .leaflet-tile{filter:brightness(.92);}
+  .leaflet-control-attribution{font-size:9px !important; background:rgba(255,255,255,.75) !important;}
+
+  .map-stats{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border);
+    border-top:1px solid var(--border);
+  }
+  .map-stat{background:var(--card); padding:14px 18px;}
+  .map-stat span{display:block; font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:3px;}
+  .map-stat strong{font-size:15px; font-weight:800;}
+
+  .detail-card{
+    position:absolute; left:18px; right:18px; bottom:18px;
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+    box-shadow:var(--shadow-3); padding:16px 18px;
+  }
+  .detail-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:12px;}
+  .detail-id{font-size:15px; font-weight:800;}
+  .detail-carrier{font-size:12px; color:var(--text-muted); font-weight:600; margin-top:2px;}
+  .stepper{display:flex; align-items:center; margin-top:6px;}
+  .step{display:flex; flex-direction:column; align-items:center; position:relative; flex:1; min-width:0;}
+  .step-dot{
+    width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:var(--card-2); border:2px solid var(--border); z-index:2; flex-shrink:0;
+  }
+  .step-dot svg{width:11px; height:11px; stroke:#fff;}
+  .step.done .step-dot{background:var(--success); border-color:var(--success);}
+  .step.current .step-dot{background:var(--blue); border-color:var(--blue); animation:pulse 1.6s infinite;}
+  .step-line{position:absolute; top:11px; left:50%; width:100%; height:2px; background:var(--border); z-index:1;}
+  .step.done .step-line{background:var(--success);}
+  .step:last-child .step-line{display:none;}
+  .step-label{font-size:10px; font-weight:700; color:var(--text-muted); margin-top:6px; text-align:center;}
+  .step.current .step-label{color:var(--text);}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(56,174,242,.5);} 70%{box-shadow:0 0 0 8px rgba(56,174,242,0);} 100%{box-shadow:0 0 0 0 rgba(56,174,242,0);}}
+
+  /* Cross border spotlight */
+  .spotlight{padding:20px 22px; margin-bottom:18px;}
+  .spotlight-grid{display:grid; grid-template-columns:repeat(4, 1fr); gap:18px; padding:16px 0 4px;}
+  .spot-field span{display:block; font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px;}
+  .spot-field strong{font-size:14.5px; font-weight:800; display:flex; align-items:center; gap:7px;}
+  .flag{font-size:16px;}
+  .checkpoints{display:flex; gap:0; padding-top:18px; border-top:1px solid var(--border); margin-top:16px;}
+  .cp{flex:1; text-align:center; position:relative; padding:0 8px;}
+  .cp::before{
+    content:''; position:absolute; top:15px; left:-50%; width:100%; height:2px; background:var(--border); z-index:0;
+  }
+  .cp:first-child::before{display:none;}
+  .cp.done::before{background:var(--success);}
+  .cp-dot{
+    width:30px; height:30px; border-radius:50%; margin:0 auto 8px; position:relative; z-index:1;
+    display:flex; align-items:center; justify-content:center; border:2px solid var(--border); background:var(--card);
+  }
+  .cp.done .cp-dot{background:var(--success-soft); border-color:var(--success); color:var(--success);}
+  .cp.delayed .cp-dot{background:var(--danger-soft); border-color:var(--danger); color:var(--danger);}
+  .cp.pending .cp-dot{color:var(--text-faint);}
+  .cp-dot svg{width:14px; height:14px;}
+  .cp strong{display:block; font-size:12.5px; font-weight:800;}
+  .cp span{font-size:11px; color:var(--text-muted); font-weight:600;}
+  .cp.delayed span{color:var(--danger); font-weight:800;}
+
+  /* Charts + fleet row */
+  .grid-secondary{display:grid; grid-template-columns:1.3fr 1fr; gap:18px; margin-bottom:18px; align-items:start;}
+  .chart-box{padding:18px 20px;}
+  .chart-legend{display:flex; gap:14px; padding:0 20px 16px; flex-wrap:wrap;}
+  .legend-item{display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; color:var(--text-muted);}
+  .legend-dot{width:9px; height:9px; border-radius:50%;}
+  canvas{max-width:100%;}
+
+  .fleet-list{padding:6px 10px 14px;}
+  .fleet-row{display:flex; align-items:center; gap:12px; padding:11px 10px; border-radius:var(--radius-md);}
+  .fleet-row:hover{background:var(--card-2);}
+  .fleet-icon{
+    width:38px; height:38px; border-radius:10px; background:var(--card-2); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .fleet-icon svg{width:19px; height:19px; color:var(--text-muted);}
+  .fleet-body{flex:1; min-width:0;}
+  .fleet-body strong{font-size:13px; font-weight:800; display:block;}
+  .fleet-body span{font-size:11.5px; color:var(--text-muted); font-weight:600;}
+  .dot-status{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+
+  /* Delivery schedule */
+  .schedule-panel{padding:4px 0 8px;}
+  .schedule-row{
+    display:grid; grid-template-columns:170px 1fr 110px; gap:18px; align-items:center;
+    padding:16px 22px; border-top:1px solid var(--border);
+  }
+  .schedule-row:first-of-type{border-top:none;}
+  .sched-id{font-size:13px; font-weight:800;}
+  .sched-cust{font-size:11.5px; color:var(--text-muted); font-weight:600; margin-top:2px;}
+  .mini-stepper{display:flex; align-items:center;}
+  .mstep{flex:1; position:relative; display:flex; flex-direction:column; align-items:center;}
+  .mstep-dot{width:9px; height:9px; border-radius:50%; background:var(--border); z-index:1;}
+  .mstep.done .mstep-dot{background:var(--success);}
+  .mstep.current .mstep-dot{background:var(--blue); box-shadow:0 0 0 3px var(--blue-soft);}
+  .mstep-line{position:absolute; top:4px; left:50%; width:100%; height:2px; background:var(--border);}
+  .mstep.done .mstep-line{background:var(--success);}
+  .mstep:last-child .mstep-line{display:none;}
+  .mstep-label{font-size:9px; font-weight:700; color:var(--text-faint); margin-top:6px; text-align:center; white-space:nowrap;}
+  .sched-status{text-align:right;}
+
+  /* ============ RESPONSIVE ============ */
+  @media(max-width:1180px){
+    .stat-grid{grid-template-columns:repeat(3, 1fr);}
+    .grid-main{grid-template-columns:1fr;}
+    .grid-secondary{grid-template-columns:1fr;}
+    .spotlight-grid{grid-template-columns:repeat(2,1fr);}
+  }
+  @media(max-width:900px){
+    .sidebar{transform:translateX(-100%); width:var(--sidebar-w) !important;}
+    .sidebar.mobile-open{transform:translateX(0);}
+    .sidebar.mobile-open ~ .sidebar-backdrop{display:block;}
+    .main{margin-left:0 !important;}
+    .menu-toggle{display:flex;}
+    .collapse-toggle{display:none;}
+    .search-field{max-width:none;}
+  }
+  @media(max-width:760px){
+    .content{padding:18px 14px 40px;}
+    .stat-grid{grid-template-columns:repeat(2, 1fr); gap:10px;}
+    .stat-card{padding:14px;}
+    .stat-value{font-size:19px;}
+    .schedule-row{grid-template-columns:1fr; row-gap:10px;}
+    .sched-status{text-align:left;}
+    .checkpoints{overflow-x:auto;}
+    .spotlight-grid{grid-template-columns:1fr 1fr;}
+    .topbar{padding:12px 14px;}
+    .btn span.btn-text{display:none;}
+    .btn-primary{padding:10px 12px;}
+  }
+  @media(max-width:520px){
+    .stat-grid{grid-template-columns:1fr 1fr;}
+    .spotlight-grid{grid-template-columns:1fr;}
+    .search-field{display:none;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ ICON SPRITE ============ -->
+<svg width="0" height="0" style="position:absolute">
+<defs>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z"/><path d="M3 7.5v9L12 21l9-4.5v-9"/><path d="M12 12v9"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8 19h6a4 4 0 0 0 4-4 4 4 0 0 0-4-4H10a4 4 0 0 1-4-4 4 4 0 0 1 4-4h6"/></symbol>
+  <symbol id="i-warehouse" viewBox="0 0 24 24"><path d="M3 21V10l9-6 9 6v11"/><path d="M3 21h18"/><path d="M9 21v-7h6v7"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24"><rect x="1" y="7" width="13" height="10" rx="1.2"/><path d="M14 10h4l4 3.5V17h-8z"/><circle cx="6" cy="19" r="1.8"/><circle cx="17.5" cy="19" r="1.8"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1.2"/><path d="M8.5 11h7M8.5 15h7M8.5 19h4"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2Z"/><path d="M9 8h6M9 12h6"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6Z"/><path d="M15 2v5h5"/><path d="M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5Z"/><path d="M12 8v5M12 16.5h.01"/></symbol>
+  <symbol id="i-bar" viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.3"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17.5" cy="9" r="2.6"/><path d="M15.7 14.2c2.6.3 4.8 2.3 4.8 5.8"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 10a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M9.5 20a2.5 2.5 0 0 0 5 0"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" stroke-width="2.6"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24" stroke-width="2.4"><path d="M7 17 17 7M7 7h10v10"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24" stroke-width="2.4"><path d="M7 7l10 10M17 7v10H7"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 22s7-7.5 7-12.5A7 7 0 0 0 5 9.5C5 14.5 12 22 12 22Z"/><circle cx="12" cy="9.5" r="2.4"/></symbol>
+  <symbol id="i-cash" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 10v.01M18 14v.01"/></symbol>
+  <symbol id="i-support" viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V9a3 3 0 0 0-6 0v3a3 3 0 0 0 3 3Z"/><path d="M19 11v1a7 7 0 0 1-14 0v-1M9 21h6"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6.5v14L9 18l6 2.5 6-2.5v-14L15 6.5 9 4Z"/><path d="M9 4v14M15 6.5v14"/></symbol>
+</defs>
+</svg>
+
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z"/><path d="M3 7.5v9L12 21l9-4.5v-9"/><path d="M12 12v9"/></svg></div>
+      <div class="brand-text"><strong>Shehena</strong><span>Cargo &amp; Logistics</span></div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Operations</div>
+      <ul>
+        <li class="nav-item active"><svg class="icon"><use href="#i-grid"/></svg><span class="label">Dashboard</span></li>
+        <li class="nav-item"><svg class="icon"><use href="#i-box"/></svg><span class="label">Shipments</span></li>
+        <li class="nav-item"><svg class="icon"><use href="#i-route"/></svg><span class="label">Live Tracking</span></li>
+        <li class="nav-item"><svg class="icon"><use href="#i-warehouse"/></svg><span class="label">Warehouse</span></li>
+        <li class="nav-item"><svg class="icon"><use href="#i-truck"/></svg><span class="label">Fleet &amp; Drivers</span></li>
+        <li class="nav-item"><svg class="icon"><use href="#i-clipboard"/></svg><span class="label">Manifests</span></li>
+      </ul>
+      <div class="nav-group-label">Finance &amp; Records</div>
+      <ul>
+        <li class="nav-item"><svg class="icon"><use href="#i-receipt"/></svg><span class="label">Billing &amp; Invoices</span></li>
+        <li class="nav-item"><svg class="icon"><use href="#i-file"/></svg><span class="label">Documents</span></li>
+        <li class="nav-item"><svg class="icon"><use href="#i-shield"/></svg><span class="label">Claims</span><span class="nav-badge">3</span></li>
+        <li class="nav-item"><svg class="icon"><use href="#i-bar"/></svg><span class="label">Reports</span></li>
+      </ul>
+      <div class="nav-group-label">Organization</div>
+      <ul>
+        <li class="nav-item"><svg class="icon"><use href="#i-users"/></svg><span class="label">Customers</span></li>
+        <li class="nav-item"><svg class="icon"><use href="#i-gear"/></svg><span class="label">Settings</span></li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="help-card">
+        <svg class="icon"><use href="#i-support"/></svg>
+        <div class="help-copy">
+          <p>Need a hand? Our support desk is online now.</p>
+          <button class="help-btn">Contact support</button>
+        </div>
+      </div>
+      <button class="collapse-toggle" id="collapseToggle">
+        <svg class="icon"><use href="#i-chevron-left"/></svg>
+        <span class="label">Collapse</span>
+      </button>
+    </div>
+  </aside>
+  <div class="sidebar-backdrop" id="backdrop"></div>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn menu-toggle" id="menuToggle" aria-label="Open menu"><svg class="icon"><use href="#i-menu"/></svg></button>
+
+      <div class="search-field">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <input id="searchInput" type="text" placeholder="Search tracking ID, customer, route…">
+      </div>
+
+      <div class="topbar-spacer"></div>
+
+      <div class="topbar-actions">
+        <button class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg><span class="btn-text">New shipment</span></button>
+
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <span class="knob"><svg><use href="#i-sun"/></svg></span>
+        </button>
+
+        <div class="notif-wrap">
+          <button class="icon-btn" id="notifBtn" aria-label="Notifications">
+            <svg class="icon"><use href="#i-bell"/></svg>
+            <span class="notif-dot"></span>
+          </button>
+          <div class="dropdown" id="notifDropdown">
+            <div class="dropdown-title">Notifications</div>
+            <div class="notif-row">
+              <div class="notif-icon" style="background:var(--danger-soft)"><svg style="stroke:var(--danger)"><use href="#i-alert"/></svg></div>
+              <div><p>SHN-TZ-2026-000137 flagged for delay — port congestion in Zanzibar.</p><span>12 minutes ago</span></div>
+            </div>
+            <div class="notif-row">
+              <div class="notif-icon" style="background:var(--success-soft)"><svg style="stroke:var(--success)"><use href="#i-cash"/></svg></div>
+              <div><p>Payment received for INV-2026-000945 from Dodoma AgroExports.</p><span>1 hour ago</span></div>
+            </div>
+            <div class="notif-row">
+              <div class="notif-icon" style="background:var(--blue-soft)"><svg style="stroke:var(--blue)"><use href="#i-pin"/></svg></div>
+              <div><p>SHN-TZ-2026-000124 crossed the Tunduma border geofence.</p><span>3 hours ago</span></div>
+            </div>
+            <div class="notif-row">
+              <div class="notif-icon" style="background:var(--warning-soft)"><svg style="stroke:var(--warning)"><use href="#i-shield"/></svg></div>
+              <div><p>New claim submitted for shipment SHN-TZ-2026-000109.</p><span>Yesterday</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="user-wrap">
+          <button class="user-btn" id="userBtn">
+            <div class="avatar">AM</div>
+            <div class="user-meta"><strong>Amani Mrema</strong><span>Ops Manager · Dar Branch</span></div>
+            <svg class="icon" style="width:15px;height:15px;color:var(--text-muted)"><use href="#i-chevron-down"/></svg>
+          </button>
+          <div class="dropdown user-dropdown" id="userDropdown">
+            <div class="user-item"><svg><use href="#i-users"/></svg> My profile</div>
+            <div class="user-item"><svg><use href="#i-gear"/></svg> Account settings</div>
+            <div class="user-item"><svg><use href="#i-logout"/></svg> Sign out</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="page-head reveal" style="animation-delay:.02s">
+        <div>
+          <h1>Operations dashboard</h1>
+          <p>Wednesday, 20 August 2026 · Dar es Salaam Head Office</p>
+        </div>
+        <button class="range-select">
+          <svg><use href="#i-clock"/></svg> Last 30 days <svg><use href="#i-chevron-down"/></svg>
+        </button>
+      </div>
+
+      <!-- STAT CARDS -->
+      <section class="stat-grid reveal" style="animation-delay:.05s">
+        <div class="stat-card">
+          <div class="stat-top">
+            <div class="stat-icon" style="background:var(--blue-soft)"><svg style="stroke:var(--blue)"><use href="#i-box"/></svg></div>
+            <div class="stat-trend trend-up"><svg><use href="#i-up"/></svg>8.2%</div>
+          </div>
+          <div class="stat-value">1,248</div>
+          <div class="stat-label">Total shipments</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-top">
+            <div class="stat-icon" style="background:var(--indigo-soft)"><svg style="stroke:var(--indigo)"><use href="#i-route"/></svg></div>
+            <div class="stat-trend trend-up"><svg><use href="#i-up"/></svg>3.1%</div>
+          </div>
+          <div class="stat-value">96</div>
+          <div class="stat-label">In transit</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-top">
+            <div class="stat-icon" style="background:var(--orange-soft)"><svg style="stroke:var(--orange)"><use href="#i-warehouse"/></svg></div>
+            <div class="stat-trend trend-down"><svg><use href="#i-down"/></svg>1.4%</div>
+          </div>
+          <div class="stat-value">214</div>
+          <div class="stat-label">At warehouse</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft)"><svg style="stroke:var(--success)"><use href="#i-check"/></svg></div>
+            <div class="stat-trend trend-up"><svg><use href="#i-up"/></svg>12%</div>
+          </div>
+          <div class="stat-value">63</div>
+          <div class="stat-label">Delivered today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft)"><svg style="stroke:var(--warning)"><use href="#i-cash"/></svg></div>
+            <div class="stat-trend trend-down"><svg><use href="#i-down"/></svg>5.6%</div>
+          </div>
+          <div class="stat-value">TZS 42.6M</div>
+          <div class="stat-label">Pending payments</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-top">
+            <div class="stat-icon" style="background:var(--danger-soft)"><svg style="stroke:var(--danger)"><use href="#i-alert"/></svg></div>
+            <div class="stat-trend trend-up"><svg><use href="#i-up"/></svg>2</div>
+          </div>
+          <div class="stat-value">3</div>
+          <div class="stat-label">Active alerts</div>
+        </div>
+      </section>
+
+      <!-- SHIPMENTS + MAP -->
+      <section class="grid-main reveal" style="animation-delay:.08s">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>Shipments</h2><p class="sub">1,248 total · 96 moving now</p></div>
+            <button class="panel-more"><svg class="icon" style="width:16px;height:16px"><use href="#i-chevron-down"/></svg></button>
+          </div>
+          <div class="filter-row" id="filterRow">
+            <button class="chip active" data-filter="all">All</button>
+            <button class="chip" data-filter="transit">In transit</button>
+            <button class="chip" data-filter="warehouse">Warehouse</button>
+            <button class="chip" data-filter="pending">Pending</button>
+            <button class="chip" data-filter="delivered">Delivered</button>
+            <button class="chip" data-filter="delayed">Delayed</button>
+          </div>
+          <div class="shipment-list" id="shipmentList"></div>
+        </div>
+
+        <div class="panel map-panel">
+          <div class="panel-head">
+            <div><h2>Live tracking</h2><p class="sub" id="mapSub">Following SHN-TZ-2026-000124</p></div>
+            <button class="btn btn-ghost" style="padding:7px 14px; font-size:12px;"><svg><use href="#i-map"/></svg> Full map</button>
+          </div>
+          <div id="map"></div>
+          <div class="map-stats">
+            <div class="map-stat"><span>Distance</span><strong id="mapDistance">612 / 968 km</strong></div>
+            <div class="map-stat"><span>Average speed</span><strong id="mapSpeed">64 km/h</strong></div>
+            <div class="map-stat"><span>Last update</span><strong id="mapUpdate">4 minutes ago</strong></div>
+          </div>
+          <div class="detail-card" id="detailCard"></div>
+        </div>
+      </section>
+
+      <!-- CROSS BORDER SPOTLIGHT -->
+      <section class="panel spotlight reveal" style="animation-delay:.1s">
+        <div class="panel-head" style="padding:0;">
+          <div><h2>Cross-border shipment</h2><p class="sub">Regional corridor · Central &amp; Southern route</p></div>
+          <span class="badge b-transit">In transit</span>
+        </div>
+        <div class="spotlight-grid">
+          <div class="spot-field"><span>Tracking no.</span><strong>SHN-TZ-2026-000124</strong></div>
+          <div class="spot-field"><span>Consignee</span><strong>Copperbelt Mining Supplies</strong></div>
+          <div class="spot-field"><span>Carrier</span><strong>TransAfrica Logistics</strong></div>
+          <div class="spot-field"><span>Route</span><strong><span class="flag">🇹🇿</span> Dar es Salaam → Lusaka <span class="flag">🇿🇲</span></strong></div>
+        </div>
+        <div class="checkpoints">
+          <div class="cp done"><div class="cp-dot"><svg class="icon" style="width:14px;height:14px"><use href="#i-check"/></svg></div><strong>Dar es Salaam</strong><span>Departed · 10 Aug</span></div>
+          <div class="cp done"><div class="cp-dot"><svg class="icon" style="width:14px;height:14px"><use href="#i-check"/></svg></div><strong>Mbeya weigh station</strong><span>Cleared · 11 Aug</span></div>
+          <div class="cp delayed"><div class="cp-dot"><svg class="icon" style="width:14px;height:14px"><use href="#i-alert"/></svg></div><strong>Tunduma border</strong><span>Delayed · customs hold</span></div>
+          <div class="cp pending"><div class="cp-dot"><svg class="icon" style="width:14px;height:14px"><use href="#i-clock"/></svg></div><strong>Lusaka</strong><span>ETA 3 Sep</span></div>
+        </div>
+      </section>
+
+      <!-- CHARTS + FLEET -->
+      <section class="grid-secondary reveal" style="animation-delay:.12s">
+        <div class="panel chart-box">
+          <div class="panel-head" style="padding:0 0 4px;">
+            <div><h2>Cargo volume</h2><p class="sub">Shipments booked per month</p></div>
+          </div>
+          <canvas id="volumeChart" height="130"></canvas>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>Fleet snapshot</h2><p class="sub">4 vehicles · 2 on route</p></div>
+          </div>
+          <div class="fleet-list" id="fleetList"></div>
+        </div>
+      </section>
+
+      <section class="grid-secondary reveal" style="animation-delay:.14s; grid-template-columns:1fr 1.3fr;">
+        <div class="panel chart-box">
+          <div class="panel-head" style="padding:0 0 4px;">
+            <div><h2>Cargo by status</h2><p class="sub">Current snapshot</p></div>
+          </div>
+          <canvas id="statusChart" height="200"></canvas>
+          <div class="chart-legend" id="statusLegend"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>Delivery schedule</h2><p class="sub">Progress across all active shipments</p></div>
+          </div>
+          <div class="schedule-panel" id="scheduleList"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ SAMPLE DATA ============ */
+  var STATUS = {
+    transit:   {label:"In transit",  badge:"b-transit",   color:"#38AEF2", soft:"var(--blue-soft)"},
+    warehouse: {label:"At warehouse",badge:"b-warehouse", color:"#6D5BD0", soft:"var(--indigo-soft)"},
+    pending:   {label:"Pending",     badge:"b-pending",    color:"#E19A1C", soft:"var(--warning-soft)"},
+    delivered: {label:"Delivered",   badge:"b-delivered",  color:"#1DA36B", soft:"var(--success-soft)"},
+    delayed:   {label:"Delayed",     badge:"b-delayed",    color:"#E5484D", soft:"var(--danger-soft)"}
+  };
+
+  var STEPS = ["Booked","Received","Warehouse","In transit","Customs","Out for delivery","Delivered"];
+
+  var shipments = [
+    {
+      id:"SHN-TZ-2026-000124", customer:"Copperbelt Mining Supplies", cargo:"Mining equipment parts",
+      status:"transit", carrier:"TransAfrica Logistics", eta:"3 Sep, 18:00",
+      route:"Dar es Salaam → Lusaka, ZM", step:3, progress:0.62,
+      waypoints:[[-6.7924,39.2083],[-6.8235,37.6822],[-6.1730,35.7419],[-7.7669,35.6980],[-8.9094,33.4608],[-9.3000,32.7667],[-15.3875,28.3228]]
+    },
+    {
+      id:"SHN-TZ-2026-000131", customer:"Great Lakes Produce Co.", cargo:"Packaged foodstuffs",
+      status:"transit", carrier:"Kilimanjaro Freight Lines", eta:"2 Sep, 09:00",
+      route:"Dar es Salaam → Kigali, RW", step:3, progress:0.45,
+      waypoints:[[-6.7924,39.2083],[-6.8235,37.6822],[-6.1730,35.7419],[-4.8180,34.7451],[-4.2133,33.1667],[-3.8480,32.6000],[-2.3833,30.7500],[-1.9441,30.0619]]
+    },
+    {
+      id:"SHN-TZ-2026-000118", customer:"Serengeti Textiles Ltd", cargo:"Raw cotton bales",
+      status:"warehouse", carrier:"Shehena Line-Haul", eta:"Awaiting sort",
+      route:"Mwanza → Dar es Salaam", step:2, progress:0,
+      waypoints:[[-2.5164,32.9000],[-3.8480,32.6000],[-6.1730,35.7419],[-6.8235,37.6822],[-6.7924,39.2083]]
+    },
+    {
+      id:"SHN-TZ-2026-000142", customer:"Kilimanjaro Coffee Traders", cargo:"Green coffee beans, export",
+      status:"pending", carrier:"Not yet assigned", eta:"Pickup scheduled",
+      route:"Moshi → Mombasa, KE", step:0, progress:0,
+      waypoints:[[-3.3500,37.3333],[-3.3869,36.6822],[-2.5450,36.7871],[-1.2921,36.8219],[-4.0435,39.6682]]
+    },
+    {
+      id:"SHN-TZ-2026-000109", customer:"Dodoma AgroExports", cargo:"Sunflower oil, 200 drums",
+      status:"delivered", carrier:"Shehena Line-Haul", eta:"Delivered 28 Aug",
+      route:"Dodoma → Dar es Salaam", step:6, progress:1,
+      waypoints:[[-6.1730,35.7419],[-6.8235,37.6822],[-6.7924,39.2083]]
+    },
+    {
+      id:"SHN-TZ-2026-000137", customer:"Zanzibar Spice Traders", cargo:"Mixed spice consignment",
+      status:"delayed", carrier:"Coastal Ferry Freight", eta:"Delayed — port congestion",
+      route:"Dar es Salaam → Zanzibar", step:4, progress:0.8,
+      waypoints:[[-6.7924,39.2083],[-6.1659,39.2026]]
+    }
+  ];
+
+  var vehicles = [
+    {plate:"T 331 CDX", model:"Scania R-Series", driver:"J. Mwakalinga", status:"On route", dot:"#1DA36B"},
+    {plate:"T 774 EFB", model:"Mercedes-Benz Actros", driver:"A. Ndosi", status:"On route", dot:"#1DA36B"},
+    {plate:"T 220 KLM", model:"MAN TGX", driver:"H. Massawe", status:"At depot", dot:"#9694A8"},
+    {plate:"T 556 XYZ", model:"Isuzu FVR", driver:"R. Komba", status:"Maintenance", dot:"#E19A1C"}
+  ];
+
+  /* ============ RENDER: shipment list ============ */
+  var listEl = document.getElementById("shipmentList");
+  var activeFilter = "all";
+  var activeId = shipments[0].id;
+
+  function renderList(){
+    var q = (document.getElementById("searchInput").value || "").toLowerCase();
+    listEl.innerHTML = "";
+    shipments.forEach(function(s){
+      if(activeFilter !== "all" && s.status !== activeFilter) return;
+      if(q && !(s.id.toLowerCase().indexOf(q)>-1 || s.customer.toLowerCase().indexOf(q)>-1 || s.route.toLowerCase().indexOf(q)>-1)) return;
+      var st = STATUS[s.status];
+      var row = document.createElement("div");
+      row.className = "ship-row" + (s.id===activeId ? " active" : "");
+      row.setAttribute("data-id", s.id);
+      row.innerHTML =
+        '<div class="ship-thumb" style="background:'+st.soft+'"><svg class="icon" style="stroke:'+st.color+'"><use href="#i-box"/></svg></div>'+
+        '<div class="ship-body">'+
+          '<div class="ship-top"><span class="ship-id">'+s.id+'</span><span class="badge '+st.badge+'">'+st.label+'</span></div>'+
+          '<div class="ship-route">'+s.route+'</div>'+
+          '<div class="ship-cust">'+s.customer+'</div>'+
+        '</div>';
+      row.addEventListener("click", function(){ selectShipment(s.id); });
+      listEl.appendChild(row);
+    });
+    if(!listEl.children.length){
+      listEl.innerHTML = '<p style="padding:24px; text-align:center; color:var(--text-faint); font-size:13px; font-weight:600;">No shipments match this filter.</p>';
+    }
+  }
+
+  document.getElementById("filterRow").addEventListener("click", function(e){
+    var btn = e.target.closest(".chip");
+    if(!btn) return;
+    document.querySelectorAll(".chip").forEach(function(c){ c.classList.remove("active"); });
+    btn.classList.add("active");
+    activeFilter = btn.getAttribute("data-filter");
+    renderList();
+  });
+  document.getElementById("searchInput").addEventListener("input", renderList);
+
+  /* ============ RENDER: detail card ============ */
+  var detailEl = document.getElementById("detailCard");
+  function renderDetail(s){
+    var stepsHtml = STEPS.map(function(label, i){
+      var cls = i < s.step ? "done" : (i === s.step ? "current" : "");
+      var icon = i < s.step ? '<svg class="icon"><use href="#i-check"/></svg>' : "";
+      return '<div class="step '+cls+'"><div class="step-dot">'+icon+'</div><span class="step-label">'+label+'</span><div class="step-line"></div></div>';
+    }).join("");
+    detailEl.innerHTML =
+      '<div class="detail-top"><div><div class="detail-id">'+s.id+'</div><div class="detail-carrier">'+s.carrier+' · '+s.cargo+'</div></div>'+
+      '<span class="badge '+STATUS[s.status].badge+'">'+STATUS[s.status].label+'</span></div>'+
+      '<div class="stepper">'+stepsHtml+'</div>';
+  }
+
+  /* ============ MAP ============ */
+  var map = L.map("map", {zoomControl:false, attributionControl:true, scrollWheelZoom:false});
+  var tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution:'&copy; OpenStreetMap &copy; CARTO', maxZoom:18, subdomains:'abcd'
+  }).addTo(map);
+  L.control.zoom({position:"bottomright"}).addTo(map);
+
+  var routeLine, markerStart, markerEnd, markerCurrent;
+
+  function drawRoute(s){
+    if(routeLine) map.removeLayer(routeLine);
+    if(markerStart) map.removeLayer(markerStart);
+    if(markerEnd) map.removeLayer(markerEnd);
+    if(markerCurrent) map.removeLayer(markerCurrent);
+
+    var pts = s.waypoints;
+    routeLine = L.polyline(pts, {color:"#38AEF2", weight:4, opacity:.9, dashArray:"1 10", lineCap:"round"}).addTo(map);
+    animateDash(routeLine);
+
+    var dotIcon = function(color){
+      return L.divIcon({className:"", html:'<div style="width:14px;height:14px;border-radius:50%;background:'+color+';border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>', iconSize:[14,14], iconAnchor:[7,7]});
+    };
+    markerStart = L.marker(pts[0], {icon:dotIcon("#1DA36B")}).addTo(map).bindPopup("Origin");
+    markerEnd = L.marker(pts[pts.length-1], {icon:dotIcon("#E5484D")}).addTo(map).bindPopup("Destination");
+
+    var curPos = pointAtProgress(pts, s.progress);
+    var truckIcon = L.divIcon({
+      className:"",
+      html:'<div style="width:30px;height:30px;border-radius:50%;background:#D96A16;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(217,106,22,.5);border:3px solid #fff;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="1" y="7" width="13" height="10" rx="1.2"/><path d="M14 10h4l4 3.5V17h-8z"/><circle cx="6" cy="19" r="1.8"/><circle cx="17.5" cy="19" r="1.8"/></svg></div>',
+      iconSize:[30,30], iconAnchor:[15,15]
+    });
+    markerCurrent = L.marker(curPos, {icon:truckIcon}).addTo(map);
+
+    map.fitBounds(routeLine.getBounds(), {padding:[30,30]});
+  }
+
+  function pointAtProgress(pts, progress){
+    if(pts.length===1) return pts[0];
+    var total = 0, segLens = [];
+    for(var i=0;i<pts.length-1;i++){
+      var d = Math.hypot(pts[i+1][0]-pts[i][0], pts[i+1][1]-pts[i][1]);
+      segLens.push(d); total += d;
+    }
+    var target = total * Math.max(0, Math.min(1, progress));
+    var acc = 0;
+    for(var j=0;j<segLens.length;j++){
+      if(acc + segLens[j] >= target || j===segLens.length-1){
+        var segT = segLens[j] ? (target - acc) / segLens[j] : 0;
+        var a = pts[j], b = pts[j+1];
+        return [a[0] + (b[0]-a[0])*segT, a[1] + (b[1]-a[1])*segT];
+      }
+      acc += segLens[j];
+    }
+    return pts[pts.length-1];
+  }
+
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function animateDash(line){
+    if(reduceMotion) return;
+    var offset = 0;
+    clearInterval(window._dashTimer);
+    window._dashTimer = setInterval(function(){
+      offset = (offset - 1 + 200) % 200;
+      try{ line.setStyle({dashOffset:String(offset)}); }catch(e){}
+    }, 60);
+  }
+
+  function selectShipment(id){
+    activeId = id;
+    var s = shipments.find(function(x){ return x.id===id; });
+    document.getElementById("mapSub").textContent = "Following " + s.id;
+    document.getElementById("mapDistance").textContent = Math.round(612 * (s.progress||0.1)) + " / " + (s.waypoints.length>2 ? "968" : "420") + " km";
+    document.getElementById("mapSpeed").textContent = s.status==="transit" ? "64 km/h" : "—";
+    document.getElementById("mapUpdate").textContent = s.status==="delivered" ? "Trip complete" : "4 minutes ago";
+    renderDetail(s);
+    drawRoute(s);
+    renderList();
+  }
+
+  /* ============ FLEET ============ */
+  var fleetEl = document.getElementById("fleetList");
+  vehicles.forEach(function(v){
+    var row = document.createElement("div");
+    row.className = "fleet-row";
+    row.innerHTML =
+      '<div class="fleet-icon"><svg class="icon"><use href="#i-truck"/></svg></div>'+
+      '<div class="fleet-body"><strong>'+v.plate+' · '+v.model+'</strong><span>'+v.driver+'</span></div>'+
+      '<span class="dot-status" style="background:'+v.dot+'"></span>';
+    fleetEl.appendChild(row);
+  });
+
+  /* ============ DELIVERY SCHEDULE ============ */
+  var schedEl = document.getElementById("scheduleList");
+  shipments.forEach(function(s){
+    var row = document.createElement("div");
+    row.className = "schedule-row";
+    var stepsHtml = STEPS.map(function(label, i){
+      var cls = i < s.step ? "done" : (i === s.step ? "current" : "");
+      return '<div class="mstep '+cls+'"><div class="mstep-dot"></div><span class="mstep-label">'+label+'</span><div class="mstep-line"></div></div>';
+    }).join("");
+    row.innerHTML =
+      '<div><div class="sched-id">'+s.id+'</div><div class="sched-cust">'+s.customer+'</div></div>'+
+      '<div class="mini-stepper">'+stepsHtml+'</div>'+
+      '<div class="sched-status"><span class="badge '+STATUS[s.status].badge+'">'+STATUS[s.status].label+'</span></div>';
+    schedEl.appendChild(row);
+  });
+
+  /* ============ CHARTS ============ */
+  var chartTextColor = getComputedStyle(document.body).getPropertyValue("--text-muted").trim() || "#6B6A80";
+  var volumeCtx = document.getElementById("volumeChart").getContext("2d");
+  var volumeChart = new Chart(volumeCtx, {
+    type:"line",
+    data:{
+      labels:["Mar","Apr","May","Jun","Jul","Aug"],
+      datasets:[{
+        label:"Shipments",
+        data:[820, 910, 875, 1005, 1120, 1248],
+        borderColor:"#38AEF2",
+        backgroundColor:function(ctx){
+          var g = ctx.chart.ctx.createLinearGradient(0,0,0,220);
+          g.addColorStop(0,"rgba(56,174,242,.32)"); g.addColorStop(1,"rgba(56,174,242,0)");
+          return g;
+        },
+        fill:true, tension:.4, borderWidth:3, pointRadius:4, pointBackgroundColor:"#38AEF2", pointBorderColor:"#fff", pointBorderWidth:2
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{display:false}, ticks:{color:chartTextColor, font:{family:"Nunito Sans", weight:"600", size:11}}},
+        y:{grid:{color:"rgba(150,148,168,.15)"}, ticks:{color:chartTextColor, font:{family:"Nunito Sans", weight:"600", size:11}}}
+      }
+    }
+  });
+
+  var statusCtx = document.getElementById("statusChart").getContext("2d");
+  var statusData = [
+    {label:"In transit", value:96, color:"#38AEF2"},
+    {label:"At warehouse", value:214, color:"#6D5BD0"},
+    {label:"Pending", value:58, color:"#E19A1C"},
+    {label:"Delivered", value:860, color:"#1DA36B"},
+    {label:"Delayed", value:20, color:"#E5484D"}
+  ];
+  var statusChart = new Chart(statusCtx, {
+    type:"doughnut",
+    data:{
+      labels:statusData.map(function(d){return d.label;}),
+      datasets:[{ data:statusData.map(function(d){return d.value;}), backgroundColor:statusData.map(function(d){return d.color;}), borderWidth:0, hoverOffset:6 }]
+    },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:"68%", plugins:{legend:{display:false}} }
+  });
+  var legendEl = document.getElementById("statusLegend");
+  statusData.forEach(function(d){
+    var item = document.createElement("div");
+    item.className = "legend-item";
+    item.innerHTML = '<span class="legend-dot" style="background:'+d.color+'"></span>'+d.label;
+    legendEl.appendChild(item);
+  });
+
+  /* ============ THEME TOGGLE ============ */
+  var htmlEl = document.documentElement;
+  var themeBtn = document.getElementById("themeToggle");
+  function applyTheme(t){
+    htmlEl.setAttribute("data-theme", t);
+    themeBtn.querySelector(".knob svg use").setAttribute("href", t==="dark" ? "#i-moon" : "#i-sun");
+    try{ localStorage.setItem("shehena-theme", t); }catch(e){}
+    var url = t==="dark"
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+    tileLayer.setUrl(url);
+  }
+  themeBtn.addEventListener("click", function(){
+    applyTheme(htmlEl.getAttribute("data-theme")==="dark" ? "light" : "dark");
+  });
+  (function initTheme(){
+    var saved = null;
+    try{ saved = localStorage.getItem("shehena-theme"); }catch(e){}
+    if(!saved && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) saved = "dark";
+    applyTheme(saved || "light");
+  })();
+
+  /* ============ SIDEBAR TOGGLES ============ */
+  var sidebar = document.getElementById("sidebar");
+  var backdrop = document.getElementById("backdrop");
+  document.getElementById("collapseToggle").addEventListener("click", function(){
+    sidebar.classList.toggle("collapsed");
+  });
+  document.getElementById("menuToggle").addEventListener("click", function(){
+    sidebar.classList.add("mobile-open");
+  });
+  backdrop.addEventListener("click", function(){
+    sidebar.classList.remove("mobile-open");
+  });
+
+  /* ============ DROPDOWNS ============ */
+  function setupDropdown(btnId, dropId){
+    var btn = document.getElementById(btnId), drop = document.getElementById(dropId);
+    btn.addEventListener("click", function(e){
+      e.stopPropagation();
+      var isOpen = drop.classList.contains("open");
+      document.querySelectorAll(".dropdown.open").forEach(function(d){ d.classList.remove("open"); });
+      if(!isOpen) drop.classList.add("open");
+    });
+  }
+  setupDropdown("notifBtn", "notifDropdown");
+  setupDropdown("userBtn", "userDropdown");
+  document.addEventListener("click", function(){
+    document.querySelectorAll(".dropdown.open").forEach(function(d){ d.classList.remove("open"); });
+  });
+
+  /* ============ INIT ============ */
+  renderList();
+  selectShipment(shipments[0].id);
+  window.addEventListener("resize", function(){ map.invalidateSize(); });
+  setTimeout(function(){ map.invalidateSize(); }, 200);
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,565 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" x-data="{ 
+    darkMode: localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches),
+    trackingNumber: '',
+    searchResults: null,
+    loading: false,
+    error: null,
+    toggleTheme() {
+        this.darkMode = !this.darkMode;
+        localStorage.setItem('theme', this.darkMode ? 'dark' : 'light');
+        document.documentElement.className = this.darkMode ? 'dark' : '';
+    },
+    async searchCargo() {
+        if (!this.trackingNumber.trim()) {
+            this.error = 'Please enter a tracking number.';
+            return;
+        }
+        
+        this.loading = true;
+        this.error = null;
+        this.searchResults = null;
+        
+        try {
+            const response = await fetch(`/api/public-tracking/${this.trackingNumber}/`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Tracking number not found.');
+            }
+            
+            this.searchResults = await response.json();
+        } catch (error) {
+            this.error = error.message || 'An error occurred. Please try again.';
+        } finally {
+            this.loading = false;
+        }
+    }
+}" :class="{ 'dark': darkMode }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Your Cargo — Cargo Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,600;6..12,700;6..12,800;6..12,900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+    <style>
+        :root {
+            --navy: #0B0524;
+            --orange: #D96A16;
+            --blue: #38AEF2;
+            --success: #1DA36B;
+            --danger: #E5484D;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            font-family: 'Nunito Sans', system-ui, sans-serif;
+            height: 100%;
+            width: 100%;
+        }
+
+        html {
+            @apply bg-white text-gray-900;
+        }
+
+        html.dark {
+            @apply bg-[#0A0620] text-white;
+        }
+
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes subtleFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .animate-slide-down {
+            animation: slideDown 0.6s ease-out;
+        }
+
+        .animate-float {
+            animation: subtleFloat 6s ease-in-out infinite;
+        }
+
+        /* Button Styles */
+        .btn-primary {
+            background: linear-gradient(135deg, #D96A16 0%, #E07B2C 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0.875rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #38AEF2 0%, #2BA0DC 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(56, 174, 242, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-back {
+            background: transparent;
+            color: var(--orange);
+            border: 2px solid var(--orange);
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-back:hover {
+            background: rgba(217, 106, 22, 0.1);
+        }
+
+        /* Form Input */
+        .form-input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: 'Nunito Sans', system-ui, sans-serif;
+            transition: all 0.3s ease;
+            background: white;
+            color: #111827;
+        }
+
+        html.dark .form-input {
+            background: #1A1240;
+            border-color: #2d2649;
+            color: white;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--orange);
+            box-shadow: 0 0 0 3px rgba(217, 106, 22, 0.1);
+        }
+
+        /* Alert Styles */
+        .alert-error {
+            padding: 1rem;
+            background-color: #FCE8E8;
+            border-left: 4px solid var(--danger);
+            border-radius: 6px;
+            color: #7B2C2E;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        html.dark .alert-error {
+            background-color: rgba(229, 72, 77, 0.15);
+            color: #F8A6A9;
+        }
+
+        .alert-success {
+            padding: 1rem;
+            background-color: #E4F7EE;
+            border-left: 4px solid var(--success);
+            border-radius: 6px;
+            color: #0D5C41;
+        }
+
+        html.dark .alert-success {
+            background-color: rgba(29, 163, 107, 0.15);
+            color: #86E2B4;
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding: 2rem 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 1.5rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--orange), var(--blue));
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        html.dark .timeline-item {
+            border-bottom-color: #2d2649;
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+
+        .timeline-dot {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--orange) 0%, var(--blue) 100%);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            box-shadow: 0 2px 8px rgba(217, 106, 22, 0.3);
+        }
+
+        .timeline-content {
+            flex: 1;
+            padding-top: 0.25rem;
+        }
+
+        .timeline-title {
+            font-weight: 700;
+            color: var(--orange);
+            margin-bottom: 0.25rem;
+        }
+
+        .timeline-time {
+            font-size: 0.875rem;
+            color: #9ca3af;
+            margin-bottom: 0.5rem;
+        }
+
+        html.dark .timeline-time {
+            color: #6b7280;
+        }
+
+        .timeline-description {
+            font-size: 0.95rem;
+            color: #6b7280;
+        }
+
+        html.dark .timeline-description {
+            color: #d1d5db;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.active {
+            background-color: #E4F7EE;
+            color: #0D5C41;
+        }
+
+        html.dark .status-badge.active {
+            background-color: rgba(29, 163, 107, 0.2);
+            color: #86E2B4;
+        }
+
+        .status-badge.pending {
+            background-color: #FCF2DD;
+            color: #663C00;
+        }
+
+        html.dark .status-badge.pending {
+            background-color: rgba(225, 154, 28, 0.2);
+            color: #FBC547;
+        }
+
+        .status-badge.delivered {
+            background-color: #EAF6FE;
+            color: #00418A;
+        }
+
+        html.dark .status-badge.delivered {
+            background-color: rgba(56, 174, 242, 0.2);
+            color: #93D4FF;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #e5e7eb;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        html.dark .theme-toggle {
+            background: #1A1240;
+            border-color: #2d2649;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--orange);
+            transform: scale(1.1);
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 2px solid rgba(217, 106, 22, 0.2);
+            border-top: 2px solid var(--orange);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .timeline::before {
+                left: 0.75rem;
+            }
+
+            .timeline-item {
+                gap: 1.5rem;
+            }
+
+            .timeline-dot {
+                width: 2.5rem;
+                height: 2.5rem;
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+    <script>
+    tailwind.config = {
+        darkMode: 'class',
+        theme: {
+            extend: {
+                colors: {
+                    navy: { DEFAULT: '#0B0524', 2: '#150E33', 3: '#1E1548' },
+                    brand: { DEFAULT: '#D96A16', soft: '#FCEEE3', ink: '#7A3B0C' },
+                    info: { DEFAULT: '#38AEF2', soft: '#EAF6FE' },
+                    success: { DEFAULT: '#1DA36B', soft: '#E4F7EE' },
+                    warning: { DEFAULT: '#E19A1C', soft: '#FCF2DD' },
+                    danger: { DEFAULT: '#E5484D', soft: '#FCE8E8' },
+                    secondary: { DEFAULT: '#6D5BD0', soft: '#EEEBFB' },
+                    surface: { DEFAULT: '#F3F4F9', dark: '#0A0620' },
+                    card: { DEFAULT: '#FFFFFF', 2: '#FAFAFD', dark: '#150E33', dark2: '#1A1240' },
+                    muted: '#6B6A80', faint: '#9694A8',
+                },
+                fontFamily: { sans: ['Nunito Sans', 'system-ui', 'sans-serif'] },
+                borderRadius: { lg: '18px', md: '14px', sm: '10px' },
+            }
+        }
+    }
+    </script>
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" @click="toggleTheme()" title="Toggle theme">
+        <span x-show="!darkMode">🌙</span>
+        <span x-show="darkMode">☀️</span>
+    </button>
+
+    <div class="min-h-screen bg-gradient-to-br from-white via-gray-50 to-blue-50 dark:from-[#0A0620] dark:via-[#0F0826] dark:to-[#150E33] relative overflow-hidden">
+        <!-- Subtle background animation -->
+        <div class="absolute inset-0 opacity-5 pointer-events-none">
+            <div class="absolute top-10 left-10 w-96 h-96 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl animate-float"></div>
+            <div class="absolute bottom-10 right-10 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-float" style="animation-delay: 2s;"></div>
+        </div>
+
+        <div class="relative z-10 px-6 py-12 md:py-20">
+            <div class="max-w-3xl mx-auto">
+                <!-- Header -->
+                <div class="text-center mb-12 animate-slide-down">
+                    <div class="inline-block mb-6">
+                        <div class="w-16 h-16 bg-gradient-to-br from-[#D96A16] to-[#E07B2C] rounded-2xl flex items-center justify-center text-3xl shadow-lg">
+                            🚚
+                        </div>
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-black text-gray-900 dark:text-white mb-4 tracking-tight">
+                        Track Your Cargo
+                    </h1>
+                    <p class="text-lg text-gray-600 dark:text-gray-400">
+                        Enter your tracking number to see real-time updates on your shipment.
+                    </p>
+                </div>
+
+                <!-- Search Card -->
+                <div class="bg-white dark:bg-[#150E33] rounded-2xl shadow-lg p-8 mb-8">
+                    <!-- Search Form -->
+                    <div class="mb-6">
+                        <label for="trackingNumber" class="block text-sm font-600 text-gray-700 dark:text-gray-300 mb-3">
+                            Tracking Number
+                        </label>
+                        <div class="flex gap-3">
+                            <input 
+                                type="text" 
+                                id="trackingNumber"
+                                x-model="trackingNumber"
+                                class="form-input flex-1"
+                                placeholder="e.g. CMS-TZ-2026-00001245"
+                                @keyup.enter="searchCargo()"
+                                @input="error = null"
+                            />
+                            <button 
+                                @click="searchCargo()"
+                                :disabled="loading"
+                                class="btn-primary px-8 whitespace-nowrap"
+                            >
+                                <span x-show="!loading">Search</span>
+                                <span x-show="loading" class="flex items-center gap-2">
+                                    <span class="spinner"></span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Error Alert -->
+                    <div x-show="error" x-transition class="alert-error" x-cloak>
+                        <span>⚠️</span>
+                        <div>
+                            <p x-text="error" class="font-semibold"></p>
+                            <p class="text-sm mt-1">Please check your tracking number and try again.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div x-show="searchResults" x-transition class="animate-slide-down" x-cloak>
+                    <!-- Shipment Details Card -->
+                    <div class="bg-white dark:bg-[#150E33] rounded-2xl shadow-lg p-8 mb-8">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8 pb-8 border-b border-gray-200 dark:border-gray-700">
+                            <div>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Tracking Number</p>
+                                <h2 class="text-2xl font-black text-gray-900 dark:text-white font-mono" x-text="searchResults.tracking_id"></h2>
+                            </div>
+                            <div x-show="searchResults.status" class="text-right">
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Current Status</p>
+                                <div :class="{
+                                    'status-badge delivered': searchResults.status === 'delivered',
+                                    'status-badge active': searchResults.status === 'in_transit',
+                                    'status-badge pending': !['delivered', 'in_transit'].includes(searchResults.status)
+                                }" x-text="searchResults.status_display"></div>
+                            </div>
+                        </div>
+
+                        <!-- Shipment Info Grid -->
+                        <div class="grid md:grid-cols-3 gap-6">
+                            <div>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Sender</p>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="searchResults.customer_name"></p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Destination</p>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="searchResults.destination_city"></p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Expected Delivery</p>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="searchResults.expected_delivery || 'To be determined'"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline -->
+                    <div class="bg-white dark:bg-[#150E33] rounded-2xl shadow-lg p-8">
+                        <h3 class="text-xl font-black text-gray-900 dark:text-white mb-8">Shipment Journey</h3>
+                        
+                        <div class="timeline" x-show="searchResults.events && searchResults.events.length > 0">
+                            <template x-for="event in searchResults.events" :key="event.id">
+                                <div class="timeline-item">
+                                    <div class="timeline-dot" x-text="event.icon || '📦'"></div>
+                                    <div class="timeline-content">
+                                        <div class="timeline-title" x-text="event.status_display"></div>
+                                        <div class="timeline-time" x-text="event.created_at"></div>
+                                        <div class="timeline-description" x-text="event.notes || 'Shipment updated'"></div>
+                                        <div x-show="event.location" class="text-sm text-gray-700 dark:text-gray-300 mt-2">
+                                            📍 <span x-text="event.location"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div x-show="!searchResults.events || searchResults.events.length === 0" class="text-center py-8 text-gray-600 dark:text-gray-400">
+                            <p>No tracking events yet. Your shipment will be updated soon.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div x-show="!searchResults && !loading && !error" class="text-center py-12">
+                    <p class="text-gray-600 dark:text-gray-400 text-lg">
+                        Enter a tracking number above to get started.
+                    </p>
+                </div>
+
+                <!-- Back to Login -->
+                <div class="text-center mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">
+                        Have an account?
+                    </p>
+                    <a href="{% url 'login' %}" class="btn-back">
+                        Sign In to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

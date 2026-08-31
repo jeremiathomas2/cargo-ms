@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Transportation — Shehena{% endblock %}
+
+{% block content %}
+<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-6">
+    <div>
+        <h1 class="text-[24px] font-extrabold tracking-tight text-gray-900 dark:text-white">Transportation</h1>
+        <p class="text-[13.5px] text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Fleet &amp; drivers overview</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+    {% include 'components/stat_card.html' with icon='<rect x="1" y="7" width="13" height="10" rx="1.2" fill="none"/><path d="M14 10h4l4 3.5V17h-8z" fill="none"/><circle cx="6" cy="19" r="1.8" fill="none"/><circle cx="17.5" cy="19" r="1.8" fill="none"/>' value=total_vehicles label="Total vehicles" color='secondary' %}
+    {% include 'components/stat_card.html' with icon='<path d="M20 6 9 17l-5-5" fill="none"/>' value=available_vehicles label="Available" color='success' %}
+    {% include 'components/stat_card.html' with icon='<circle cx="6" cy="19" r="2.2" fill="none"/><path d="M8 19h6a4 4 0 0 0 4-4 4 4 0 0 0-4-4H10a4 4 0 0 1-4-4 4 4 0 0 1 4-4h6" fill="none"/>' value=on_route_vehicles label="On route" color='info' %}
+    {% include 'components/stat_card.html' with icon='<circle cx="9" cy="8" r="3.3" fill="none"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" fill="none"/>' value=total_drivers label="Total drivers" color='brand' %}
+</div>
+
+<div class="panel bg-card dark:bg-card-dark border border-gray-200 dark:border-[#291F55] rounded-[18px] card-shadow overflow-hidden">
+    <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5">
+        <div>
+            <h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Active trips</h2>
+            <p class="text-xs text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Trips currently in progress</p>
+        </div>
+        <a href="{% url 'transportation:manifest_list' %}" class="text-[13px] font-extrabold text-info hover:underline">View manifests</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse min-w-[720px]">
+            <thead>
+                <tr class="border-b border-gray-200 dark:border-[#291F55] bg-card-2 dark:bg-card-dark2">
+                    <th class="px-5 py-3 text-[11px] font-extrabold uppercase tracking-wide text-muted dark:text-[#B2ACD6]">Reference</th>
+                    <th class="px-5 py-3 text-[11px] font-extrabold uppercase tracking-wide text-muted dark:text-[#B2ACD6]">Vehicle</th>
+                    <th class="px-5 py-3 text-[11px] font-extrabold uppercase tracking-wide text-muted dark:text-[#B2ACD6]">Driver</th>
+                    <th class="px-5 py-3 text-[11px] font-extrabold uppercase tracking-wide text-muted dark:text-[#B2ACD6]">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-[#1E1548]">
+                {% for trip in active_trips %}
+                <tr class="hover:bg-card-2 dark:hover:bg-card-dark2 transition-colors">
+                    <td class="px-5 py-3.5 text-[13px] font-extrabold text-info">{{ trip.reference|default:trip.id|truncatechars:12 }}</td>
+                    <td class="px-5 py-3.5 text-[13px] font-bold text-gray-900 dark:text-white">{{ trip.vehicle }}</td>
+                    <td class="px-5 py-3.5 text-[13px] text-gray-900 dark:text-white font-bold">{{ trip.driver }}</td>
+                    <td class="px-5 py-3.5">
+                        {% if trip.status == 'in_transit' %}
+                            {% include 'components/badge.html' with text="In transit" type="transit" %}
+                        {% else %}
+                            {% include 'components/badge.html' with text=trip.get_status_display type="info" %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-6 py-14 text-center">
+                        <p class="text-sm font-semibold text-faint dark:text-[#8981B8]">No active trips.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

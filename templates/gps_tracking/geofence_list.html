@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Geofence Zones</h1>
+        <p>Geographic boundaries and alert triggers</p>
+    </div>
+    <div class="page-head-actions">
+        <button class="btn btn-ghost"><svg class="icon"><use href="#i-download"/></svg> Export</button>
+        <button class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg> New Zone</button>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-shield"/></svg></div>
+        </div>
+        <div class="stat-value">{{ geofences.paginator.count }}</div>
+        <div class="stat-label">Total Zones</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-home"/></svg></div>
+        </div>
+        <div class="stat-value">{% for g in geofences %}{% if g.zone_type == 'warehouse' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not geofences %}0{% endif %}</div>
+        <div class="stat-label">Warehouses</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--info-soft); color:var(--info);"><svg class="icon"><use href="#i-location"/></svg></div>
+        </div>
+        <div class="stat-value">{% for g in geofences %}{% if g.zone_type == 'pickup' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not geofences %}0{% endif %}</div>
+        <div class="stat-label">Pickup Points</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-alert"/></svg></div>
+        </div>
+        <div class="stat-value">{% for g in geofences %}{% if g.alert_on_enter or g.alert_on_exit %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not geofences %}0{% endif %}</div>
+        <div class="stat-label">With Alerts</div>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.08s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'gps_tracking:geofence_list' %}" class="chip {% if not type_filter %}active{% endif %}">All Types</a>
+            {% for val,label in zone_type_choices %}
+            <a href="?type={{ val }}" class="chip {% if type_filter == val %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2">
+                <div class="search-field" style="width:260px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Search zone name, address...">
+                </div>
+                <button type="submit" class="chip" style="background:var(--brand); color:#fff; border-color:var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="grid-main reveal" style="animation-delay:.1s">
+    <div class="panel" style="margin-bottom:0;">
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Zone</th>
+                        <th>Type</th>
+                        <th>Coordinates</th>
+                        <th>Radius</th>
+                        <th>Branch</th>
+                        <th>Alerts</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for g in geofences %}
+                    <tr>
+                        <td>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <div class="fleet-icon" style="background:var(--secondary-soft); border:none;">
+                                    <svg class="icon" style="color:var(--secondary);"><use href="#i-shield"/></svg>
+                                </div>
+                                <div>
+                                    <div style="font-size:13px; font-weight:800; color:var(--text);">{{ g.name }}</div>
+                                    <div class="td-faint">{{ g.address|default:"—"|truncatechars:50 }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {% if g.zone_type == 'warehouse' %}b-warehouse{% elif g.zone_type == 'pickup' %}b-info{% elif g.zone_type == 'delivery' %}b-delivered{% elif g.zone_type == 'restricted' %}b-danger{% else %}b-pending{% endif %}">
+                                {{ g.get_zone_type_display|default:"Custom" }}
+                            </span>
+                        </td>
+                        <td style="font-size:12px; font-weight:700; font-family:ui-monospace, monospace;">
+                            {% if g.latitude %}{{ g.latitude|floatformat:4 }}, {{ g.longitude|floatformat:4 }}{% else %}<span class="td-faint">—</span>{% endif %}
+                        </td>
+                        <td style="font-weight:800;">{{ g.radius|default:0 }} m</td>
+                        <td style="font-size:12.5px; font-weight:700;">{{ g.branch.name|default:"—" }}</td>
+                        <td>
+                            <div style="display:flex; gap:4px;">
+                                {% if g.alert_on_enter %}<span class="chip" style="font-size:10.5px; background:var(--info-soft); color:var(--info); border-color:var(--info);">Enter</span>{% endif %}
+                                {% if g.alert_on_exit %}<span class="chip" style="font-size:10.5px; background:var(--warning-soft); color:var(--warning); border-color:var(--warning);">Exit</span>{% endif %}
+                                {% if not g.alert_on_enter and not g.alert_on_exit %}<span class="td-faint">None</span>{% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {% if g.is_active %}b-delivered{% else %}b-delayed{% endif %}">{% if g.is_active %}Active{% else %}Inactive{% endif %}</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="data-table-empty">
+                                <div class="empty-icon"><svg class="icon"><use href="#i-shield"/></svg></div>
+                                <p>No geofence zones. Add your first warehouse, pickup or delivery zone.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if geofences.has_other_pages %}
+        <div class="pagination">
+            <div class="pagination-info">Page {{ geofences.number }} of {{ geofences.paginator.num_pages }}</div>
+            <div class="pagination-controls">
+                <a href="{% if geofences.has_previous %}?page={{ geofences.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% else %}#{% endif %}"
+                   class="page-btn {% if not geofences.has_previous %}disabled{% endif %}">
+                    <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+                </a>
+                <a href="{% if geofences.has_next %}?page={{ geofences.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% else %}#{% endif %}"
+                   class="page-btn {% if not geofences.has_next %}disabled{% endif %}">
+                    Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="panel map-panel" style="margin-bottom:0;">
+        <div class="panel-head">
+            <div><h2>Zones Overview</h2><p class="sub">Radius circles plotted on map</p></div>
+        </div>
+        <div class="leaflet-wrap" style="height:420px; border-radius:14px; overflow:hidden;">
+            <div id="geoMap" style="width:100%; height:100%;"></div>
+        </div>
+        <div class="map-stats">
+            <div class="map-stat"><span>Zones</span><strong>{{ geofences.paginator.count }}</strong></div>
+            <div class="map-stat"><span>Active</span><strong>{% for g in geofences %}{% if g.is_active %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not geofences %}0{% endif %}</strong></div>
+            <div class="map-stat"><span>Avg Radius</span><strong>{{ avg_radius|default:0 }} m</strong></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    var zones = {{ geofences_json|safe }};
+    if (window.L && (zones||[]).length) {
+        var map = L.map('geoMap').setView([-6.8220733, 39.2821518], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'&copy; OpenStreetMap'}).addTo(map);
+        var colors = ['#D96A16','#1DA36B','#38AEF2','#6D5BD0','#E19A1C','#E5484D','#8B5CF6'];
+        var b = [];
+        zones.forEach(function(g, i){
+            if (g.lat && g.lng) {
+                var c = colors[i % colors.length];
+                var r = parseInt(g.radius,10) || 500;
+                var circle = L.circle([g.lat, g.lng], {radius:r, color:c, fillColor:c, fillOpacity:.12, weight:2}).addTo(map);
+                circle.bindTooltip(g.name||'Zone '+(i+1), {sticky:true, permanent:false});
+                L.marker([g.lat, g.lng], {opacity:.9}).addTo(map).bindPopup('<b>'+(g.name||'Zone')+'</b><br>Type: '+(g.type||'Custom')+'<br>Radius: '+r+' m');
+                b.push([g.lat, g.lng]);
+            }
+        });
+        if (b.length) { try { map.fitBounds(b, {padding:[40,40]}); } catch(e){} }
+    }
+})();
+</script>
+{% endblock %}

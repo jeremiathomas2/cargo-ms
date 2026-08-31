@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Device Detail</h1>
+        <p>Telemetry, positions and events for tracker #{{ device.tracker_id }}</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'gps_tracking:gps_history' %}?device={{ device.pk }}" class="btn btn-ghost"><svg class="icon"><use href="#i-clock"/></svg> History</a>
+        <a href="{% url 'gps_tracking:live_tracking' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-map"/></svg> Live View</a>
+        <a href="{% url 'gps_tracking:device_list' %}" class="btn btn-primary"><svg class="icon"><use href="#i-chevron-left"/></svg> All Devices</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--info-soft); color:var(--info);"><svg class="icon"><use href="#i-map"/></svg></div>
+        </div>
+        <div class="stat-value">{{ device.tracker_id }}</div>
+        <div class="stat-label">Tracker ID</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:{% if device.status == 'online' %}var(--success-soft); color:var(--success);{% else %}var(--danger-soft); color:var(--danger);{% endif %}"><svg class="icon"><use href="#i-signal"/></svg></div>
+        </div>
+        <div class="stat-value">{{ device.get_status_display }}</div>
+        <div class="stat-label">Connection</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-bolt"/></svg></div>
+        </div>
+        <div class="stat-value">{% if device.battery_level %}{{ device.battery_level }}%{% else %}—{% endif %}</div>
+        <div class="stat-label">Battery Level</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-route"/></svg></div>
+        </div>
+        <div class="stat-value">{{ recent_positions|length }}</div>
+        <div class="stat-label">Recent Positions</div>
+    </div>
+</div>
+
+<div class="grid-main reveal" style="animation-delay:.08s">
+    <div class="panel" style="margin-bottom:0;">
+        <div class="panel-head">
+            <div><h2>Device Identity</h2><p class="sub">Registration and assignment</p></div>
+        </div>
+        <div style="padding:6px 20px 20px;">
+            <div class="grid grid-cols-2 gap-x-5 gap-y-4">
+                <div><div class="td-faint" style="font-size:11px;">Device Type</div><div style="font-size:13.5px; font-weight:800; color:var(--text);">{{ device.get_device_type_display|default:"Standard" }}</div></div>
+                <div><div class="td-faint" style="font-size:11px;">Model</div><div style="font-size:13.5px; font-weight:800; color:var(--text);">{{ device.model|default:"—" }}</div></div>
+                <div><div class="td-faint" style="font-size:11px;">IMEI</div><div style="font-size:13px; font-weight:800; font-family:ui-monospace, monospace;">{{ device.imei|default:"—" }}</div></div>
+                <div><div class="td-faint" style="font-size:11px;">Serial Number</div><div style="font-size:13px; font-weight:800; font-family:ui-monospace, monospace;">{{ device.serial_number|default:"—" }}</div></div>
+                <div><div class="td-faint" style="font-size:11px;">SIM Phone</div><div style="font-size:13px; font-weight:800; font-family:ui-monospace, monospace;">{{ device.sim_phone|default:"—" }}</div></div>
+                <div><div class="td-faint" style="font-size:11px;">ICCID</div><div style="font-size:13px; font-weight:800; font-family:ui-monospace, monospace;">{{ device.sim_iccid|default:"—" }}</div></div>
+                <div class="col-span-2" style="margin-top:10px; padding-top:14px; border-top:1px solid var(--border);">
+                    <div class="td-faint" style="font-size:11px; margin-bottom:6px;">Assignments</div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        {% if device.assigned_vehicle %}
+                        <a href="{% url 'transportation:vehicle_detail' pk=device.assigned_vehicle.pk %}" class="chip" style="font-size:11.5px;">
+                            <svg class="icon" style="width:13px;height:13px;"><use href="#i-truck"/></svg> {{ device.assigned_vehicle.registration_number }}
+                        </a>
+                        {% else %}<span class="chip" style="font-size:11.5px; background:var(--card-2);">No vehicle assigned</span>{% endif %}
+                        {% if device.assigned_shipment %}
+                        <a href="{% url 'cargo:detail' pk=device.assigned_shipment.pk %}" class="chip" style="font-size:11.5px;">
+                            <svg class="icon" style="width:13px;height:13px;"><use href="#i-box"/></svg> {{ device.assigned_shipment.tracking_id }}
+                        </a>
+                        {% else %}<span class="chip" style="font-size:11.5px; background:var(--card-2);">No shipment</span>{% endif %}
+                        {% if device.assigned_driver %}
+                        <span class="chip" style="font-size:11.5px;">
+                            <svg class="icon" style="width:13px;height:13px;"><use href="#i-users"/></svg> {{ device.assigned_driver.first_name|default:"" }} {{ device.assigned_driver.last_name|default:"" }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div><div class="td-faint" style="font-size:11px;">Install Date</div><div style="font-size:13px; font-weight:700;">{{ device.install_date|default:"—" }}</div></div>
+                <div><div class="td-faint" style="font-size:11px;">Expiry</div><div style="font-size:13px; font-weight:700;">{{ device.warranty_expiry|default:"—" }}</div></div>
+                <div><div class="td-faint" style="font-size:11px;">Last Update</div><div style="font-size:13px; font-weight:700;">{% if device.last_update %}{{ device.last_update|timesince }} ago{% else %}—{% endif %}</div></div>
+                <div><div class="td-faint" style="font-size:11px;">Last Coordinates</div><div style="font-size:13px; font-weight:800; font-family:ui-monospace, monospace;">
+                    {% if device.last_latitude %}{{ device.last_latitude|floatformat:5 }}, {{ device.last_longitude|floatformat:5 }}{% else %}—{% endif %}
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel map-panel" style="margin-bottom:0;">
+        <div class="panel-head">
+            <div><h2>Latest Location</h2><p class="sub">Live position on map</p></div>
+            <span class="badge {% if device.status == 'online' %}b-delivered{% else %}b-delayed{% endif %}">{{ device.get_status_display }}</span>
+        </div>
+        <div class="leaflet-wrap" style="height:300px; border-radius:14px; overflow:hidden;">
+            <div id="deviceMap" style="width:100%; height:100%;"></div>
+        </div>
+        <div class="map-stats">
+            <div class="map-stat"><span>Speed</span><strong>{% if recent_positions and recent_positions.0.speed %}{{ recent_positions.0.speed }} km/h{% else %}0 km/h{% endif %}</strong></div>
+            <div class="map-stat"><span>Heading</span><strong>{% if recent_positions and recent_positions.0.heading %}{{ recent_positions.0.heading }}°{% else %}0°{% endif %}</strong></div>
+            <div class="map-stat"><span>Altitude</span><strong>{% if recent_positions and recent_positions.0.altitude %}{{ recent_positions.0.altitude }} m{% else %}0 m{% endif %}</strong></div>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.1s; margin-top:18px;">
+    <div class="panel-head">
+        <div><h2>Position History</h2><p class="sub">Recent telemetry samples</p></div>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                    <th>Speed</th>
+                    <th>Heading</th>
+                    <th>Altitude</th>
+                    <th>Battery</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in recent_positions %}
+                <tr>
+                    <td style="font-size:12.5px; font-weight:700; white-space:nowrap;">{{ p.timestamp|date:"d M H:i:s" }}</td>
+                    <td style="font-family:ui-monospace, monospace;">{{ p.latitude|floatformat:5 }}</td>
+                    <td style="font-family:ui-monospace, monospace;">{{ p.longitude|floatformat:5 }}</td>
+                    <td style="font-weight:800;">{{ p.speed|default:0 }} km/h</td>
+                    <td>{{ p.heading|default:0 }}°</td>
+                    <td>{{ p.altitude|default:0 }} m</td>
+                    <td>{% if p.battery_level %}{{ p.battery_level }}%{% else %}—{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7">
+                    <div class="data-table-empty">
+                        <div class="empty-icon"><svg class="icon"><use href="#i-route"/></svg></div>
+                        <p>No position samples for this device.</p>
+                    </div>
+                </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.12s; margin-top:18px;">
+    <div class="panel-head">
+        <div><h2>Alerts & Events</h2><p class="sub">Geofence triggers and tamper events</p></div>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Type</th>
+                    <th>Message</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in recent_alerts %}
+                <tr>
+                    <td style="font-size:12.5px; font-weight:700; white-space:nowrap;">{{ a.created_at|date:"d M H:i" }}</td>
+                    <td>
+                        <span class="badge {% if a.alert_type == 'low_battery' %}b-warning{% elif a.alert_type == 'overspeed' or a.alert_type == 'tamper' %}b-danger{% elif a.alert_type == 'geofence_enter' or a.alert_type == 'geofence_exit' %}b-info{% else %}b-warehouse{% endif %}">{{ a.get_alert_type_display }}</span>
+                    </td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ a.message|default:"—" }}</td>
+                    <td>{% if a.acknowledged %}<span class="b-delivered">Acknowledged</span>{% else %}<span class="b-pending">Active</span>{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4">
+                    <div class="data-table-empty">
+                        <div class="empty-icon"><svg class="icon"><use href="#i-alert"/></svg></div>
+                        <p>No alerts on record.</p>
+                    </div>
+                </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.14s; margin-top:18px;">
+    <div class="panel-head">
+        <div><h2>Geofence Events</h2><p class="sub">Entries and exits by zone</p></div>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Zone</th>
+                    <th>Event</th>
+                    <th>Duration</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ge in geofence_events %}
+                <tr>
+                    <td style="font-size:12.5px; font-weight:700; white-space:nowrap;">{{ ge.timestamp|date:"d M H:i" }}</td>
+                    <td style="font-size:13px; font-weight:800;">{{ ge.geofence.name|default:"—" }}</td>
+                    <td><span class="badge {% if ge.event_type == 'enter' %}b-transit{% else %}b-delayed{% endif %}">{{ ge.get_event_type_display|title }}</span></td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ ge.duration|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4">
+                    <div class="data-table-empty">
+                        <div class="empty-icon"><svg class="icon"><use href="#i-shield"/></svg></div>
+                        <p>No geofence events recorded.</p>
+                    </div>
+                </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    if (window.L) {
+        var lat = {% if device.last_latitude %}{{ device.last_latitude }}{% else %}-6.8220733{% endif %};
+        var lng = {% if device.last_longitude %}{{ device.last_longitude }}{% else %}39.2821518{% endif %};
+        var map = L.map('deviceMap').setView([lat, lng], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'&copy; OpenStreetMap'}).addTo(map);
+        L.marker([lat, lng]).addTo(map).bindPopup('<b>{{ device.tracker_id }}</b><br>{% if device.assigned_vehicle %}{{ device.assigned_vehicle.registration_number }}{% else %}Unassigned{% endif %}');
+    }
+})();
+</script>
+{% endblock %}

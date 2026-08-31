@@ -1,0 +1,23 @@
+{% comment %}
+Status badge.
+Accepts via include params:
+  text - display text (default: status)
+  type - transit | warehouse | pending | delivered | delayed | info | warning | danger (default info)
+{% endcomment %}
+{% if type == 'transit' %}
+<span class="inline-flex items-center text-[10.5px] font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap text-info bg-info/10 dark:bg-[#0F2C3D]">{{ text|default:"In transit" }}</span>
+{% elif type == 'warehouse' %}
+<span class="inline-flex items-center text-[10.5px] font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap text-secondary bg-secondary/10 dark:bg-[#221A44]">{{ text|default:"At warehouse" }}</span>
+{% elif type == 'pending' %}
+<span class="inline-flex items-center text-[10.5px] font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap text-warning bg-warning/10 dark:bg-[#332508]">{{ text|default:"Pending" }}</span>
+{% elif type == 'delivered' %}
+<span class="inline-flex items-center text-[10.5px] font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap text-success bg-success/10 dark:bg-[#0E2B22]">{{ text|default:"Delivered" }}</span>
+{% elif type == 'delayed' %}
+<span class="inline-flex items-center text-[10.5px] font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap text-danger bg-danger/10 dark:bg-[#3A1418]">{{ text|default:"Delayed" }}</span>
+{% elif type == 'warning' %}
+<span class="inline-flex items-center text-[10.5px] font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap text-warning bg-warning/10 dark:bg-[#332508]">{{ text|default:"Warning" }}</span>
+{% elif type == 'danger' %}
+<span class="inline-flex items-center text-[10.5px] font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap text-danger bg-danger/10 dark:bg-[#3A1418]">{{ text|default:"Danger" }}</span>
+{% else %}
+<span class="inline-flex items-center text-[10.5px] font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap text-info bg-info/10 dark:bg-[#0F2C3D]">{{ text|default:"Info" }}</span>
+{% endif %}

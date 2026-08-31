@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Documents</h1>
+        <p>Certificates, waybills, receipts and generated records</p>
+    </div>
+    <div class="page-head-actions">
+        <button class="btn btn-ghost"><svg class="icon"><use href="#i-upload"/></svg> Upload</button>
+        <button class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg> Generate</button>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-file"/></svg></div>
+        </div>
+        <div class="stat-value">{{ documents.paginator.count }}</div>
+        <div class="stat-label">Total Documents</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--info-soft); color:var(--info);"><svg class="icon"><use href="#i-layers"/></svg></div>
+        </div>
+        <div class="stat-value">{% for d in documents %}{% if d.status == 'generated' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not documents %}0{% endif %}</div>
+        <div class="stat-label">Generated</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-check"/></svg></div>
+        </div>
+        <div class="stat-value">{% for d in documents %}{% if d.status == 'signed' or d.status == 'verified' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not documents %}0{% endif %}</div>
+        <div class="stat-label">Signed / Verified</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-clock"/></svg></div>
+        </div>
+        <div class="stat-value">{% for d in documents %}{% if d.status == 'draft' or d.status == 'pending' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not documents %}0{% endif %}</div>
+        <div class="stat-label">Drafts</div>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.08s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'documents:list' %}" class="chip {% if not type_filter and not status_filter %}active{% endif %}">All</a>
+            {% for t in doc_types %}
+            <a href="?type={{ t }}" class="chip {% if type_filter == t %}active{% endif %}">{{ t|title }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2 flex-wrap">
+                <div class="search-field" style="width: 280px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Doc #, title, tracking ID...">
+                </div>
+                <select name="status" class="chip" onchange="this.form.submit()">
+                    <option value="">All Status</option>
+                    {% for val,label in status_choices %}
+                    <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.1s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Document #</th>
+                    <th>Title / Type</th>
+                    <th>Linked To</th>
+                    <th>Customer</th>
+                    <th>File</th>
+                    <th>Status</th>
+                    <th class="text-right">Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in documents %}
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div class="fleet-icon" style="background:var(--secondary-soft); border:none;">
+                                <svg class="icon" style="color:var(--secondary);"><use href="#i-file"/></svg>
+                            </div>
+                            <a href="{% url 'documents:detail' pk=d.pk %}" style="font-size:13px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ d.document_number }}</a>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-size:13px; font-weight:800; color:var(--text);">{{ d.title }}</div>
+                        <span class="badge b-info">{{ d.document_type|title }}</span>
+                    </td>
+                    <td>
+                        {% if d.shipment %}
+                        <div style="font-size:12.5px; font-weight:700; color:var(--text); font-family:ui-monospace, monospace;">{{ d.shipment.tracking_id }}</div>
+                        <div class="td-faint">Shipment</div>
+                        {% elif d.invoice %}
+                        <div style="font-size:12.5px; font-weight:700; color:var(--text); font-family:ui-monospace, monospace;">{{ d.invoice.invoice_number }}</div>
+                        <div class="td-faint">Invoice</div>
+                        {% elif d.delivery %}
+                        <div style="font-size:12.5px; font-weight:700; color:var(--text); font-family:ui-monospace, monospace;">{{ d.delivery.delivery_number }}</div>
+                        <div class="td-faint">Delivery</div>
+                        {% elif d.claim %}
+                        <div style="font-size:12.5px; font-weight:700; color:var(--text); font-family:ui-monospace, monospace;">{{ d.claim.claim_number }}</div>
+                        <div class="td-faint">Claim</div>
+                        {% else %}
+                        <span class="td-faint">Standalone</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if d.customer %}
+                        <div style="font-size:12.5px; font-weight:700; color:var(--text);">{{ d.customer.full_name }}</div>
+                        {% else %}
+                        <span class="td-faint">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if d.file %}
+                        <a href="{% url 'documents:download' pk=d.pk %}" style="font-size:12px; font-weight:700; color:var(--info);">
+                            <svg class="icon" style="width:14px;height:14px; display:inline-block; vertical-align:middle; margin-right:4px;"><use href="#i-download"/></svg>
+                            Download
+                        </a>
+                        {% else %}
+                        <span class="td-faint">No file</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge {% if d.status == 'signed' or d.status == 'verified' %}b-delivered{% elif d.status == 'generated' or d.status == 'issued' %}b-transit{% elif d.status == 'draft' or d.status == 'pending' %}b-pending{% elif d.status == 'revoked' or d.status == 'expired' %}b-delayed{% else %}b-warehouse{% endif %}">{{ d.get_status_display }}</span>
+                    </td>
+                    <td class="text-right">
+                        <div style="font-size:13px; font-weight:800; color:var(--text); white-space:nowrap;">{{ d.created_at|date:"d M Y" }}</div>
+                        <div class="td-faint">{{ d.created_at|time:"H:i" }}</div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-file"/></svg></div>
+                            <p>No documents found. Generate or upload records to begin.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if documents.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ documents.number }} of {{ documents.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if documents.has_previous %}?page={{ documents.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not documents.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            {% for num in documents.paginator.page_range %}
+                {% if forloop.first or forloop.last or num >= documents.number|add:"-2" and num <= documents.number|add:"2" %}
+                <a href="?page={{ num }}{% if search %}&q={{ search }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+                   class="page-btn {% if num == documents.number %}active{% endif %}">{{ num }}</a>
+                {% elif num == documents.number|add:"-3" or num == documents.number|add:"3" %}
+                <span class="page-dots">…</span>
+                {% endif %}
+            {% endfor %}
+            <a href="{% if documents.has_next %}?page={{ documents.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not documents.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

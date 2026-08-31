@@ -1,0 +1,76 @@
+{% extends "accounts/base_auth.html" %}
+{% block title %}Create Account — Cargo Management{% endblock %}
+
+{% block content %}
+<h2>Create your account</h2>
+<p class="sub">Set up access to manage and track your cargo.</p>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  {% if form.errors %}
+    <div class="banner banner-error show">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+      <span>Please correct the errors below.</span>
+    </div>
+  {% endif %}
+
+  <div class="field">
+    <label for="id_first_name">First name</label>
+    <input type="text" id="id_first_name" name="first_name" placeholder="Amina" autocomplete="given-name" value="{{ form.first_name.value|default:'' }}">
+    {% if form.first_name.errors %}<div class="field-errors"><ul>{% for e in form.first_name.errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+  </div>
+
+  <div class="field">
+    <label for="id_last_name">Last name</label>
+    <input type="text" id="id_last_name" name="last_name" placeholder="Hassan" autocomplete="family-name" value="{{ form.last_name.value|default:'' }}">
+    {% if form.last_name.errors %}<div class="field-errors"><ul>{% for e in form.last_name.errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+  </div>
+
+  <div class="field">
+    <label for="id_email">Email</label>
+    <input type="email" id="id_email" name="email" placeholder="you@company.com" autocomplete="email" value="{{ form.email.value|default:'' }}">
+    {% if form.email.errors %}<div class="field-errors"><ul>{% for e in form.email.errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+  </div>
+
+  <div class="field">
+    <label for="id_phone">Phone number</label>
+    <input type="tel" id="id_phone" name="phone" placeholder="+255 7XX XXX XXX" autocomplete="tel" value="{{ form.phone.value|default:'' }}">
+    {% if form.phone.errors %}<div class="field-errors"><ul>{% for e in form.phone.errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+  </div>
+
+  <div class="field">
+    <label for="id_username">Username</label>
+    <input type="text" id="id_username" name="username" placeholder="aminahassan" autocomplete="username" value="{{ form.username.value|default:'' }}">
+    {% if form.username.errors %}<div class="field-errors"><ul>{% for e in form.username.errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+  </div>
+
+  <div class="field">
+    <label for="id_password1">Password</label>
+    <div class="input-wrap">
+      <input type="password" id="id_password1" name="password1" placeholder="Create a password" autocomplete="new-password">
+      <button type="button" class="toggle-visibility" data-toggle-for="id_password1" aria-label="Show password">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+    {% if form.password1.errors %}<div class="field-errors"><ul>{% for e in form.password1.errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+  </div>
+
+  <div class="field">
+    <label for="id_password2">Confirm password</label>
+    <div class="input-wrap">
+      <input type="password" id="id_password2" name="password2" placeholder="Re-enter your password" autocomplete="new-password">
+      <button type="button" class="toggle-visibility" data-toggle-for="id_password2" aria-label="Show password">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+    {% if form.password2.errors %}<div class="field-errors"><ul>{% for e in form.password2.errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+  </div>
+
+  <button type="submit" class="btn btn-primary" style="margin-top:8px;">Create account</button>
+</form>
+
+<div class="switch-line">
+  Already have an account? <a href="{% url 'accounts:login' %}">Sign in</a>
+</div>
+{% endblock %}

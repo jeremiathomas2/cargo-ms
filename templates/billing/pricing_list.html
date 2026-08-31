@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Pricing & Rules</h1>
+        <p>Configure tariffs, tax rates, discounts and service charges</p>
+    </div>
+    <div class="page-head-actions">
+        <button class="btn btn-ghost"><svg class="icon"><use href="#i-download"/></svg> Export</button>
+        <button class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg> Add Rule</button>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-cash"/></svg></div>
+        </div>
+        <div class="stat-value">{{ pricing_rules.paginator.count }}</div>
+        <div class="stat-label">Pricing Rules</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-bar"/></svg></div>
+        </div>
+        <div class="stat-value">{{ taxes|length }}</div>
+        <div class="stat-label">Active Tax Rates</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-down"/></svg></div>
+        </div>
+        <div class="stat-value">{{ discounts|length }}</div>
+        <div class="stat-label">Discount Schemes</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-layers"/></svg></div>
+        </div>
+        <div class="stat-value">{{ pricing_rules.paginator.count|add:taxes|length|add:discounts|length }}</div>
+        <div class="stat-label">Total Configs</div>
+    </div>
+</div>
+
+<div class="grid-secondary reveal" style="animation-delay:.08s">
+    <div class="panel" style="margin-bottom:0;">
+        <div class="panel-head">
+            <div>
+                <h2>Pricing Rules</h2>
+                <p class="sub">Tariffs, per-kg rates, route-based pricing</p>
+            </div>
+        </div>
+        <div class="filter-row">
+            <form method="get" class="flex items-center gap-2 flex-wrap w-full">
+                <div class="search-field" style="flex:1; max-width:360px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Search rule name or description...">
+                </div>
+                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Apply
+                </button>
+            </form>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Rule Name</th>
+                        <th>Type</th>
+                        <th>Basis</th>
+                        <th>Rate / Amount</th>
+                        <th>Min Charge</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rule in pricing_rules %}
+                    <tr>
+                        <td>
+                            <div style="font-size:13px; font-weight:800; color:var(--text);">{{ rule.name }}</div>
+                            {% if rule.description %}<div class="td-faint">{{ rule.description|truncatechars:40 }}</div>{% endif %}
+                        </td>
+                        <td>
+                            <span class="badge b-info">{{ rule.get_pricing_type_display|default:"Standard" }}</span>
+                        </td>
+                        <td>
+                            <div style="font-size:12.5px; font-weight:700; color:var(--text);">{{ rule.get_calculation_basis_display|default:"Per kg" }}</div>
+                        </td>
+                        <td>
+                            <div style="font-size:13px; font-weight:800; color:var(--text);">
+                                {% if rule.rate_percentage %}{{ rule.rate_percentage }}%{% elif rule.flat_amount %}{{ rule.currency|default:"TZS" }} {{ rule.flat_amount|floatformat:2 }}{% else %}{{ rule.currency|default:"TZS" }} {{ rule.rate_per_unit|default:0|floatformat:2 }}/unit{% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if rule.minimum_charge %}
+                            <div style="font-size:12.5px; font-weight:700; color:var(--text-muted);">{{ rule.currency|default:"TZS" }} {{ rule.minimum_charge|floatformat:2 }}</div>
+                            {% else %}
+                            <span class="td-faint">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <button class="panel-more" style="display:inline-flex;"><svg class="icon"><use href="#i-edit"/></svg></button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="data-table-empty">
+                                <div class="empty-icon"><svg class="icon"><use href="#i-cash"/></svg></div>
+                                <p>No pricing rules configured yet.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if pricing_rules.has_other_pages %}
+        <div class="pagination">
+            <div class="pagination-info">Page {{ pricing_rules.number }} of {{ pricing_rules.paginator.num_pages }}</div>
+            <div class="pagination-controls">
+                <a href="{% if pricing_rules.has_previous %}?page={{ pricing_rules.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% else %}#{% endif %}"
+                   class="page-btn {% if not pricing_rules.has_previous %}disabled{% endif %}">
+                    <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+                </a>
+                <a href="{% if pricing_rules.has_next %}?page={{ pricing_rules.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% else %}#{% endif %}"
+                   class="page-btn {% if not pricing_rules.has_next %}disabled{% endif %}">
+                    Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:18px;">
+        <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head">
+                <div>
+                    <h2>Active Tax Rates</h2>
+                    <p class="sub">Applied at invoice generation</p>
+                </div>
+                <button class="chip" style="background:var(--brand); color:#fff; border-color:var(--brand);"><svg class="icon"><use href="#i-plus"/></svg> Add</button>
+            </div>
+            <div style="padding:0 20px 14px;">
+                {% for tax in taxes %}
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 14px; border-radius:12px; background:var(--card-2); margin-bottom:8px;">
+                    <div>
+                        <div style="font-size:13px; font-weight:800; color:var(--text);">{{ tax.name }}</div>
+                        <div class="td-faint">{{ tax.get_tax_type_display|default:"Percentage" }} · {% if tax.is_compound %}Compound{% else %}Simple{% endif %}</div>
+                    </div>
+                    <div style="font-size:16px; font-weight:800; color:var(--warning);">{% if tax.rate_percentage %}{{ tax.rate_percentage }}%{% else %}{{ tax.currency|default:"TZS" }} {{ tax.flat_amount|default:0 }}{% endif %}</div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <div class="icon"><svg class="icon"><use href="#i-bar"/></svg></div>
+                    <p>No tax rates configured.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head">
+                <div>
+                    <h2>Discount Schemes</h2>
+                    <p class="sub">Loyalty, volume and promo discounts</p>
+                </div>
+                <button class="chip" style="background:var(--brand); color:#fff; border-color:var(--brand);"><svg class="icon"><use href="#i-plus"/></svg> Add</button>
+            </div>
+            <div style="padding:0 20px 14px;">
+                {% for disc in discounts %}
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 14px; border-radius:12px; background:var(--card-2); margin-bottom:8px;">
+                    <div>
+                        <div style="font-size:13px; font-weight:800; color:var(--text);">{{ disc.name }}</div>
+                        <div class="td-faint">{{ disc.get_discount_type_display|default:"Percentage" }}</div>
+                    </div>
+                    <div style="font-size:16px; font-weight:800; color:var(--success);">-{% if disc.rate_percentage %}{{ disc.rate_percentage }}%{% else %}{{ disc.currency|default:"TZS" }} {{ disc.flat_amount|default:0 }}{% endif %}</div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <div class="icon"><svg class="icon"><use href="#i-down"/></svg></div>
+                    <p>No discount schemes available.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

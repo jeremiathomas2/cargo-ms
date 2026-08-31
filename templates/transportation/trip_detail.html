@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head">
+    <div class="flex items-center gap-4 flex-wrap">
+        <a href="{% url 'transportation:trip_list' %}" class="icon-btn" style="padding: 10px;">
+            <svg class="w-5 h-5 stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
+        <div>
+            <div class="flex items-center gap-3 flex-wrap">
+                <h1 class="page-title" style="margin-bottom: 0;">Trip {{ trip.trip_number }}</h1>
+                <span class="b-{% if trip.status == 'completed' %}delivered{% elif trip.status == 'in_transit' or trip.status == 'active' %}transit{% elif trip.status == 'cancelled' %}delayed{% else %}pending{% endif %}">{{ trip.get_status_display }}</span>
+                {% if trip.gps_device %}<span class="chip" style="background: var(--success-bg); color: var(--success); border-color: var(--success-border); font-size: 11px;">GPS Tracking</span>{% endif %}
+            </div>
+            <p class="page-sub" style="margin-top: 4px;">
+                {% if trip.route %}{{ trip.route.name }} · {{ trip.route.distance_km }} km · ~{{ trip.route.estimated_duration_hours }}h{% else %}Custom route{% endif %}
+                · Created {{ trip.created_at|date:"d M Y H:i" }}
+            </p>
+        </div>
+    </div>
+    <div class="page-head-actions">
+        {% if manifest %}
+        <a href="{% url 'transportation:manifest_detail' pk=manifest.pk %}" class="btn ghost"><svg class="icon"><use href="#i-file"/></svg> Manifest {{ manifest.manifest_number }}</a>
+        {% endif %}
+        <button class="btn btn-primary"><svg class="icon"><use href="#i-edit"/></svg> Manage Trip</button>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-brand/10 text-brand"><svg class="icon"><use href="#i-truck"/></svg></div></div><div class="stat-value">{% if trip.vehicle %}{{ trip.vehicle.registration_number }}{% else %}—{% endif %}</div><div class="stat-label">Vehicle</div></div>
+    <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-secondary/10 text-secondary"><svg class="icon"><use href="#i-users"/></svg></div></div><div class="stat-value">{% if trip.driver %}{{ trip.driver.first_name|slice:"1" }}. {{ trip.driver.last_name }}{% else %}—{% endif %}</div><div class="stat-label">Driver</div></div>
+    <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-info/10 text-info"><svg class="icon"><use href="#i-package"/></svg></div></div><div class="stat-value">{{ trip_shipments|length }}</div><div class="stat-label">Shipments</div></div>
+    <div class="stat-card"><div class="stat-top"><div class="stat-icon bg-success/10 text-success"><svg class="icon"><use href="#i-clock"/></svg></div></div><div class="stat-value">{% if trip.arrived_at %}Arrived{% elif trip.departed_at %}{{ trip.departed_at|timesince }}{% else %}{{ trip.planned_departure|date:"H:i"|default:"—" }}{% endif %}</div><div class="stat-label">{% if trip.arrived_at %}Arrival{% elif trip.departed_at %}En Route{% else %}Planned Dep{% endif %}</div></div>
+</div>
+
+<div class="grid-main" style="margin-bottom: 22px;">
+    <div class="panel">
+        <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]"><div><h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Route Stops</h2><p class="text-xs text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Planned waypoints</p></div></div>
+        <div class="px-5 py-5">
+            <ol class="relative border-l-2 border-gray-200 dark:border-[#291F55] ml-3 space-y-5">
+                {% for stop in route_stops %}
+                <li class="relative pl-6">
+                    <span class="absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2
+                        {% if forloop.first %}bg-success border-success
+                        {% elif forloop.last %}bg-brand border-brand
+                        {% else %}bg-info border-info{% endif %}"></span>
+                    <div class="flex items-start justify-between gap-3 flex-wrap">
+                        <div>
+                            <p class="text-[13px] font-extrabold text-gray-900 dark:text-white">Stop {{ stop.sequence }} · {{ stop.name }}</p>
+                            <p class="text-[11.5px] text-faint dark:text-[#8981B8] font-semibold mt-0.5">ETA: +{{ stop.estimated_arrival_minutes }} min</p>
+                        </div>
+                        {% if forloop.first %}<span class="b-delivered">Origin</span>
+                        {% elif forloop.last %}<span class="b-pending">Destination</span>
+                        {% else %}<span class="chip" style="font-size: 11px;">Waypoint</span>{% endif %}
+                    </div>
+                </li>
+                {% empty %}
+                <li class="pl-6 text-sm font-semibold text-faint dark:text-[#8981B8]">No waypoint stop data. Route: {% if trip.route %}{{ trip.route.origin }} → {{ trip.route.destination }}{% else %}—{% endif %}</li>
+                {% endfor %}
+            </ol>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]"><div><h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Cargo Manifest</h2><p class="text-xs text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">{{ trip_shipments|length }} shipments on this trip</p></div></div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left min-w-[480px]">
+                <thead><tr class="border-b border-gray-200 dark:border-[#291F55] bg-card-2 dark:bg-card-dark2">
+                    <th class="px-4 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Tracking</th>
+                    <th class="px-4 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Customer</th>
+                    <th class="px-4 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Pkgs</th>
+                    <th class="px-4 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Status</th>
+                </tr></thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-[#1E1548]">
+                    {% for s in trip_shipments %}
+                    <tr class="hover:bg-card-2/60 dark:hover:bg-card-dark2/60">
+                        <td class="px-4 py-3"><a href="{% url 'cargo:detail' pk=s.pk %}" class="text-[13px] font-extrabold text-gray-900 dark:text-white font-mono hover:text-brand">{{ s.tracking_id }}</a></td>
+                        <td class="px-4 py-3 text-[12.5px] font-bold text-muted dark:text-[#B2ACD6] truncate">{% if s.customer %}{{ s.customer.company_name|default:s.customer.full_name }}{% else %}—{% endif %}</td>
+                        <td class="px-4 py-3 text-[13px] font-black text-gray-900 dark:text-white">{{ s.num_packages }}</td>
+                        <td class="px-4 py-3"><span class="b-{% if s.status == 'delivered' %}delivered{% elif s.status == 'in_transit' or s.status == 'loaded' or s.status == 'out_for_delivery' %}transit{% elif s.status == 'customs_hold' or s.status == 'delivery_attempted' or s.status == 'lost' or s.status == 'damaged' %}delayed{% elif s.status == 'booked' or s.status == 'awaiting_receiving' %}pending{% else %}warehouse{% endif %}">{{ s.get_status_display }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="px-4 py-10 text-center text-[12px] font-semibold text-faint dark:text-[#8981B8]">No shipments linked to this trip yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]"><div><h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Trip Summary</h2></div></div>
+    <div class="p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="p-4 rounded-[14px] bg-card-2 dark:bg-card-dark2">
+            <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Planned Departure</div>
+            <div class="text-[14px] font-extrabold text-gray-900 dark:text-white">{{ trip.planned_departure|date:"d M Y H:i"|default:"—" }}</div>
+        </div>
+        <div class="p-4 rounded-[14px] bg-card-2 dark:bg-card-dark2">
+            <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Actual Departure</div>
+            <div class="text-[14px] font-extrabold text-gray-900 dark:text-white">{% if trip.departed_at %}{{ trip.departed_at|date:"d M Y H:i" }}{% else %}<span class="text-faint">Pending</span>{% endif %}</div>
+        </div>
+        <div class="p-4 rounded-[14px] bg-card-2 dark:bg-card-dark2">
+            <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Arrival</div>
+            <div class="text-[14px] font-extrabold text-gray-900 dark:text-white">{% if trip.arrived_at %}{{ trip.arrived_at|date:"d M Y H:i" }}{% else %}<span class="text-faint">Pending</span>{% endif %}</div>
+        </div>
+        <div class="p-4 rounded-[14px] bg-card-2 dark:bg-card-dark2">
+            <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Created By</div>
+            <div class="text-[14px] font-extrabold text-gray-900 dark:text-white truncate">{% if trip.created_by %}{{ trip.created_by.full_name|default:trip.created_by.email }}{% else %}—{% endif %}</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head">
+    <div class="flex items-center gap-4 flex-wrap">
+        <a href="{% url 'cargo:list' %}" class="icon-btn" style="padding: 10px;">
+            <svg class="w-5 h-5 stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
+        <div>
+            <h1 class="page-title" style="margin-bottom: 0;">{% if editing %}Edit Shipment{% else %}Create New Shipment{% endif %}</h1>
+            <p class="page-sub" style="margin-top: 4px;">
+                {% if editing %}Update shipment #{{ shipment.tracking_id }} details{% else %}Enter sender, receiver and cargo information{% endif %}
+            </p>
+        </div>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'cargo:list' %}" class="btn ghost">Cancel</a>
+        <button type="submit" form="shipmentForm" class="btn btn-primary">
+            <svg class="icon"><use href="#i-check"/></svg>
+            {% if editing %}Save Changes{% else %}Book Shipment{% endif %}
+        </button>
+    </div>
+</div>
+
+<form id="shipmentForm" method="post" class="space-y-5">
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="panel">
+            <div class="flex items-center gap-3 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+                <div class="w-9 h-9 rounded-[11px] bg-success/10 flex items-center justify-center">
+                    <svg class="icon text-success"><use href="#i-pin"/></svg>
+                </div>
+                <div>
+                    <h2 class="text-[15px] font-extrabold text-gray-900 dark:text-white">Customer & Parties</h2>
+                    <p class="text-[11px] text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Client account and contact details</p>
+                </div>
+            </div>
+            <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-2">
+                    <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Customer Account *</label>
+                    <select name="customer" required class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                        <option value="">Select customer...</option>
+                        {% for c in customers %}
+                        <option value="{{ c.pk }}" {% if editing and shipment.customer_id == c.pk %}selected{% endif %}>{{ c.company_name|default:c.full_name }} {% if c.phone %} · {{ c.phone }}{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="flex items-center gap-3 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+                <div class="w-9 h-9 rounded-[11px] bg-brand/10 flex items-center justify-center">
+                    <svg class="icon text-brand"><use href="#i-layers"/></svg>
+                </div>
+                <div>
+                    <h2 class="text-[15px] font-extrabold text-gray-900 dark:text-white">Routing & Branches</h2>
+                    <p class="text-[11px] text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Origin, destination and service route</p>
+                </div>
+            </div>
+            <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Origin Branch</label>
+                    <select name="origin_branch" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                        <option value="">Select branch...</option>
+                        {% for b in branches %}
+                        <option value="{{ b.pk }}" {% if editing and shipment.origin_branch_id == b.pk %}selected{% endif %}>{{ b.name }} ({{ b.city }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Destination Branch</label>
+                    <select name="destination_branch" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                        <option value="">Select branch...</option>
+                        {% for b in branches %}
+                        <option value="{{ b.pk }}" {% if editing and shipment.destination_branch_id == b.pk %}selected{% endif %}>{{ b.name }} ({{ b.city }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Service Route</label>
+                    <select name="route" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                        <option value="">Select route (optional)...</option>
+                        {% for r in routes %}
+                        <option value="{{ r.pk }}" {% if editing and shipment.route_id == r.pk %}selected{% endif %}>{{ r.name }} · {{ r.origin_city }} → {{ r.destination_city }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="panel">
+            <div class="flex items-center gap-3 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+                <div class="w-9 h-9 rounded-[11px] bg-secondary/10 flex items-center justify-center">
+                    <svg class="icon text-secondary"><use href="#i-pin"/></svg>
+                </div>
+                <div>
+                    <h2 class="text-[15px] font-extrabold text-gray-900 dark:text-white">Sender Details</h2>
+                    <p class="text-[11px] text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Person or company sending the cargo</p>
+                </div>
+            </div>
+            <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-2">
+                    <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Full Name *</label>
+                    <input type="text" name="sender_name" required value="{% if editing %}{{ shipment.sender_name }}{% endif %}" placeholder="e.g., John Kamau" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white placeholder:text-faint dark:placeholder:text-[#8981B8] focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                </div>
+                <div>
+                    <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Phone *</label>
+                    <input type="text" name="sender_phone" required value="{% if editing %}{{ shipment.sender_phone }}{% endif %}" placeholder="+255..." class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                </div>
+                <div>
+                    <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">City</label>
+                    <input type="text" name="sender_city" value="{% if editing %}{{ shipment.sender_city }}{% endif %}" placeholder="Dar es Salaam" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Origin Address / Location</label>
+                    <input type="text" name="origin" value="{% if editing %}{{ shipment.origin }}{% endif %}" placeholder="Full origin location" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Pickup Address (optional)</label>
+                    <textarea name="sender_address" rows="2" placeholder="Street, building, landmark..." class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 resize-none">{% if editing %}{{ shipment.sender_address }}{% endif %}</textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="inline-flex items-center gap-2.5 cursor-pointer">
+                        <input type="checkbox" name="pickup_required" {% if editing and shipment.pickup_required %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 dark:border-[#291F55] text-brand focus:ring-brand">
+                        <span class="text-[13px] font-bold text-gray-900 dark:text-white">Vehicle pickup required (adds pickup fee)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="flex items-center gap-3 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+                <div class="w-9 h-9 rounded-[11px] bg-danger/10 flex items-center justify-center">
+                    <svg class="icon text-danger"><use href="#i-pin"/></svg>
+                </div>
+                <div>
+                    <h2 class="text-[15px] font-extrabold text-gray-900 dark:text-white">Receiver Details</h2>
+                    <p class="text-[11px] text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Consignee receiving the shipment</p>
+                </div>
+            </div>
+            <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-2">
+                    <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Full Name *</label>
+                    <input type="text" name="receiver_name" required value="{% if editing %}{{ shipment.receiver_name }}{% endif %}" placeholder="e.g., Jane Banda" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white placeholder:text-faint dark:placeholder:text-[#8981B8] focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                </div>
+                <div>
+                    <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Phone *</label>
+                    <input type="text" name="receiver_phone" required value="{% if editing %}{{ shipment.receiver_phone }}{% endif %}" placeholder="+260..." class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                </div>
+                <div>
+                    <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">City</label>
+                    <input type="text" name="receiver_city" value="{% if editing %}{{ shipment.receiver_city }}{% endif %}" placeholder="Lusaka" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Destination Address / Location</label>
+                    <input type="text" name="destination" value="{% if editing %}{{ shipment.destination }}{% endif %}" placeholder="Full destination location" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Delivery Address (optional)</label>
+                    <textarea name="receiver_address" rows="2" placeholder="Street, building, landmark..." class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 resize-none">{% if editing %}{{ shipment.receiver_address }}{% endif %}</textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="inline-flex items-center gap-2.5 cursor-pointer">
+                        <input type="checkbox" name="delivery_required" {% if not editing or shipment.delivery_required %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 dark:border-[#291F55] text-brand focus:ring-brand">
+                        <span class="text-[13px] font-bold text-gray-900 dark:text-white">Last-mile delivery (uncheck = receiver collects from branch)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="flex items-center gap-3 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+            <div class="w-9 h-9 rounded-[11px] bg-info/10 flex items-center justify-center">
+                <svg class="icon text-info"><use href="#i-package"/></svg>
+            </div>
+            <div>
+                <h2 class="text-[15px] font-extrabold text-gray-900 dark:text-white">Cargo Details</h2>
+                <p class="text-[11px] text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Package type, weight, dimensions and value</p>
+            </div>
+        </div>
+        <div class="p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="col-span-2 md:col-span-1">
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Cargo Type</label>
+                <select name="cargo_type" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                    {% for val,label in cargo_type_choices %}
+                    <option value="{{ val }}" {% if editing and shipment.cargo_type == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Priority</label>
+                <select name="priority" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                    {% for val,label in priority_choices %}
+                    <option value="{{ val }}" {% if editing and shipment.priority == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block"># of Packages *</label>
+                <input type="number" name="num_packages" min="1" required value="{% if editing %}{{ shipment.num_packages }}{% else %}1{% endif %}" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Declared Value ($)</label>
+                <input type="number" name="declared_value" step="0.01" min="0" value="{% if editing %}{{ shipment.declared_value }}{% else %}0{% endif %}" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Actual Weight (kg) *</label>
+                <input type="number" name="actual_weight" step="0.01" min="0" required value="{% if editing %}{{ shipment.actual_weight }}{% else %}0{% endif %}" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Volumetric (kg)</label>
+                <input type="number" name="volumetric_weight" step="0.01" min="0" value="{% if editing %}{{ shipment.volumetric_weight }}{% else %}0{% endif %}" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Charged Weight (kg)</label>
+                <input type="number" name="charged_weight" step="0.01" min="0" value="{% if editing %}{{ shipment.charged_weight }}{% else %}0{% endif %}" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div></div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Length (cm)</label>
+                <input type="number" name="length" step="0.01" min="0" value="{% if editing %}{{ shipment.length }}{% else %}0{% endif %}" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Width (cm)</label>
+                <input type="number" name="width" step="0.01" min="0" value="{% if editing %}{{ shipment.width }}{% else %}0{% endif %}" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Height (cm)</label>
+                <input type="number" name="height" step="0.01" min="0" value="{% if editing %}{{ shipment.height }}{% else %}0{% endif %}" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div class="col-span-2 md:col-span-4">
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Cargo Description</label>
+                <textarea name="description" rows="2" placeholder="Describe contents, packaging, SKUs, serial numbers etc." class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 resize-none">{% if editing %}{{ shipment.description }}{% endif %}</textarea>
+            </div>
+            <div class="col-span-2 md:col-span-4">
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-2.5 block">Handling Flags</label>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <label class="inline-flex items-center gap-2 cursor-pointer p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2">
+                        <input type="checkbox" name="is_fragile" {% if editing and shipment.is_fragile %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 dark:border-[#291F55] text-brand focus:ring-brand">
+                        <span class="text-[12.5px] font-bold text-gray-900 dark:text-white">Fragile</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2">
+                        <input type="checkbox" name="is_perishable" {% if editing and shipment.is_perishable %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 dark:border-[#291F55] text-brand focus:ring-brand">
+                        <span class="text-[12.5px] font-bold text-gray-900 dark:text-white">Perishable</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2">
+                        <input type="checkbox" name="is_hazardous" {% if editing and shipment.is_hazardous %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 dark:border-[#291F55] text-brand focus:ring-brand">
+                        <span class="text-[12.5px] font-bold text-gray-900 dark:text-white">Hazardous</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2">
+                        <input type="checkbox" name="is_insured" {% if editing and shipment.is_insured %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 dark:border-[#291F55] text-brand focus:ring-brand">
+                        <span class="text-[12.5px] font-bold text-gray-900 dark:text-white">Insured</span>
+                    </label>
+                </div>
+            </div>
+            <div class="col-span-2 md:col-span-4">
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Special Handling Instructions</label>
+                <textarea name="special_handling" rows="2" placeholder="Temperature range, orientation, stacking limits..." class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 resize-none">{% if editing %}{{ shipment.special_handling }}{% endif %}</textarea>
+            </div>
+            {% if editing and shipment.is_insured %}
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Insurance Amount ($)</label>
+                <input type="number" name="insurance_amount" step="0.01" min="0" value="{{ shipment.insurance_amount }}" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            {% else %}
+            <div></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="flex items-center gap-3 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+            <div class="w-9 h-9 rounded-[11px] bg-warning/10 flex items-center justify-center">
+                <svg class="icon text-warning"><use href="#i-cash"/></svg>
+            </div>
+            <div>
+                <h2 class="text-[15px] font-extrabold text-gray-900 dark:text-white">Pricing & Totals</h2>
+                <p class="text-[11px] text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Fee breakdown for this shipment</p>
+            </div>
+        </div>
+        <div class="p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Shipping Cost ($)</label>
+                <input type="number" name="shipping_cost" step="0.01" min="0" value="{% if editing %}{{ shipment.shipping_cost }}{% else %}0{% endif %}" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Handling Fee ($)</label>
+                <input type="number" name="handling_fee" step="0.01" min="0" value="{% if editing %}{{ shipment.handling_fee }}{% else %}0{% endif %}" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Insurance Fee ($)</label>
+                <input type="number" name="insurance_fee" step="0.01" min="0" value="{% if editing %}{{ shipment.insurance_fee }}{% else %}0{% endif %}" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Total Cost ($)</label>
+                <input type="number" name="total_cost" step="0.01" min="0" value="{% if editing %}{{ shipment.total_cost }}{% else %}0{% endif %}" class="w-full px-4 py-3 rounded-[12px] border-2 border-brand bg-brand/5 dark:bg-brand/10 text-[13px] font-black text-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

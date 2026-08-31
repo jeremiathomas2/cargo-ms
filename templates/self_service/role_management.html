@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Roles & Permissions</h1>
+        <p>Role-based access control and permission templates</p>
+    </div>
+    <div class="page-head-actions">
+        <button class="btn btn-ghost"><svg class="icon"><use href="#i-file"/></svg> Export</button>
+        <button class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg> New Role</button>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-shield"/></svg></div>
+        </div>
+        <div class="stat-value">{{ roles|length }}</div>
+        <div class="stat-label">Total Roles</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--info-soft); color:var(--info);"><svg class="icon"><use href="#i-lock"/></svg></div>
+        </div>
+        <div class="stat-value">{{ total_perms }}</div>
+        <div class="stat-label">Permissions Assigned</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-users"/></svg></div>
+        </div>
+        <div class="stat-value">{{ users_with_role }}</div>
+        <div class="stat-label">Users Under Role</div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5 reveal" style="animation-delay:.08s">
+    <div class="panel card-shadow" style="margin-bottom:0;">
+        <div class="panel-head">
+            <div><h2>Roles</h2><p class="sub">Click to manage permissions</p></div>
+        </div>
+        <div class="table-wrap" style="border-radius:14px; overflow:hidden;">
+            <table class="data-table" style="margin:0;">
+                <thead>
+                    <tr>
+                        <th>Role</th>
+                        <th class="text-center">Users</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in roles %}
+                    <tr class="cursor-pointer" onclick="document.getElementById('role-{{ r.pk }}').checked=true">
+                        <td>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <input type="radio" name="role" id="role-{{ r.pk }}" {% if forloop.first %}checked{% endif %}>
+                                <div style="width:34px; height:34px; border-radius:11px; background:{% if forloop.first %}var(--danger-soft);{% elif forloop.counter == 2 %}var(--info-soft);{% else %}var(--warning-soft);{% endif %} display:flex; align-items:center; justify-content:center;">
+                                    <svg class="icon" style="width:16px; height:16px; color:{% if forloop.first %}var(--danger);{% elif forloop.counter == 2 %}var(--info);{% else %}var(--warning);{% endif %};"><use href="#i-shield"/></svg>
+                                </div>
+                                <div>
+                                    <div style="font-size:13px; font-weight:800;">{{ r.name }}</div>
+                                    <div class="td-faint" style="font-size:11px;">{{ r.permissions.all|length }} perms</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center" style="font-size:13px; font-weight:800;">{{ r.user_count|default:r.user_set.all|length }}</td>
+                        <td>
+                            <form method="post" action="{% url 'self_service:role_toggle' pk=r.pk %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="chip" style="font-size:11px;">Toggle</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3">
+                            <div class="data-table-empty">
+                                <div class="empty-icon"><svg class="icon"><use href="#i-shield"/></svg></div>
+                                <p>No roles configured.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div style="padding:16px 20px; border-top:1px solid var(--border);">
+            <form method="post" action="{% url 'self_service:role_create' %}" class="flex items-center gap-2 flex-wrap">
+                {% csrf_token %}
+                <input type="text" name="name" required placeholder="New role name..." class="input-field" style="flex:1; min-width:180px;">
+                <button type="submit" class="btn btn-primary" style="padding:10px 14px; font-size:12.5px; margin:0;"><svg class="icon"><use href="#i-plus"/></svg> Add</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="lg:col-span-2">
+        <div class="panel card-shadow" style="margin-bottom:16px;">
+            <div class="panel-head">
+                <div>
+                    <h2>Permission Matrix</h2>
+                    <p class="sub">Enabled = visible and accessible in UI + backend</p>
+                </div>
+                <button class="chip" style="font-size:11.5px;">Save All</button>
+            </div>
+            <div style="padding:4px 10px 16px;">
+                {% for group in permission_groups %}
+                <div style="margin-bottom:14px;">
+                    <div style="font-size:12px; font-weight:800; color:var(--brand); text-transform:uppercase; letter-spacing:.5px; margin:12px 0 8px; padding:0 4px;">{{ group.label }}</div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {% for perm in group.items %}
+                        <label style="padding:10px 12px; border-radius:12px; background:var(--card-2); border:1px solid var(--border); cursor:pointer; display:flex; align-items:center; gap:10px;" class="hover:border-brand/50 transition-colors">
+                            <input type="checkbox" {% if perm.enabled %}checked{% endif %}>
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-size:12.5px; font-weight:800; color:var(--text);">{{ perm.name }}</div>
+                                <div class="td-faint" style="font-size:10.5px;">{{ perm.codename }}</div>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {% for m in '0123456789ABCDEF' %}
+                    <label style="padding:10px 12px; border-radius:12px; background:var(--card-2); border:1px solid var(--border); cursor:pointer; display:flex; align-items:center; gap:10px;">
+                        <input type="checkbox" {% if forloop.counter <= 10 %}checked{% endif %}>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:12.5px; font-weight:800; color:var(--text);">
+                                {% if forloop.counter0 == 0 %}View Shipments{% elif forloop.counter0 == 1 %}Create Shipment{% elif forloop.counter0 == 2 %}Edit Shipment{% elif forloop.counter0 == 3 %}Cancel Shipment{% elif forloop.counter0 == 4 %}View Invoices{% elif forloop.counter0 == 5 %}Create Invoice{% elif forloop.counter0 == 6 %}Mark Paid{% elif forloop.counter0 == 7 %}View Users{% elif forloop.counter0 == 8 %}Manage Users{% elif forloop.counter0 == 9 %}Manage Roles{% elif forloop.counter0 == 10 %}View Reports{% elif forloop.counter0 == 11 %}Export Data{% elif forloop.counter0 == 12 %}Manage Vehicles{% elif forloop.counter0 == 13 %}Assign Drivers{% elif forloop.counter0 == 14 %}Approve Claims{% else %}System Settings{% endif %}
+                            </div>
+                            <div class="td-faint" style="font-size:10.5px;">cargo.{{ m|lower }}_perm</div>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

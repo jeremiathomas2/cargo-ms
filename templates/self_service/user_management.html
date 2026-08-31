@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>User Management</h1>
+        <p>Staff accounts, roles and access control</p>
+    </div>
+    <div class="page-head-actions">
+        <button class="btn btn-ghost"><svg class="icon"><use href="#i-download"/></svg> Export</button>
+        <button class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg> Add User</button>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-users"/></svg></div>
+        </div>
+        <div class="stat-value">{{ users.paginator.count }}</div>
+        <div class="stat-label">Total Users</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-check"/></svg></div>
+        </div>
+        <div class="stat-value">{% for u in users %}{% if u.is_active %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not users %}0{% endif %}</div>
+        <div class="stat-label">Active</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--danger-soft); color:var(--danger);"><svg class="icon"><use href="#i-user-x"/></svg></div>
+        </div>
+        <div class="stat-value">{% for u in users %}{% if not u.is_active %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not users %}0{% endif %}</div>
+        <div class="stat-label">Inactive</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-shield"/></svg></div>
+        </div>
+        <div class="stat-value">{% for u in users %}{% if u.is_staff %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not users %}0{% endif %}</div>
+        <div class="stat-label">Staff</div>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.08s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'self_service:user_management' %}" class="chip {% if not status_filter and not role_filter %}active{% endif %}">All</a>
+            <a href="?status=active" class="chip {% if status_filter == 'active' %}active{% endif %}">Active</a>
+            <a href="?status=inactive" class="chip {% if status_filter == 'inactive' %}active{% endif %}">Inactive</a>
+            <a href="?status=staff" class="chip {% if status_filter == 'staff' %}active{% endif %}">Staff Only</a>
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2">
+                <div class="search-field" style="width:320px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Name, email, phone, branch...">
+                </div>
+                <select name="role" class="chip" onchange="this.form.submit()">
+                    <option value="">All Roles</option>
+                    {% for r in roles %}
+                    <option value="{{ r.pk }}" {% if role_filter == r.pk|stringformat:"s" %}selected{% endif %}>{{ r.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="chip" style="background:var(--brand); color:#fff; border-color:var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.1s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Branch</th>
+                    <th>Contact</th>
+                    <th>Last Login</th>
+                    <th>Status</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:11px;">
+                            <div style="width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg, var(--brand), #F0954B); display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:900; letter-spacing:-.3px; box-shadow:var(--shadow-1);">
+                                {% firstof u.first_name|slice:":1" u.email|slice:":1" "U" %}{{ u.last_name|slice:":1" }}
+                            </div>
+                            <div>
+                                <div style="font-size:13.5px; font-weight:800; color:var(--text);">{{ u.first_name|default:"" }} {{ u.last_name|default:"" }}</div>
+                                <div class="td-faint" style="font-size:11.5px;">@{{ u.username|default:u.email }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if u.role %}
+                        <span class="badge {% if u.role.name == 'Admin' or u.role.name == 'Administrator' %}b-delayed{% elif u.role.name == 'Manager' %}b-transit{% else %}b-warehouse{% endif %}" style="text-transform:none;">{{ u.role.name|title }}</span>
+                        {% elif u.userprofile.role %}
+                        <span class="badge b-warehouse" style="text-transform:none;">{{ u.userprofile.role.name|title }}</span>
+                        {% else %}
+                        <span class="td-faint">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ u.branch.name|default:u.userprofile.branch.name|default:"—" }}</td>
+                    <td>
+                        <div style="font-size:12.5px; font-weight:800;">{{ u.email|default:"—" }}</div>
+                        <div class="td-faint" style="font-family:ui-monospace, monospace; font-size:11.5px;">{{ u.phone|default:u.userprofile.phone|default:"—" }}</div>
+                    </td>
+                    <td style="font-size:12px; font-weight:700; white-space:nowrap;">
+                        {% if u.last_login %}{{ u.last_login|timesince }} ago{% else %}<span class="td-faint">Never</span>{% endif %}
+                    </td>
+                    <td>
+                        <span class="badge {% if u.is_active %}b-delivered{% else %}b-delayed{% endif %}">{% if u.is_active %}Active{% else %}Inactive{% endif %}</span>
+                    </td>
+                    <td class="text-right">
+                        <div style="display:inline-flex; gap:6px;">
+                            <form method="post" action="{% url 'self_service:user_edit' pk=u.pk %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="chip" style="font-size:11px;">Edit</button>
+                            </form>
+                            <form method="post" action="{% url 'self_service:user_delete' pk=u.pk %}" style="display:inline;" onsubmit="return confirm('Deactivate this user?');">
+                                {% csrf_token %}
+                                <button type="submit" class="chip" style="font-size:11px; background:var(--danger-soft); color:var(--danger); border-color:var(--danger);">Deactivate</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-users"/></svg></div>
+                            <p>No users match this filter.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if users.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ users.number }} of {{ users.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if users.has_previous %}?page={{ users.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not users.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if users.has_next %}?page={{ users.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not users.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% load static %}
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-mark"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z"/><path d="M3 7.5v9L12 21l9-4.5v-9"/><path d="M12 12v9"/></svg></div>
+    <div class="brand-text"><strong>Shehena</strong><span>Cargo &amp; Logistics</span></div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-group-label">Operations</div>
+    <ul>
+      <li>
+        <a href="{% url 'dashboard:index' %}" class="nav-item {% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}">
+          <svg class="icon"><use href="#i-grid"/></svg><span class="label">Dashboard</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'cargo:list' %}" class="nav-item {% if request.resolver_match.namespace == 'cargo' %}active{% endif %}">
+          <svg class="icon"><use href="#i-box"/></svg><span class="label">Shipments</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'gps_tracking:live_tracking' %}" class="nav-item {% if request.resolver_match.namespace == 'gps_tracking' %}active{% endif %}">
+          <svg class="icon"><use href="#i-route"/></svg><span class="label">Live Tracking</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'warehouse:list' %}" class="nav-item {% if request.resolver_match.namespace == 'warehouse' %}active{% endif %}">
+          <svg class="icon"><use href="#i-warehouse"/></svg><span class="label">Warehouse</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'transportation:vehicle_list' %}" class="nav-item {% if request.resolver_match.namespace == 'transportation' %}active{% endif %}">
+          <svg class="icon"><use href="#i-truck"/></svg><span class="label">Fleet &amp; Drivers</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'transportation:manifest_list' %}" class="nav-item">
+          <svg class="icon"><use href="#i-clipboard"/></svg><span class="label">Manifests</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="nav-group-label">Finance &amp; Records</div>
+    <ul>
+      <li>
+        <a href="{% url 'billing:invoice_list' %}" class="nav-item {% if request.resolver_match.namespace == 'billing' %}active{% endif %}">
+          <svg class="icon"><use href="#i-receipt"/></svg><span class="label">Billing &amp; Invoices</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'documents:list' %}" class="nav-item {% if request.resolver_match.namespace == 'documents' %}active{% endif %}">
+          <svg class="icon"><use href="#i-file"/></svg><span class="label">Documents</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'claims:list' %}" class="nav-item {% if request.resolver_match.namespace == 'claims' %}active{% endif %}">
+          <svg class="icon"><use href="#i-shield"/></svg><span class="label">Claims</span><span class="nav-badge">3</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'reports:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'reports' %}active{% endif %}">
+          <svg class="icon"><use href="#i-bar"/></svg><span class="label">Reports</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="nav-group-label">Organization</div>
+    <ul>
+      <li>
+        <a href="{% url 'customers:list' %}" class="nav-item {% if request.resolver_match.namespace == 'customers' %}active{% endif %}">
+          <svg class="icon"><use href="#i-users"/></svg><span class="label">Customers</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'self_service:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'self_service' %}active{% endif %}">
+          <svg class="icon"><use href="#i-gear"/></svg><span class="label">Settings</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="help-card">
+      <svg class="icon"><use href="#i-support"/></svg>
+      <div class="help-copy">
+        <p>Need a hand? Our support desk is online now.</p>
+        <button class="help-btn">Contact support</button>
+      </div>
+    </div>
+    <button class="collapse-toggle" id="collapseToggle">
+      <svg class="icon"><use href="#i-chevron-left"/></svg>
+      <span class="label">Collapse</span>
+    </button>
+  </div>
+</aside>
+<div class="sidebar-backdrop" id="backdrop"></div>

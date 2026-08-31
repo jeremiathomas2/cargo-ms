@@ -1,0 +1,31 @@
+{% comment %}
+Reusable stat card.
+Accepts via include params:
+  icon  - inline SVG (optional, default: box icon)
+  value - the big number/text
+  label - the stat label
+  trend - optional numeric value (e.g., 8.2)
+  trend_up - boolean, True for up trend, False for down
+  color - accent: info | secondary | brand | success | warning | danger (default info)
+{% endcomment %}
+<div class="stat-card bg-card dark:bg-card-dark border border-gray-200 dark:border-[#291F55] rounded-[14px] p-[18px] card-shadow">
+    <div class="flex items-center justify-between mb-3.5">
+        <div class="w-9 h-9 rounded-[10px] flex items-center justify-center
+            {% if color == 'secondary' %}bg-secondary/10 dark:bg-[#221A44] text-secondary
+            {% elif color == 'success' %}bg-success/10 dark:bg-[#0E2B22] text-success
+            {% elif color == 'warning' %}bg-warning/10 dark:bg-[#332508] text-warning
+            {% elif color == 'danger' %}bg-danger/10 dark:bg-[#3A1418] text-danger
+            {% elif color == 'brand' %}bg-brand/10 dark:bg-[#3A2412] text-brand
+            {% else %}bg-info/10 dark:bg-[#0F2C3D] text-info{% endif %}">
+            <svg class="w-[18px] h-[18px] stroke-current fill-none stroke-[1.8] stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24">{% if icon %}{{ icon|safe }}{% else %}<path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z" fill="none"/><path d="M3 7.5v9L12 21l9-4.5v-9" fill="none"/><path d="M12 12v9" fill="none"/>{% endif %}</svg>
+        </div>
+        {% if trend is not None %}
+        <span class="flex items-center gap-1 text-[11.5px] font-extrabold px-1.5 py-0.5 rounded-full {% if trend_up %}text-success bg-success/10 dark:bg-[#0E2B22]{% else %}text-danger bg-danger/10 dark:bg-[#3A1418]{% endif %}">
+            <svg class="w-[11px] h-[11px] stroke-current fill-none stroke-[2.4] stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24">{% if trend_up %}<path d="M7 17 17 7" fill="none"/><path d="M7 7h10v10" fill="none"/>{% else %}<path d="M7 7l10 10" fill="none"/><path d="M17 7v10H7" fill="none"/>{% endif %}</svg>
+            {{ trend }}%
+        </span>
+        {% endif %}
+    </div>
+    <div class="text-[23px] font-extrabold tracking-tight text-gray-900 dark:text-white">{{ value }}</div>
+    <div class="text-[12.5px] text-muted dark:text-[#B2ACD6] font-bold mt-0.5">{{ label }}</div>
+</div>

@@ -1,0 +1,517 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head">
+    <div class="flex items-center gap-4 flex-wrap">
+        <a href="{% url 'cargo:list' %}" class="icon-btn" style="padding: 10px;">
+            <svg class="w-5 h-5 stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
+        <div>
+            <div class="flex items-center gap-3 flex-wrap">
+                <h1 class="page-title" style="margin-bottom: 0;">Shipment #{{ shipment.tracking_id }}</h1>
+                {% if shipment.status == 'delivered' %}
+                    <span class="b-delivered">{{ shipment.get_status_display }}</span>
+                {% elif shipment.status == 'in_transit' or shipment.status == 'out_for_delivery' or shipment.status == 'loaded' %}
+                    <span class="b-transit">{{ shipment.get_status_display }}</span>
+                {% elif shipment.status == 'in_warehouse' or shipment.status == 'received' or shipment.status == 'sorted' or shipment.status == 'ready_for_dispatch' or shipment.status == 'arrived_destination' or shipment.status == 'ready_for_delivery' %}
+                    <span class="b-warehouse">{{ shipment.get_status_display }}</span>
+                {% elif shipment.status == 'customs_hold' or shipment.status == 'delivery_attempted' %}
+                    <span class="b-delayed">{{ shipment.get_status_display }}</span>
+                {% elif shipment.status == 'returned' or shipment.status == 'lost' or shipment.status == 'damaged' or shipment.status == 'cancelled' %}
+                    <span class="b-delayed">{{ shipment.get_status_display }}</span>
+                {% else %}
+                    <span class="b-pending">{{ shipment.get_status_display }}</span>
+                {% endif %}
+                {% if shipment.priority == 'urgent' %}
+                    <span class="inline-flex items-center text-[10.5px] font-extrabold px-2.5 py-1 rounded-full bg-danger/10 text-danger">URGENT</span>
+                {% elif shipment.priority == 'high' %}
+                    <span class="inline-flex items-center text-[10.5px] font-extrabold px-2.5 py-1 rounded-full bg-warning/10 text-warning">HIGH PRIORITY</span>
+                {% endif %}
+            </div>
+            <p class="page-sub" style="margin-top: 4px;">
+                Booking {{ shipment.booking_number }}
+                {% if shipment.waybill_number %}· Waybill {{ shipment.waybill_number }}{% endif %}
+                · Created {{ shipment.created_at|date:"d M Y H:i" }}
+            </p>
+        </div>
+    </div>
+    <div class="page-head-actions">
+        {% if allowed_transitions %}
+        <div class="dropdown-wrap" id="statusDropdownWrap">
+            <button class="btn ghost" id="statusBtn">
+                <svg class="icon"><use href="#i-edit"/></svg>
+                Change Status
+                <svg class="chev"><use href="#i-chevron-down"/></svg>
+            </button>
+            <div class="dropdown card-shadow" id="statusDropdown" style="min-width: 260px;">
+                <form method="post" action="{% url 'cargo:status_change' pk=shipment.pk %}">
+                    {% csrf_token %}
+                    <div class="px-4 py-3 border-b border-gray-100 dark:border-[#1E1548]">
+                        <p class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider">Valid transitions</p>
+                    </div>
+                    <div class="p-2">
+                        {% for t in allowed_transitions %}
+                        <button type="submit" name="status" value="{{ t }}" class="w-full text-left px-3 py-2 rounded-[10px] text-[13px] font-bold text-gray-800 dark:text-white hover:bg-card-2 dark:hover:bg-card-dark2 transition-colors">{{ t|title }}</button>
+                        {% endfor %}
+                    </div>
+                    <div class="px-4 py-3 border-t border-gray-100 dark:border-[#1E1548]">
+                        <input type="text" name="reason" placeholder="Reason (optional)" class="w-full px-3 py-2 rounded-[10px] text-[13px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-gray-900 dark:text-white focus:outline-none focus:border-brand">
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        <a href="{% url 'cargo:edit' pk=shipment.pk %}" class="btn ghost">
+            <svg class="icon"><use href="#i-edit"/></svg>
+            Edit
+        </a>
+        <button class="btn btn-primary">
+            <svg class="icon"><use href="#i-download"/></svg>
+            Waybill PDF
+        </button>
+    </div>
+</div>
+
+<div class="stepper" id="lifecycleStepper" style="margin-bottom: 22px;"></div>
+
+<div class="grid-main" style="margin-bottom: 22px;">
+    <div class="shipments-panel panel">
+        <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+            <div>
+                <h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Shipment Overview</h2>
+                <p class="text-xs text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Route, parties, and cargo details</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 p-5">
+            <div>
+                <p class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-3">Origin</p>
+                <div class="flex items-start gap-3 p-4 rounded-[14px] bg-card-2 dark:bg-card-dark2">
+                    <div class="w-10 h-10 rounded-[12px] bg-success/10 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-success stroke-current fill-none stroke-2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-[14px] font-extrabold text-gray-900 dark:text-white">{{ shipment.sender_city|default:shipment.origin }}</div>
+                        <div class="text-[12.5px] font-bold text-muted dark:text-[#B2ACD6] mt-0.5">{{ shipment.sender_name }} · {{ shipment.sender_phone }}</div>
+                        {% if shipment.sender_address %}<div class="text-[11.5px] text-faint dark:text-[#8981B8] font-semibold mt-1">{{ shipment.sender_address }}</div>{% endif %}
+                        {% if shipment.origin_branch %}<div class="text-[11px] text-info font-extrabold mt-1">Branch: {{ shipment.origin_branch.name }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+            <div>
+                <p class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-3">Destination</p>
+                <div class="flex items-start gap-3 p-4 rounded-[14px] bg-card-2 dark:bg-card-dark2">
+                    <div class="w-10 h-10 rounded-[12px] bg-danger/10 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-danger stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M12 21s-7-6.5-7-12a7 7 0 1 1 14 0c0 5.5-7 12-7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-[14px] font-extrabold text-gray-900 dark:text-white">{{ shipment.receiver_city|default:shipment.destination }}</div>
+                        <div class="text-[12.5px] font-bold text-muted dark:text-[#B2ACD6] mt-0.5">{{ shipment.receiver_name }} · {{ shipment.receiver_phone }}</div>
+                        {% if shipment.receiver_address %}<div class="text-[11.5px] text-faint dark:text-[#8981B8] font-semibold mt-1">{{ shipment.receiver_address }}</div>{% endif %}
+                        {% if shipment.destination_branch %}<div class="text-[11px] text-info font-extrabold mt-1">Branch: {{ shipment.destination_branch.name }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="border-t border-gray-200 dark:border-[#291F55] p-5">
+            <p class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-4">Cargo & Dimensions</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <div class="text-[11px] text-faint dark:text-[#8981B8] font-semibold">Type</div>
+                    <div class="text-[13.5px] font-extrabold text-gray-900 dark:text-white mt-1">{{ shipment.get_cargo_type_display }}</div>
+                </div>
+                <div>
+                    <div class="text-[11px] text-faint dark:text-[#8981B8] font-semibold">Packages</div>
+                    <div class="text-[13.5px] font-extrabold text-gray-900 dark:text-white mt-1">{{ shipment.num_packages }}</div>
+                </div>
+                <div>
+                    <div class="text-[11px] text-faint dark:text-[#8981B8] font-semibold">Actual Weight</div>
+                    <div class="text-[13.5px] font-extrabold text-gray-900 dark:text-white mt-1">{{ shipment.actual_weight }} kg</div>
+                </div>
+                <div>
+                    <div class="text-[11px] text-faint dark:text-[#8981B8] font-semibold">Charged Weight</div>
+                    <div class="text-[13.5px] font-extrabold text-gray-900 dark:text-white mt-1">{{ shipment.charged_weight }} kg</div>
+                </div>
+                <div>
+                    <div class="text-[11px] text-faint dark:text-[#8981B8] font-semibold">Volumetric</div>
+                    <div class="text-[13.5px] font-extrabold text-gray-900 dark:text-white mt-1">{{ shipment.volumetric_weight }} kg</div>
+                </div>
+                <div>
+                    <div class="text-[11px] text-faint dark:text-[#8981B8] font-semibold">Dimensions</div>
+                    <div class="text-[13.5px] font-extrabold text-gray-900 dark:text-white mt-1">
+                        {% if shipment.length %}{{ shipment.length }}×{{ shipment.width }}×{{ shipment.height }} cm{% else %}—{% endif %}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-[11px] text-faint dark:text-[#8981B8] font-semibold">Declared Value</div>
+                    <div class="text-[13.5px] font-extrabold text-gray-900 dark:text-white mt-1">${{ shipment.declared_value }}</div>
+                </div>
+                <div>
+                    <div class="text-[11px] text-faint dark:text-[#8981B8] font-semibold">Insurance</div>
+                    <div class="text-[13.5px] font-extrabold text-gray-900 dark:text-white mt-1">
+                        {% if shipment.is_insured %}${{ shipment.insurance_amount }}{% else %}<span class="text-faint dark:text-[#8981B8]">None</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+            {% if shipment.description %}
+            <div class="mt-4 p-4 rounded-[14px] bg-card-2 dark:bg-card-dark2">
+                <div class="text-[11px] text-faint dark:text-[#8981B8] font-semibold mb-1">Description</div>
+                <div class="text-[13px] font-bold text-gray-800 dark:text-[#D9D5F2] leading-relaxed">{{ shipment.description }}</div>
+            </div>
+            {% endif %}
+            <div class="mt-4 flex flex-wrap gap-2">
+                {% if shipment.is_fragile %}<span class="chip" style="background: var(--warning-bg); color: var(--warning); border-color: var(--warning-border);">Fragile</span>{% endif %}
+                {% if shipment.is_perishable %}<span class="chip" style="background: var(--info-bg); color: var(--info); border-color: var(--info-border);">Perishable</span>{% endif %}
+                {% if shipment.is_hazardous %}<span class="chip" style="background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border);">Hazardous</span>{% endif %}
+                {% if shipment.pickup_required %}<span class="chip" style="background: var(--secondary-bg); color: var(--secondary); border-color: var(--secondary-border);">Pickup Required</span>{% endif %}
+                {% if shipment.delivery_required %}<span class="chip" style="background: var(--success-bg); color: var(--success); border-color: var(--success-border);">Delivery Required</span>{% endif %}
+                {% if shipment.special_handling %}<span class="chip" style="background: var(--brand-bg); color: var(--brand); border-color: var(--brand-border);">Special Handling</span>{% endif %}
+            </div>
+        </div>
+        <div class="border-t border-gray-200 dark:border-[#291F55] p-5">
+            <p class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-4">Cost Breakdown</p>
+            <div class="space-y-2.5">
+                <div class="flex items-center justify-between text-[13px]">
+                    <span class="font-bold text-muted dark:text-[#B2ACD6]">Shipping Cost</span>
+                    <span class="font-extrabold text-gray-900 dark:text-white">${{ shipment.shipping_cost }}</span>
+                </div>
+                <div class="flex items-center justify-between text-[13px]">
+                    <span class="font-bold text-muted dark:text-[#B2ACD6]">Handling Fee</span>
+                    <span class="font-extrabold text-gray-900 dark:text-white">${{ shipment.handling_fee }}</span>
+                </div>
+                {% if shipment.is_insured %}
+                <div class="flex items-center justify-between text-[13px]">
+                    <span class="font-bold text-muted dark:text-[#B2ACD6]">Insurance</span>
+                    <span class="font-extrabold text-gray-900 dark:text-white">${{ shipment.insurance_fee }}</span>
+                </div>
+                {% endif %}
+                <div class="h-px bg-gray-200 dark:bg-[#291F55] my-2"></div>
+                <div class="flex items-center justify-between text-[14px]">
+                    <span class="font-extrabold text-gray-900 dark:text-white">Total</span>
+                    <span class="font-black text-brand text-lg">${{ shipment.total_cost }}</span>
+                </div>
+                <div class="flex items-center justify-between text-[13px] mt-2 pt-3 border-t border-gray-200 dark:border-[#291F55]">
+                    <span class="font-bold text-muted dark:text-[#B2ACD6]">Payment Status</span>
+                    <span class="b-{% if shipment.payment_status == 'paid' %}delivered{% elif shipment.payment_status == 'partially_paid' %}warehouse{% elif shipment.payment_status == 'unpaid' %}pending{% else %}delayed{% endif %}">{{ shipment.get_payment_status_display }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="map-panel panel" x-data="{ detailOpen: true }">
+        <div id="shipmentMap" style="height: 420px; border-radius: 14px; overflow: hidden;"></div>
+        <div class="detail-card" :class="{ 'open': detailOpen }" style="right: 14px; left: auto; top: 14px; width: 280px;" id="shipmentDetailCard">
+            <button class="detail-close" style="position: absolute; top: 10px; right: 10px;" @click="detailOpen = false">
+                <svg class="w-3.5 h-3.5 stroke-current fill-none stroke-2.5" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+            <div class="flex items-center gap-2 mb-3">
+                <span class="b-transit" id="cardStatus">{{ shipment.get_status_display }}</span>
+                {% if shipment.priority == 'urgent' %}<span class="inline-flex items-center text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-danger/10 text-danger">URGENT</span>{% endif %}
+            </div>
+            <div class="text-[17px] font-black text-gray-900 dark:text-white tracking-tight" id="cardTracking">{{ shipment.tracking_id }}</div>
+            <div class="text-[11.5px] text-faint dark:text-[#8981B8] font-semibold mt-0.5">{{ shipment.sender_city|default:shipment.origin }} → {{ shipment.receiver_city|default:shipment.destination }}</div>
+            <div class="mt-4 flex items-center gap-3 pb-4 border-b border-gray-200/60 dark:border-[#291F55]/60">
+                <div class="w-9 h-9 rounded-[12px] bg-brand/10 flex items-center justify-center flex-shrink-0">
+                    <svg class="icon text-brand"><use href="#i-users"/></svg>
+                </div>
+                <div class="min-w-0">
+                    <div class="text-[12.5px] font-extrabold text-gray-900 dark:text-white truncate">{% if shipment.customer %}{{ shipment.customer.full_name }}{% else %}{{ shipment.sender_name }}{% endif %}</div>
+                    <div class="text-[11px] text-faint dark:text-[#8981B8] font-semibold truncate">{{ shipment.customer.company_name|default:"—" }}</div>
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2.5 py-4 border-b border-gray-200/60 dark:border-[#291F55]/60">
+                <div>
+                    <div class="text-[10.5px] text-faint dark:text-[#8981B8] font-bold uppercase tracking-wider">Packages</div>
+                    <div class="text-[14px] font-black text-gray-900 dark:text-white mt-1">{{ shipment.num_packages }}</div>
+                </div>
+                <div>
+                    <div class="text-[10.5px] text-faint dark:text-[#8981B8] font-bold uppercase tracking-wider">Weight</div>
+                    <div class="text-[14px] font-black text-gray-900 dark:text-white mt-1">{{ shipment.charged_weight|default:shipment.actual_weight }}<span class="text-[10px] ml-0.5 text-faint">kg</span></div>
+                </div>
+                <div>
+                    <div class="text-[10.5px] text-faint dark:text-[#8981B8] font-bold uppercase tracking-wider">ETA</div>
+                    <div class="text-[14px] font-black text-gray-900 dark:text-white mt-1">{% if shipment.estimated_delivery %}{{ shipment.estimated_delivery|date:"d M" }}{% else %}—{% endif %}</div>
+                </div>
+            </div>
+            <div class="mt-4 space-y-2.5">
+                {% if shipment.assigned_vehicle %}
+                <div class="flex items-center gap-2.5">
+                    <svg class="icon text-secondary"><use href="#i-truck"/></svg>
+                    <span class="text-[12.5px] font-bold text-gray-900 dark:text-white">{{ shipment.assigned_vehicle.plate_number }} · {{ shipment.assigned_vehicle.get_type_display }}</span>
+                </div>
+                {% endif %}
+                {% if shipment.assigned_driver %}
+                <div class="flex items-center gap-2.5">
+                    <svg class="icon text-info"><use href="#i-users"/></svg>
+                    <span class="text-[12.5px] font-bold text-gray-900 dark:text-white">{{ shipment.assigned_driver.full_name }}</span>
+                </div>
+                {% endif %}
+                {% if shipment.route %}
+                <div class="flex items-center gap-2.5">
+                    <svg class="icon text-success"><use href="#i-route"/></svg>
+                    <span class="text-[12.5px] font-bold text-gray-900 dark:text-white">{{ shipment.route.name }}</span>
+                </div>
+                {% endif %}
+                {% if shipment.current_branch %}
+                <div class="flex items-center gap-2.5">
+                    <svg class="icon text-brand"><use href="#i-warehouse"/></svg>
+                    <span class="text-[12.5px] font-bold text-muted dark:text-[#B2ACD6]">At {{ shipment.current_branch.name }}</span>
+                </div>
+                {% endif %}
+            </div>
+            <button class="btn btn-primary w-full mt-4" style="justify-content: center;">
+                <svg class="icon"><use href="#i-eye"/></svg>
+                View Full Details
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="grid-secondary">
+    <div class="panel">
+        <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5">
+            <div>
+                <h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Status History & Events</h2>
+                <p class="text-xs text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Timeline of every tracking event</p>
+            </div>
+        </div>
+        <div class="px-5 pb-5">
+            <ol class="relative border-l-2 border-gray-200 dark:border-[#291F55] ml-3 space-y-5">
+                {% for h in status_history %}
+                <li class="relative pl-6 {% if not forloop.last %}pb-1{% endif %}">
+                    <span class="absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2
+                        {% if forloop.first %}bg-info border-info pulse-dot{% else %}bg-success border-success{% endif %}"></span>
+                    <div class="flex items-start justify-between gap-3 flex-wrap">
+                        <div>
+                            <p class="text-[13px] font-extrabold text-gray-900 dark:text-white">
+                                {{ h.get_new_status_display }}
+                                {% if h.previous_status %}
+                                <span class="text-faint dark:text-[#8981B8] font-semibold text-[11.5px] ml-1">from {{ h.get_previous_status_display|default:"—" }}</span>
+                                {% endif %}
+                            </p>
+                            {% if h.reason %}<p class="text-[12px] text-muted dark:text-[#B2ACD6] font-bold mt-0.5">{{ h.reason }}</p>{% endif %}
+                            {% if h.changed_by %}<p class="text-[11px] text-faint dark:text-[#8981B8] font-semibold mt-0.5">by {{ h.changed_by.full_name|default:h.changed_by.email }} · {{ h.get_source_display }}</p>{% endif %}
+                        </div>
+                        <span class="text-[11.5px] text-faint dark:text-[#8981B8] font-bold whitespace-nowrap">{{ h.changed_at|date:"d M, H:i" }}</span>
+                    </div>
+                </li>
+                {% endfor %}
+                {% for ev in events %}
+                <li class="relative pl-6 {% if not forloop.last %}pb-1{% endif %}">
+                    <span class="absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2
+                        {% if ev.event_type == 'status_change' %}bg-success border-success
+                        {% elif ev.event_type == 'note' %}bg-secondary border-secondary
+                        {% else %}bg-info border-info{% endif %}"></span>
+                    <div class="flex items-start justify-between gap-3 flex-wrap">
+                        <div>
+                            <p class="text-[13px] font-bold text-gray-900 dark:text-white">{{ ev.description }}</p>
+                            {% if ev.created_by %}<p class="text-[11px] text-faint dark:text-[#8981B8] font-semibold mt-0.5">by {{ ev.created_by.full_name|default:ev.created_by.email }}</p>{% endif %}
+                        </div>
+                        <span class="text-[11.5px] text-faint dark:text-[#8981B8] font-bold whitespace-nowrap">{{ ev.created_at|date:"d M, H:i" }}</span>
+                    </div>
+                </li>
+                {% empty %}
+                    {% if not status_history %}
+                    <li class="pl-6 text-sm font-semibold text-faint dark:text-[#8981B8]">No events recorded yet.</li>
+                    {% endif %}
+                {% endfor %}
+            </ol>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5">
+            <div>
+                <h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Packages & Notes</h2>
+                <p class="text-xs text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Content details and handling notes</p>
+            </div>
+        </div>
+        <div class="px-5 pb-5">
+            {% if packages %}
+            <div class="mb-4">
+                <div class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-2.5">Package Contents</div>
+                <div class="overflow-x-auto rounded-[14px] border border-gray-200 dark:border-[#291F55]">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-card-2 dark:bg-card-dark2">
+                                <th class="px-3 py-2.5 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase">#</th>
+                                <th class="px-3 py-2.5 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase">Label</th>
+                                <th class="px-3 py-2.5 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase">Wt (kg)</th>
+                                <th class="px-3 py-2.5 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase">L×W×H</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-[#1E1548]">
+                            {% for p in packages %}
+                            <tr>
+                                <td class="px-3 py-2.5 text-[12.5px] font-extrabold text-gray-900 dark:text-white">{{ forloop.counter }}</td>
+                                <td class="px-3 py-2.5 text-[12.5px] font-bold text-gray-900 dark:text-white">{{ p.label|default:p.tracking_code|default:"Package" }}</td>
+                                <td class="px-3 py-2.5 text-[12.5px] font-bold text-muted dark:text-[#B2ACD6]">{{ p.weight|default:"—" }}</td>
+                                <td class="px-3 py-2.5 text-[12.5px] font-bold text-muted dark:text-[#B2ACD6]">
+                                    {% if p.length %}{{ p.length }}×{{ p.width }}×{{ p.height }}{% else %}—{% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if notes %}
+            <div>
+                <div class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-2.5">Notes</div>
+                <div class="space-y-2.5">
+                    {% for n in notes %}
+                    <div class="p-3.5 rounded-[14px] bg-card-2 dark:bg-card-dark2">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[12px] font-extrabold text-gray-900 dark:text-white">{{ n.created_by.full_name|default:"System" }}</span>
+                            <span class="text-[10.5px] text-faint dark:text-[#8981B8] font-bold">{{ n.created_at|date:"d M H:i" }}</span>
+                        </div>
+                        <div class="text-[12.5px] font-bold text-gray-800 dark:text-[#D9D5F2]">{{ n.content }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if not packages and not notes %}
+            <div class="flex flex-col items-center gap-3 py-10 text-center">
+                <div class="w-14 h-14 rounded-full bg-card-2 dark:bg-card-dark2 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-faint dark:text-[#8981B8] stroke-current fill-none stroke-[1.8]" viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z"/><path d="M3 7.5v9L12 21l9-4.5v-9"/><path d="M12 12v9"/></svg>
+                </div>
+                <p class="text-sm font-semibold text-faint dark:text-[#8981B8]">No packages or notes logged yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    var STEPS = ['Booked','Received','Warehouse','In transit','Customs','Out for delivery','Delivered'];
+    var STATUS_TO_STEP = {
+        'booked': 0, 'awaiting_receiving': 0,
+        'received': 1,
+        'in_warehouse': 2, 'sorted': 2, 'ready_for_dispatch': 2,
+        'loaded': 3, 'in_transit': 3,
+        'arrived_destination': 4, 'customs_hold': 4,
+        'ready_for_delivery': 5, 'out_for_delivery': 5, 'delivery_attempted': 5,
+        'delivered': 6, 'returned': 6, 'lost': 6, 'damaged': 6, 'cancelled': 6
+    };
+    var STATUS_TO_PROGRESS = {
+        'booked': 0.02, 'awaiting_receiving': 0.08, 'received': 0.15,
+        'in_warehouse': 0.28, 'sorted': 0.33, 'ready_for_dispatch': 0.38,
+        'loaded': 0.45, 'in_transit': 0.58,
+        'arrived_destination': 0.72, 'customs_hold': 0.76,
+        'ready_for_delivery': 0.84, 'out_for_delivery': 0.90, 'delivery_attempted': 0.94,
+        'delivered': 1.0, 'returned': 1.0, 'lost': 1.0, 'damaged': 1.0, 'cancelled': 1.0
+    };
+    var status = '{{ shipment.status }}';
+    var stepIndex = STATUS_TO_STEP[status] ?? 0;
+    var progress = STATUS_TO_PROGRESS[status] ?? 0.05;
+
+    var stepperEl = document.getElementById('lifecycleStepper');
+    if (stepperEl) {
+        stepperEl.innerHTML = STEPS.map(function(label, i){
+            var cls = i < stepIndex ? 'done' : (i === stepIndex ? 'current' : '');
+            var icon = i < stepIndex ? '<svg class="icon"><use href="#i-check"/></svg>' : (i === stepIndex ? '<span class="step-dot-inner pulse-dot-inner"></span>' : '');
+            return '<div class="step '+cls+'"><div class="step-dot">'+icon+'</div><span class="step-label">'+label+'</span><div class="step-line"></div></div>';
+        }).join('');
+    }
+
+    function themeTileUrl(theme) {
+        return theme === 'dark'
+            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+            : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+    }
+    var currentTheme = localStorage.getItem('theme') || document.documentElement.getAttribute('data-theme') || 'light';
+
+    var mapEl = document.getElementById('shipmentMap');
+    if (mapEl && typeof L !== 'undefined') {
+        var originLat = {{ shipment.origin_branch.latitude|default:"-6.7924" }};
+        var originLng = {{ shipment.origin_branch.longitude|default:"39.2083" }};
+        var destLat = {{ shipment.destination_branch.latitude|default:"-15.3875" }};
+        var destLng = {{ shipment.destination_branch.longitude|default:"28.3228" }};
+        var midLat = (originLat + destLat) / 2 - 1.5;
+        var midLng = (originLng + destLng) / 2 + 1.5;
+        var waypoints = [[originLat, originLng],[midLat, midLng],[destLat, destLng]];
+
+        var map = L.map(mapEl, { zoomControl: true, scrollWheelZoom: false }).setView([(originLat+destLat)/2, (originLng+destLng)/2], 6);
+        var tileLayer = L.tileLayer(themeTileUrl(currentTheme), {
+            attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19
+        }).addTo(map);
+        window.shipmentTileLayer = tileLayer;
+
+        var startIcon = L.divIcon({ className: 'map-pin start', html: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" class="pin-ring"/><circle cx="12" cy="12" r="4" class="pin-core"/></svg>', iconSize: [22,22], iconAnchor: [11,11] });
+        var endIcon = L.divIcon({ className: 'map-pin end', html: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 22s-8-7.2-8-13a8 8 0 1 1 16 0c0 5.8-8 13-8 13Z" class="pin-ring"/><circle cx="12" cy="9" r="3.5" class="pin-core"/></svg>', iconSize: [26,26], iconAnchor: [13,26] });
+        var truckIcon = L.divIcon({ className: 'truck-marker', html: '<div class="truck-pulse"></div><div class="truck-wrap"><svg viewBox="0 0 24 24" fill="none"><path d="M1 3h11v11H1z" class="truck-cabin"/><path d="M12 6h5l3 3v5h-8z" class="truck-cargo"/><circle cx="5.5" cy="15.5" r="2" class="truck-wheel"/><circle cx="18.5" cy="15.5" r="2" class="truck-wheel"/></svg></div>', iconSize: [36,30], iconAnchor: [18,15] });
+
+        L.marker(waypoints[0], { icon: startIcon }).addTo(map);
+        L.marker(waypoints[waypoints.length-1], { icon: endIcon }).addTo(map);
+
+        var polyline = L.polyline(waypoints, { className: 'route-line', color: 'transparent', weight: 5, opacity: 1 }).addTo(map);
+
+        var cumulative = [0];
+        var total = 0;
+        for (var i=1; i<waypoints.length; i++){
+            var d = map.distance(waypoints[i-1], waypoints[i]);
+            total += d;
+            cumulative.push(total);
+        }
+        function pointAtProgress(p) {
+            var dist = p * total;
+            for (var i=1; i<cumulative.length; i++){
+                if (dist <= cumulative[i]){
+                    var segLen = cumulative[i] - cumulative[i-1];
+                    var t = segLen === 0 ? 0 : (dist - cumulative[i-1]) / segLen;
+                    var a = waypoints[i-1], b = waypoints[i];
+                    return [a[0] + (b[0]-a[0])*t, a[1] + (b[1]-a[1])*t];
+                }
+            }
+            return waypoints[waypoints.length-1];
+        }
+
+        var truckPos = pointAtProgress(Math.min(progress, 0.99));
+        var truckMarker = L.marker(truckPos, { icon: truckIcon, interactive: false, keyboard: false }).addTo(map);
+
+        try { map.fitBounds(polyline.getBounds(), { padding: [40,40] }); } catch(e){}
+
+        var plPath = polyline.getElement();
+        if (plPath) {
+            var dashOffset = 0;
+            setInterval(function(){
+                dashOffset = (dashOffset - 1) % 40;
+                plPath.style.strokeDashoffset = dashOffset;
+            }, 60);
+        }
+
+        (function syncTheme(){
+            function applyTheme(t){
+                if (window.shipmentTileLayer) window.shipmentTileLayer.setUrl(themeTileUrl(t));
+            }
+            var obs = new MutationObserver(function(m){
+                m.forEach(function(mut){
+                    if (mut.attributeName === 'data-theme') applyTheme(mut.target.getAttribute('data-theme'));
+                });
+            });
+            obs.observe(document.documentElement, { attributes: true });
+        })();
+    }
+
+    var wrap = document.getElementById('statusDropdownWrap');
+    if (wrap) {
+        var btn = document.getElementById('statusBtn');
+        var drop = document.getElementById('statusDropdown');
+        btn.addEventListener('click', function(e){
+            e.stopPropagation();
+            drop.classList.toggle('open');
+        });
+        document.addEventListener('click', function(){
+            drop.classList.remove('open');
+        });
+    }
+})();
+</script>
+{% endblock %}

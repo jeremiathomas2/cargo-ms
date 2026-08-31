@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Settings & Administration</h1>
+        <p>System configuration, users, roles and preferences</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'notifications:preferences' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-bell"/></svg> Notifications</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-users"/></svg></div>
+        </div>
+        <div class="stat-value">{{ user_count|default:0 }}</div>
+        <div class="stat-label">System Users</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-shield"/></svg></div>
+        </div>
+        <div class="stat-value">{{ role_count|default:0 }}</div>
+        <div class="stat-label">Active Roles</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-branch"/></svg></div>
+        </div>
+        <div class="stat-value">{{ branch_count|default:0 }}</div>
+        <div class="stat-label">Branches</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--info-soft); color:var(--info);"><svg class="icon"><use href="#i-gear"/></svg></div>
+        </div>
+        <div class="stat-value">{{ sequence_count|default:0 }}</div>
+        <div class="stat-label">Numbering Rules</div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 reveal" style="animation-delay:.08s; margin-top:4px;">
+    <a href="{% url 'self_service:user_management' %}" class="panel card-shadow hover:shadow-lg transition-shadow overflow-hidden group block">
+        <div class="relative h-36 bg-gradient-to-br from-brand/15 via-info/10 to-secondary/10 dark:from-brand/10 dark:via-info/5 dark:to-secondary/5 overflow-hidden p-5">
+            <div class="absolute right-5 top-5 w-14 h-14 rounded-[16px] bg-card/90 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <svg class="icon" style="color:var(--brand);"><use href="#i-users"/></svg>
+            </div>
+            <h3 class="text-[18px] font-black text-gray-900 dark:text-white tracking-tight mt-4">User Management</h3>
+            <p class="text-[12px] text-faint dark:text-[#8981B8] font-semibold mt-1.5 leading-relaxed">Create, edit and deactivate system accounts</p>
+        </div>
+        <div class="px-5 py-4 border-t border-gray-200 dark:border-[#291F55] flex items-center justify-between">
+            <span class="chip" style="font-size:11.5px;">Manage Staff</span>
+            <svg class="w-4 h-4 text-muted dark:text-[#B2ACD6] group-hover:text-brand group-hover:translate-x-1 transition-all stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+    </a>
+
+    <a href="{% url 'self_service:role_management' %}" class="panel card-shadow hover:shadow-lg transition-shadow overflow-hidden group block">
+        <div class="relative h-36 bg-gradient-to-br from-secondary/15 via-info/10 to-brand/10 dark:from-secondary/10 dark:via-info/5 dark:to-brand/5 overflow-hidden p-5">
+            <div class="absolute right-5 top-5 w-14 h-14 rounded-[16px] bg-card/90 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <svg class="icon" style="color:var(--secondary);"><use href="#i-shield"/></svg>
+            </div>
+            <h3 class="text-[18px] font-black text-gray-900 dark:text-white tracking-tight mt-4">Roles & Permissions</h3>
+            <p class="text-[12px] text-faint dark:text-[#8981B8] font-semibold mt-1.5 leading-relaxed">Role-based access control and permission sets</p>
+        </div>
+        <div class="px-5 py-4 border-t border-gray-200 dark:border-[#291F55] flex items-center justify-between">
+            <span class="chip" style="font-size:11.5px;">Configure RBAC</span>
+            <svg class="w-4 h-4 text-muted dark:text-[#B2ACD6] group-hover:text-brand group-hover:translate-x-1 transition-all stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+    </a>
+
+    <a href="{% url 'self_service:theme_settings' %}" class="panel card-shadow hover:shadow-lg transition-shadow overflow-hidden group block">
+        <div class="relative h-36 bg-gradient-to-br from-info/15 via-brand/10 to-warning/10 dark:from-info/10 dark:via-brand/5 dark:to-warning/5 overflow-hidden p-5">
+            <div class="absolute right-5 top-5 w-14 h-14 rounded-[16px] bg-card/90 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <svg class="icon" style="color:var(--info);"><use href="#i-upload"/></svg>
+            </div>
+            <h3 class="text-[18px] font-black text-gray-900 dark:text-white tracking-tight mt-4">Theme Settings</h3>
+            <p class="text-[12px] text-faint dark:text-[#8981B8] font-semibold mt-1.5 leading-relaxed">Light and dark mode appearance preferences</p>
+        </div>
+        <div class="px-5 py-4 border-t border-gray-200 dark:border-[#291F55] flex items-center justify-between">
+            <span class="chip" style="font-size:11.5px;">Customize</span>
+            <svg class="w-4 h-4 text-muted dark:text-[#B2ACD6] group-hover:text-brand group-hover:translate-x-1 transition-all stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+    </a>
+
+    <a href="{% url 'self_service:numbering_settings' %}" class="panel card-shadow hover:shadow-lg transition-shadow overflow-hidden group block">
+        <div class="relative h-36 bg-gradient-to-br from-warning/15 via-brand/10 to-success/10 dark:from-warning/10 dark:via-brand/5 dark:to-success/5 overflow-hidden p-5">
+            <div class="absolute right-5 top-5 w-14 h-14 rounded-[16px] bg-card/90 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <svg class="icon" style="color:var(--warning);"><use href="#i-file"/></svg>
+            </div>
+            <h3 class="text-[18px] font-black text-gray-900 dark:text-white tracking-tight mt-4">Document Numbering</h3>
+            <p class="text-[12px] text-faint dark:text-[#8981B8] font-semibold mt-1.5 leading-relaxed">Configure prefixes, sequences and invoice numbering</p>
+        </div>
+        <div class="px-5 py-4 border-t border-gray-200 dark:border-[#291F55] flex items-center justify-between">
+            <span class="chip" style="font-size:11.5px;">Sequences</span>
+            <svg class="w-4 h-4 text-muted dark:text-[#B2ACD6] group-hover:text-brand group-hover:translate-x-1 transition-all stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+    </a>
+
+    <a href="{% url 'notifications:preferences' %}" class="panel card-shadow hover:shadow-lg transition-shadow overflow-hidden group block">
+        <div class="relative h-36 bg-gradient-to-br from-success/15 via-info/10 to-secondary/10 dark:from-success/10 dark:via-info/5 dark:to-secondary/5 overflow-hidden p-5">
+            <div class="absolute right-5 top-5 w-14 h-14 rounded-[16px] bg-card/90 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <svg class="icon" style="color:var(--success);"><use href="#i-bell"/></svg>
+            </div>
+            <h3 class="text-[18px] font-black text-gray-900 dark:text-white tracking-tight mt-4">Notifications</h3>
+            <p class="text-[12px] text-faint dark:text-[#8981B8] font-semibold mt-1.5 leading-relaxed">Email, SMS and in-app notification preferences</p>
+        </div>
+        <div class="px-5 py-4 border-t border-gray-200 dark:border-[#291F55] flex items-center justify-between">
+            <span class="chip" style="font-size:11.5px;">Channels</span>
+            <svg class="w-4 h-4 text-muted dark:text-[#B2ACD6] group-hover:text-brand group-hover:translate-x-1 transition-all stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+    </a>
+
+    <div class="panel card-shadow overflow-hidden group block cursor-default opacity-85">
+        <div class="relative h-36 bg-gradient-to-br from-danger/10 via-warning/10 to-brand/10 overflow-hidden p-5">
+            <div class="absolute right-5 top-5 w-14 h-14 rounded-[16px] bg-card/90 flex items-center justify-center">
+                <svg class="icon" style="color:var(--danger);"><use href="#i-gear"/></svg>
+            </div>
+            <h3 class="text-[18px] font-black text-gray-900 dark:text-white tracking-tight mt-4">System / Advanced</h3>
+            <p class="text-[12px] text-faint dark:text-[#8981B8] font-semibold mt-1.5 leading-relaxed">Branches, workflow and billing configuration</p>
+        </div>
+        <div class="px-5 py-4 border-t border-gray-200 dark:border-[#291F55] flex items-center justify-between">
+            <span class="chip" style="font-size:11.5px;">Coming Soon</span>
+            <svg class="w-4 h-4 text-muted opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+    </div>
+</div>
+{% endblock %}

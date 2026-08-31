@@ -1,0 +1,42 @@
+{% extends "accounts/base_auth.html" %}
+{% block title %}Sign In — Cargo Management{% endblock %}
+
+{% block content %}
+<h2>Welcome back</h2>
+<p class="sub">Sign in to your account to continue.</p>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  <div class="field">
+    <label for="login-email">Email or username</label>
+    <input type="text" id="login-email" name="username" placeholder="you@company.com" autocomplete="username" required>
+  </div>
+  <div class="field">
+    <label for="login-password">Password</label>
+    <div class="input-wrap">
+      <input type="password" id="login-password" name="password" placeholder="Enter your password" autocomplete="current-password" required>
+      <button type="button" class="toggle-visibility" data-toggle-for="login-password" aria-label="Show password">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;font-size:13.5px;">
+    <label style="display:flex;align-items:center;gap:8px;color:var(--ink-soft);cursor:pointer;user-select:none;">
+      <input type="checkbox" id="remember-me" style="appearance:none;width:17px;height:17px;border-radius:5px;border:1.5px solid var(--line);background:var(--input-bg);cursor:pointer;position:relative;flex:0 0 auto;">
+      Remember me
+    </label>
+    <a href="{% url 'accounts:password_reset' %}" style="font-size:13.5px;">Forgot password?</a>
+  </div>
+  <button type="submit" class="btn btn-primary">Sign in</button>
+</form>
+
+<div class="switch-line">
+  Don't have an account? <a href="{% url 'accounts:register' %}">Create one</a>
+</div>
+
+<div class="track-link">
+  <p>Just checking a shipment? You don't need an account.</p>
+  <a href="{% url 'accounts:track_cargo_public' %}" class="btn btn-ghost" style="text-decoration:none;display:inline-flex;">Track cargo</a>
+</div>
+{% endblock %}

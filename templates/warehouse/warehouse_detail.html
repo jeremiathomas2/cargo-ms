@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head">
+    <div class="flex items-center gap-4 flex-wrap">
+        <a href="{% url 'warehouse:list' %}" class="icon-btn" style="padding: 10px;">
+            <svg class="w-5 h-5 stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
+        <div>
+            <div class="flex items-center gap-3 flex-wrap">
+                <h1 class="page-title" style="margin-bottom: 0;">{{ warehouse.name }}</h1>
+                <span class="chip">{{ warehouse.code }}</span>
+                {% if warehouse.is_active %}<span class="b-delivered">Active</span>{% else %}<span class="b-delayed">Inactive</span>{% endif %}
+                {% if warehouse.temperature_controlled %}<span class="chip" style="background: var(--info-bg); color: var(--info); border-color: var(--info-border);">Cold Storage</span>{% endif %}
+            </div>
+            <p class="page-sub" style="margin-top: 4px;">
+                {% if warehouse.branch %}{{ warehouse.branch.name }} · {{ warehouse.branch.city }}{% endif %}
+                {% if warehouse.manager %}· Managed by {{ warehouse.manager.full_name|default:"—" }}{% endif %}
+            </p>
+        </div>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'warehouse:receiving' pk=warehouse.pk %}" class="btn ghost">
+            <svg class="icon"><use href="#i-upload"/></svg>
+            Receiving
+        </a>
+        <a href="{% url 'warehouse:dispatch' pk=warehouse.pk %}" class="btn ghost">
+            <svg class="icon"><use href="#i-download"/></svg>
+            Dispatch
+        </a>
+        <a href="{% url 'warehouse:zones' pk=warehouse.pk %}" class="btn btn-primary">
+            <svg class="icon"><use href="#i-layers"/></svg>
+            Manage Zones
+        </a>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon bg-brand/10 text-brand"><svg class="icon"><use href="#i-layers"/></svg></div>
+        </div>
+        <div class="stat-value">{{ warehouse.capacity }}</div>
+        <div class="stat-label">Total Capacity</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon bg-secondary/10 text-secondary"><svg class="icon"><use href="#i-package"/></svg></div>
+        </div>
+        <div class="stat-value">{{ warehouse.current_occupancy }}</div>
+        <div class="stat-label">Packages Stored</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon bg-info/10 text-info"><svg class="icon"><use href="#i-warehouse"/></svg></div>
+        </div>
+        <div class="stat-value">{{ zones.count }}</div>
+        <div class="stat-label">Zones Configured</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon bg-success/10 text-success"><svg class="icon"><use href="#i-users"/></svg></div>
+        </div>
+        <div class="stat-value">{{ cargo_in_warehouse|length }}</div>
+        <div class="stat-label">Shipments Here</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon bg-warning/10 text-warning"><svg class="icon"><use href="#i-clock"/></svg></div>
+        </div>
+        <div class="stat-value">{% widthratio warehouse.current_occupancy|default:0 warehouse.capacity|default:1 100 %}%</div>
+        <div class="stat-label">Utilization</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon bg-danger/10 text-danger"><svg class="icon"><use href="#i-clipboard"/></svg></div>
+        </div>
+        <div class="stat-value">{{ recent_movements|length }}</div>
+        <div class="stat-label">Recent Moves</div>
+    </div>
+</div>
+
+<div class="grid-main" style="margin-bottom: 22px;">
+    <div class="panel">
+        <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+            <div>
+                <h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Occupancy Overview</h2>
+                <p class="text-xs text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Zone-by-zone usage</p>
+            </div>
+        </div>
+        <div class="p-5 space-y-4">
+            {% for z in zones %}
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <div class="flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-[10px] {% if z.zone_type == 'storage' %}bg-brand/10 text-brand{% elif z.zone_type == 'receiving' %}bg-info/10 text-info{% elif z.zone_type == 'dispatch' %}bg-secondary/10 text-secondary{% elif z.zone_type == 'sorting' %}bg-warning/10 text-warning{% elif z.zone_type == 'hazmat' %}bg-danger/10 text-danger{% elif z.zone_type == 'cold' %}bg-info/10 text-info{% else %}bg-card-2 dark:bg-card-dark2 text-muted{% endif %} flex items-center justify-center">
+                            <svg class="w-4 h-4"><use href="#i-layers"/></svg>
+                        </span>
+                        <div>
+                            <div class="text-[13px] font-extrabold text-gray-900 dark:text-white">{{ z.name }} <span class="text-[11px] font-bold text-faint dark:text-[#8981B8]">({{ z.code }})</span></div>
+                            <div class="text-[11px] font-bold text-muted dark:text-[#B2ACD6]">{{ z.get_zone_type_display }} · {{ z.shelves.count }} shelves</div>
+                        </div>
+                    </div>
+                    <div class="text-[12.5px] font-black text-gray-900 dark:text-white">{{ z.current_occupancy }}/{{ z.capacity }}</div>
+                </div>
+                <div class="h-2.5 rounded-full bg-card-2 dark:bg-card-dark2 overflow-hidden">
+                    {% with pct=z.current_occupancy|default:0 %}
+                    {% with cap=z.capacity|default:1 %}
+                    {% widthratio pct cap 100 as p %}
+                    <div class="h-full rounded-full {% if p >= 90 %}bg-danger{% elif p >= 75 %}bg-warning{% else %}{% if z.zone_type == 'storage' %}bg-brand{% elif z.zone_type == 'receiving' %}bg-info{% elif z.zone_type == 'dispatch' %}bg-secondary{% elif z.zone_type == 'sorting' %}bg-warning{% elif z.zone_type == 'hazmat' %}bg-danger{% else %}bg-info{% endif %}{% endif %}" style="width: {% if p > 100 %}100{% else %}{{ p }}{% endif %}%;"></div>
+                    {% endwith %}{% endwith %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-8">
+                <p class="text-sm font-semibold text-faint dark:text-[#8981B8]">No zones configured. <a href="{% url 'warehouse:zones' pk=warehouse.pk %}" class="text-brand underline">Configure zones →</a></p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+            <div>
+                <h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Shipments in Warehouse</h2>
+                <p class="text-xs text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Currently stored cargo</p>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left min-w-[480px]">
+                <thead>
+                    <tr class="border-b border-gray-200 dark:border-[#291F55] bg-card-2 dark:bg-card-dark2">
+                        <th class="px-4 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Tracking</th>
+                        <th class="px-4 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Customer</th>
+                        <th class="px-4 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide">Status</th>
+                        <th class="px-4 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wide text-right">Pkgs</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-[#1E1548]">
+                    {% for s in cargo_in_warehouse %}
+                    <tr class="hover:bg-card-2/60 dark:hover:bg-card-dark2/60">
+                        <td class="px-4 py-3">
+                            <a href="{% url 'cargo:detail' pk=s.pk %}" class="text-[13px] font-extrabold text-gray-900 dark:text-white font-mono hover:text-brand">{{ s.tracking_id }}</a>
+                        </td>
+                        <td class="px-4 py-3 text-[12.5px] font-bold text-muted dark:text-[#B2ACD6] truncate">{% if s.customer %}{{ s.customer.company_name|default:s.customer.full_name }}{% else %}—{% endif %}</td>
+                        <td class="px-4 py-3">
+                            <span class="b-{% if s.status == 'delivered' %}delivered{% elif s.status == 'in_transit' or s.status == 'loaded' or s.status == 'out_for_delivery' %}transit{% elif s.status == 'customs_hold' or s.status == 'delivery_attempted' or s.status == 'lost' or s.status == 'damaged' %}delayed{% elif s.status == 'booked' or s.status == 'awaiting_receiving' %}pending{% else %}warehouse{% endif %}">{{ s.get_status_display }}</span>
+                        </td>
+                        <td class="px-4 py-3 text-[13px] font-black text-gray-900 dark:text-white text-right">{{ s.num_packages }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="px-4 py-10 text-center text-[12px] font-semibold text-faint dark:text-[#8981B8]">No shipments currently in warehouse.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="grid-secondary">
+    <div class="panel">
+        <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5">
+            <div>
+                <h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Recent Movements</h2>
+                <p class="text-xs text-muted dark:text-[#B2ACD6] font-semibold mt-0.5"><a href="{% url 'warehouse:movements' pk=warehouse.pk %}" class="text-brand hover:underline">View all →</a></p>
+            </div>
+        </div>
+        <div class="px-5 pb-5">
+            <ol class="relative border-l-2 border-gray-200 dark:border-[#291F55] ml-3 space-y-5">
+                {% for m in recent_movements %}
+                <li class="relative pl-6">
+                    <span class="absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2
+                        {% if m.movement_type == 'receiving' or m.movement_type == 'putaway' %}bg-success border-success
+                        {% elif m.movement_type == 'dispatch' or m.movement_type == 'picking' %}bg-secondary border-secondary
+                        {% elif m.movement_type == 'adjustment' or m.movement_type == 'stocktake' %}bg-warning border-warning
+                        {% else %}bg-info border-info{% endif %}"></span>
+                    <div class="flex items-start justify-between gap-3 flex-wrap">
+                        <div>
+                            <p class="text-[13px] font-extrabold text-gray-900 dark:text-white">
+                                {{ m.get_movement_type_display }}
+                                {% if m.shipment %}· <a href="{% url 'cargo:detail' pk=m.shipment.pk %}" class="text-brand font-mono">{{ m.shipment.tracking_id }}</a>{% endif %}
+                            </p>
+                            {% if m.from_zone or m.to_zone %}
+                            <p class="text-[11.5px] font-bold text-muted dark:text-[#B2ACD6] mt-0.5">
+                                {% if m.from_zone %}{{ m.from_zone.code }}{% else %}External{% endif %}
+                                →
+                                {% if m.to_zone %}{{ m.to_zone.code }}{% else %}External{% endif %}
+                            </p>
+                            {% endif %}
+                            {% if m.scanned_by %}<p class="text-[11px] font-semibold text-faint dark:text-[#8981B8] mt-0.5">by {{ m.scanned_by.full_name|default:m.scanned_by.email }}</p>{% endif %}
+                            {% if m.notes %}<p class="text-[11.5px] font-semibold text-faint dark:text-[#8981B8] mt-1 italic">"{{ m.notes }}"</p>{% endif %}
+                        </div>
+                        <span class="text-[11.5px] text-faint dark:text-[#8981B8] font-bold whitespace-nowrap">{{ m.created_at|date:"d M, H:i" }}</span>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="pl-6 text-sm font-semibold text-faint dark:text-[#8981B8]">No movements recorded yet.</li>
+                {% endfor %}
+            </ol>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5">
+            <div>
+                <h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Facility Info</h2>
+            </div>
+        </div>
+        <div class="p-5 space-y-4">
+            {% if warehouse.address %}
+            <div>
+                <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Address</div>
+                <div class="text-[13px] font-bold text-gray-800 dark:text-[#D9D5F2]">{{ warehouse.address }}</div>
+            </div>
+            {% endif %}
+            <div class="grid grid-cols-2 gap-3">
+                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2">
+                    <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Latitude</div>
+                    <div class="text-[12.5px] font-extrabold text-gray-900 dark:text-white">{{ warehouse.latitude|default:"—" }}</div>
+                </div>
+                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2">
+                    <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Longitude</div>
+                    <div class="text-[12.5px] font-extrabold text-gray-900 dark:text-white">{{ warehouse.longitude|default:"—" }}</div>
+                </div>
+            </div>
+            <div class="p-4 rounded-[14px] bg-card-2 dark:bg-card-dark2">
+                <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-2">Storage Breakdown</div>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between text-[12.5px]">
+                        <span class="font-bold text-muted dark:text-[#B2ACD6]">Zones</span>
+                        <span class="font-extrabold text-gray-900 dark:text-white">{{ zones.count }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[12.5px]">
+                        <span class="font-bold text-muted dark:text-[#B2ACD6]">Shelves</span>
+                        <span class="font-extrabold text-gray-900 dark:text-white">{% for z in zones %}{% if forloop.first %}{% widthratio z.shelves.count 1 1 %}{% endif %}{% endfor %}+</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[12.5px]">
+                        <span class="font-bold text-muted dark:text-[#B2ACD6]">Packages Stored</span>
+                        <span class="font-extrabold text-brand">{{ packages_in_warehouse|length }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,2555 @@
+MASTER PROMPT — ADVANCED CARGO MANAGEMENT & LOGISTICS TRACKING SYSTEM
+Technology: Django + Django REST Framework + PostgreSQL + Redis + Celery + modern responsive frontend
+
+ROLE
+You are a senior software architect, Django engineer, security engineer, database engineer, UI/UX designer, DevOps engineer, and QA engineer. Build a complete production-ready Cargo Management & Logistics Tracking System. Do not create a prototype, mockup, pseudo-implementation, or collection of disconnected pages. Generate a coherent, runnable, secure, scalable Django project with complete backend, frontend, database models, APIs, permissions, automation, documents, GPS tracking, payments, notifications, testing, seed data, and deployment configuration.
+
+IMPORTANT EXECUTION RULE
+Implement the system completely and coherently. Do not leave TODOs, placeholder functions, fake API responses, empty buttons, or "implement later" sections for core functionality. Where an external provider requires credentials or hardware, implement the integration architecture, configuration, webhook endpoints, validation, simulator/test adapter, and clear environment variables so the project runs without the real provider.
+
+============================================================
+1. PRODUCT DEFINITION
+============================================================
+
+Build an enterprise-grade multi-branch Cargo Management & Logistics Tracking System (CMLTS).
+
+The system manages the complete lifecycle:
+
+Customer
+→ Booking
+→ Cargo/Shipment
+→ Packages
+→ Receiving
+→ Warehouse
+→ Sorting/Consolidation
+→ Manifest
+→ Trip/Transportation
+→ GPS Tracking
+→ Destination
+→ Delivery
+→ Proof of Delivery
+→ Invoice
+→ Payment
+→ Documents
+→ Notifications
+→ Reports/Audit
+
+The platform must support:
+- Customers and companies
+- Staff and administrators
+- Role-based and object-level access control
+- Multi-branch operations
+- Multi-warehouse operations
+- Cargo/shipment management
+- Package-level management
+- Barcode and QR codes
+- Live GPS tracking
+- Vehicle and driver management
+- Trips and manifests
+- Routes and geofences
+- Delivery management
+- Proof of delivery
+- Payments and invoicing
+- Document generation
+- Notifications
+- Claims and damage management
+- Reports and analytics
+- Audit logs
+- Customer portal
+- Public cargo tracking
+- REST APIs
+- Mobile-app-ready architecture
+- Theme customization
+- High performance
+- Strong security
+- Responsive UI
+- Smooth animations
+
+============================================================
+1B. COMPETITIVE DIFFERENTIATION SUMMARY
+============================================================
+
+This specification is deliberately split into two layers so scope stays achievable:
+
+PHASE 1 — CORE PLATFORM (Sections 1–68)
+A complete, production-ready cargo management and logistics tracking system
+covering the full shipment lifecycle, RBAC, GPS tracking, warehouse operations,
+billing, documents, notifications, claims, reporting, and deployment. This
+alone is already ahead of most local/regional cargo systems, which are commonly
+spreadsheet-based or limited to basic booking + SMS status updates.
+
+PHASE 2 — DIFFERENTIATION LAYER (Sections 69–77)
+A set of advanced capabilities not found in typical cargo/freight software,
+purpose-built for the East African / Tanzanian transit-trade context. These
+should be implemented only after Phase 1 is stable, tested, and deployable —
+build order and priority guidance is given in Section 67B.
+
+At a glance, Phase 2 adds:
+- Predictive ETA, route/load optimization, and anomaly detection (Section 69)
+- Cross-border customs, HS codes, corridor tracking, multi-currency (Section 70)
+- Cold-chain/IoT sensors and digital e-seals (Section 71)
+- USSD, IVR, offline-first sync, and Swahili/English localization (Section 72)
+- Instant quote calculator, volumetric billing, B2B self-onboarding (Section 73)
+- Driver scorecards, predictive maintenance, carbon reporting (Section 74)
+- SLA breach automation and fraud/risk watchlists (Section 75)
+- Optional multi-tenant SaaS architecture (Section 76)
+- Outbound webhooks and an open integration layer (Section 77)
+
+Not every Phase 2 item needs to ship at once. Section 67B ranks them by
+effort vs. business value so implementation can proceed incrementally.
+
+============================================================
+2. REQUIRED TECHNOLOGY STACK
+============================================================
+
+Backend:
+- Python 3.12+
+- Django 5.x or latest stable compatible version
+- Django REST Framework
+- PostgreSQL
+- Redis
+- Celery
+- Celery Beat
+- django-filter
+- drf-spectacular for OpenAPI documentation
+- PostgreSQL full-text/search capabilities where useful
+
+Authentication/security:
+- Django authentication
+- JWT authentication for API/mobile clients using a maintained JWT package
+- Session authentication for the web administration interface where appropriate
+- Secure password hashing
+- Optional 2FA architecture
+- Login throttling/rate limiting
+- Password reset
+- Email verification
+- Session/device management
+- Permission-based authorization
+
+Frontend:
+Prefer a modern Django-first architecture:
+- Django Templates
+- HTMX for partial page updates
+- Alpine.js for lightweight interactivity
+- Tailwind CSS
+- Chart.js or another lightweight charting library
+- Leaflet for maps
+- WebSocket support using Django Channels where real-time updates are required
+
+Do not unnecessarily build a separate SPA if it increases complexity. Keep the primary web application fast and maintainable.
+
+Background processing:
+- Celery
+- Redis
+- Celery Beat for scheduled automation
+
+Storage:
+- Local media in development
+- S3-compatible object storage architecture for production
+- Private document storage with authorization checks
+
+Documents:
+- PDF generation using ReportLab or an appropriate server-side PDF library
+- HTML templates for printable documents
+- QR code generation
+- Barcode generation
+
+Testing:
+- pytest + pytest-django or Django TestCase
+- API tests
+- permission tests
+- security tests
+- model/service tests
+- document generation tests
+- payment webhook tests
+- GPS ingestion tests
+
+Deployment:
+- Docker
+- Docker Compose
+- Nginx
+- Gunicorn
+- PostgreSQL
+- Redis
+- Celery worker
+- Celery beat
+- production .env.example
+- health checks
+- logging
+
+============================================================
+3. PROJECT STRUCTURE
+============================================================
+
+Create a clean modular Django architecture. Suggested apps:
+
+core/
+accounts/
+customers/
+branches/
+cargo/
+packages/
+warehouse/
+transportation/
+gps_tracking/
+delivery/
+billing/
+payments/
+documents/
+notifications/
+claims/
+reports/
+audit/
+api/
+dashboard/
+
+Use services.py/domain-service patterns for complex business logic rather than putting all logic inside views/models.
+
+Use selectors/query services for optimized read operations where useful.
+
+Use serializers, permissions, filters, pagination, throttling, and API versioning correctly.
+
+Use reusable components and avoid duplicated code.
+
+============================================================
+4. BRANDING AND VISUAL DESIGN
+============================================================
+
+The interface must look like a professional modern logistics SaaS platform.
+
+Use the visual direction of the referenced logistics dashboards:
+- Clean enterprise dashboard
+- Professional logistics/map aesthetic
+- Spacious cards
+- Clear information hierarchy
+- Modern sidebar
+- Top navigation
+- Data-rich tables
+- Status badges
+- Map-centric tracking screens
+- Subtle shadows
+- Rounded but professional components
+- Smooth transitions
+- Responsive mobile/tablet/desktop layouts
+
+PRIMARY COLOR SYSTEM
+Use this as the default system theme:
+- Primary dark/navy: #0B0524
+- Primary accent/orange: #D96A16
+- Secondary blue: #38AEF2
+- White/light surfaces
+- Neutral gray scale
+- Success, warning, danger, and info states must remain visually distinct and accessible.
+
+Do not make every element colorful. Use the primary palette consistently:
+- Navy for navigation/header/strong branding
+- Orange for primary action/emphasis
+- Blue for links, tracking, map-related elements and informational actions
+- Neutral surfaces for readability
+
+Create CSS variables/design tokens so colors can be changed centrally.
+
+============================================================
+5. THEME CUSTOMIZATION
+============================================================
+
+Implement a complete theme customization system.
+
+Users should be able to switch:
+- Light theme
+- Dark theme
+- System/default theme
+
+Administrators should be able to configure:
+- Primary color
+- Secondary color
+- Accent color
+- Logo
+- Favicon
+- Company name
+- Login-page branding
+- Sidebar style
+- Compact/comfortable layout
+- Border radius
+- Dashboard density
+
+Persist user theme preferences.
+
+Do not hard-code colors throughout templates. Use CSS variables/design tokens.
+
+Dark mode must be carefully designed and readable, not simply inverted colors.
+
+============================================================
+6. ANIMATIONS AND UX
+============================================================
+
+Add professional, lightweight animations:
+- Sidebar transition
+- Page transitions
+- Card hover effects
+- Button feedback
+- Modal opening/closing
+- Dropdown transitions
+- Toast notifications
+- Skeleton loaders
+- Table loading states
+- Progress indicators
+- GPS marker movement
+- Status transitions
+- Dashboard number counters
+- Smooth chart rendering
+
+Animations must be subtle and performance-friendly.
+
+Respect prefers-reduced-motion.
+
+Do not use excessive animation that harms usability.
+
+============================================================
+7. ACCESS CONTROL AND SECURITY
+============================================================
+
+Implement strong RBAC and object/branch-level authorization.
+
+Roles:
+- Super Administrator
+- System Administrator
+- Head Office Manager
+- Branch Manager
+- Booking Officer
+- Customer Service Officer
+- Warehouse Officer
+- Dispatch Officer
+- Transport Manager
+- Driver
+- Delivery Officer
+- Accountant
+- Finance Manager
+- Auditor
+- Customer
+
+Permissions must include granular actions such as:
+- cargo.view
+- cargo.create
+- cargo.update
+- cargo.cancel
+- cargo.receive
+- cargo.dispatch
+- cargo.transfer
+- cargo.deliver
+- cargo.delete
+- package.scan
+- warehouse.manage
+- vehicle.manage
+- driver.manage
+- gps.view
+- gps.manage
+- gps.assign
+- payment.create
+- payment.refund
+- invoice.create
+- invoice.cancel
+- document.generate
+- report.view
+- report.export
+- user.manage
+- settings.manage
+- audit.view
+
+Implement:
+- Role permissions
+- Branch restrictions
+- Ownership restrictions
+- Customer can only see their own cargo
+- Driver can only see assigned trips/cargo
+- Warehouse staff can only access authorized warehouses
+- Branch managers can access their branches
+- Head office can access authorized organization-wide information
+- Auditor is read-only
+- Administrators can configure access
+
+Never rely only on hiding UI elements. Enforce permissions on the server, API, object queries, and actions.
+
+============================================================
+8. SECURITY REQUIREMENTS
+============================================================
+
+Apply Django security best practices.
+
+Implement:
+- CSRF protection
+- XSS protection
+- SQL injection protection through ORM/parameterized queries
+- Clickjacking protection
+- Secure cookies
+- HttpOnly cookies
+- SameSite policy
+- HTTPS production configuration
+- HSTS production configuration
+- Secure session configuration
+- Content Security Policy where practical
+- Security headers
+- CORS restrictions
+- API throttling
+- Login rate limiting
+- Brute-force protection
+- Password validation
+- Account lockout/throttling strategy
+- Input validation
+- File upload validation
+- File size limits
+- Allowed MIME types/extensions
+- Private document access
+- Authorization before file downloads
+- Secrets only through environment variables
+- No credentials in source code
+- No sensitive information in logs
+- Audit logging
+- Database constraints
+- Transaction.atomic for critical financial/operational workflows
+- Idempotency for payment webhooks and other repeatable external callbacks
+
+Use UUIDs for externally exposed object identifiers where appropriate.
+
+Do not expose sequential internal database IDs unnecessarily.
+
+============================================================
+9. DATABASE DESIGN
+============================================================
+
+Design a normalized PostgreSQL database.
+
+Core entities:
+
+Organization
+User
+Role
+Permission
+UserRole/Profile
+Branch
+Warehouse
+WarehouseZone
+WarehouseLocation
+
+Customer
+CustomerAddress
+CustomerContact
+
+Shipment/Cargo
+ShipmentPackage
+PackageItem
+ShipmentStatusHistory
+CargoEvent
+CargoNote
+CargoAssignment
+
+Vehicle
+Driver
+GPSDevice
+GPSDeviceAssignment
+GPSPosition
+Trip
+Route
+RouteStop
+Manifest
+ManifestShipment
+
+Geofence
+GeofenceEvent
+
+Delivery
+DeliveryAttempt
+ProofOfDelivery
+
+Quotation
+QuotationItem
+Invoice
+InvoiceItem
+Payment
+PaymentTransaction
+Refund
+PaymentMethod
+
+PricingRule
+Tax
+Discount
+Insurance
+
+Document
+DocumentTemplate
+DocumentVersion
+
+Notification
+NotificationTemplate
+NotificationLog
+
+Claim
+ClaimDocument
+
+AuditLog
+
+SystemSetting
+BranchSetting
+UserPreference
+
+Create proper foreign keys, indexes, unique constraints, check constraints, timestamps, soft-delete/archive strategy where appropriate.
+
+Use Decimal for monetary values.
+
+Never use floating point for financial calculations.
+
+Use timezone-aware DateTime fields.
+
+============================================================
+10. CARGO/SHIPMENT MODULE
+============================================================
+
+Create shipment records with:
+
+- Tracking ID
+- Booking number
+- Waybill number
+- Customer
+- Sender
+- Receiver
+- Origin
+- Destination
+- Cargo type
+- Description
+- Number of packages
+- Actual weight
+- Volume
+- Dimensions
+- Declared value
+- Insurance
+- Pickup required
+- Delivery required
+- Special handling
+- Fragile flag
+- Perishable flag
+- Hazardous flag
+- Priority
+- Current status
+- Current branch
+- Current warehouse
+- Current location
+- Assigned trip
+- Assigned vehicle
+- Assigned GPS tracker
+- Estimated departure
+- Estimated arrival
+- Actual arrival
+- Created by
+- Created date
+
+Automatically generate:
+- Tracking ID
+- Booking number
+- Waybill number
+- QR code
+- Barcode
+
+Example:
+CMS-TZ-2026-00001245
+
+Do not allow duplicate tracking IDs.
+
+============================================================
+11. PACKAGE MANAGEMENT
+============================================================
+
+A shipment can have multiple packages.
+
+Each package has:
+- Package ID
+- Shipment
+- Barcode
+- QR code
+- Package type
+- Weight
+- Length
+- Width
+- Height
+- Volume
+- Description
+- Condition
+- Value
+- Current location
+- Status
+- Individual GPS tracker if assigned
+
+Support:
+- Add package
+- Remove package before dispatch
+- Scan package
+- Receive package
+- Move package
+- Consolidate
+- Split
+- Transfer
+- Dispatch
+- Return
+
+============================================================
+12. GLOBAL CARGO SEARCH
+============================================================
+
+Create a powerful search interface.
+
+Search by:
+- Tracking ID
+- Barcode
+- QR code
+- Customer name
+- Customer phone
+- Sender
+- Receiver
+- Invoice number
+- Booking number
+- Waybill number
+- Manifest number
+- Vehicle registration
+- Driver
+- GPS tracker ID
+- Origin
+- Destination
+- Status
+- Date range
+
+Support:
+- Debounced search
+- Server-side filtering
+- Pagination
+- Sorting
+- Search suggestions
+- QR/barcode scanning
+- Fast indexed queries
+
+Do not load the entire cargo database into the browser.
+
+Create optimized PostgreSQL indexes and querysets.
+
+============================================================
+13. CARGO DETAIL PAGE
+============================================================
+
+Create a professional detailed cargo page with tabs:
+
+Overview
+Tracking
+Packages
+Transportation
+Warehouse
+Payments
+Documents
+History
+Communication
+Claims
+
+Overview must show:
+- Tracking ID
+- Current status
+- Origin
+- Destination
+- Current location
+- ETA
+- Customer
+- Sender
+- Receiver
+- Weight
+- Packages
+- Payment status
+- Assigned vehicle
+- Driver
+- GPS status
+
+============================================================
+14. CARGO STATUS WORKFLOW
+============================================================
+
+Implement a controlled status state machine.
+
+Suggested statuses:
+
+BOOKED
+AWAITING_RECEIVING
+RECEIVED
+IN_WAREHOUSE
+SORTED
+READY_FOR_DISPATCH
+LOADED
+IN_TRANSIT
+ARRIVED_DESTINATION
+CUSTOMS_HOLD
+READY_FOR_DELIVERY
+OUT_FOR_DELIVERY
+DELIVERY_ATTEMPTED
+DELIVERED
+RETURNED
+LOST
+DAMAGED
+CANCELLED
+
+Do not allow arbitrary invalid status changes.
+
+Every status change must create a CargoEvent/StatusHistory record containing:
+- Previous status
+- New status
+- User/system actor
+- Timestamp
+- Branch
+- Location
+- Reason
+- Source (manual/GPS/scanner/API/automation)
+
+============================================================
+15. WAREHOUSE MANAGEMENT
+============================================================
+
+Support:
+- Multiple warehouses
+- Zones
+- Shelves
+- Bins/locations
+- Receiving
+- Put-away
+- Internal movement
+- Sorting
+- Consolidation
+- Picking
+- Dispatch
+- Stocktaking
+- Damaged cargo
+- Lost cargo
+- Storage aging
+
+Show exact cargo location:
+Warehouse → Zone → Shelf → Bin
+
+Barcode scanning must update movement records.
+
+============================================================
+16. TRANSPORTATION
+============================================================
+
+Manage:
+- Vehicles
+- Drivers
+- Routes
+- Trips
+- Manifests
+- Stops
+- Cargo loading
+- Cargo unloading
+- Transport costs
+
+Vehicle:
+- Registration
+- Type
+- Capacity
+- Status
+- Insurance
+- Inspection
+- Assigned GPS
+
+Driver:
+- Name
+- Phone
+- License number
+- License expiry
+- Status
+- Assigned vehicle
+
+Trip:
+- Trip number
+- Vehicle
+- Driver
+- Route
+- Manifest
+- GPS device
+- Departure
+- ETA
+- Actual arrival
+- Status
+
+============================================================
+17. MANIFEST MANAGEMENT
+============================================================
+
+A manifest groups shipments/packages for transportation.
+
+Implement:
+- Create manifest
+- Add/remove shipments
+- Scan cargo while loading
+- Verify expected vs actual
+- Prevent duplicate loading
+- Detect missing packages
+- Generate manifest PDF
+- Lock manifest after dispatch unless authorized override
+- Record loading/unloading events
+
+Show:
+- Total shipments
+- Total packages
+- Total weight
+- Vehicle
+- Driver
+- Origin
+- Destination
+- Loading progress
+
+============================================================
+18. GPS TRACKING SYSTEM
+============================================================
+
+Implement a proper GPS architecture.
+
+Entities:
+GPSDevice
+GPSDeviceAssignment
+GPSPosition
+GPSAlert
+Geofence
+GeofenceEvent
+
+GPSDevice fields:
+- Tracker ID
+- IMEI
+- Serial number
+- Device type
+- SIM number
+- Network provider
+- Battery
+- Status
+- Last latitude
+- Last longitude
+- Last speed
+- Last heading
+- Last update
+- Assigned vehicle
+- Assigned cargo/package
+
+Support two modes:
+1. Vehicle-level GPS
+2. Cargo/package-level GPS
+
+Do not overwrite historical tracking when assignments change.
+
+============================================================
+19. GPS INGESTION API
+============================================================
+
+Create a secure GPS ingestion endpoint.
+
+Example:
+POST /api/v1/gps/devices/{device_id}/positions/
+
+Accept:
+- latitude
+- longitude
+- speed
+- heading
+- altitude
+- battery
+- timestamp
+- ignition status if available
+
+Validate:
+- Latitude range
+- Longitude range
+- Timestamp
+- Device authentication
+- Replay protection where appropriate
+- Rate limits
+
+Store GPS positions efficiently.
+
+Do not create unlimited unnecessary database writes if the same device sends duplicate points.
+
+Add indexes for:
+- device
+- timestamp
+- shipment/package
+- vehicle
+
+============================================================
+20. LIVE MAP
+============================================================
+
+Use Leaflet for maps.
+
+Cargo tracking page must display:
+- Current GPS position
+- Origin
+- Destination
+- Route
+- Historical path
+- Vehicle
+- Driver if authorized
+- Speed
+- Heading
+- Last update
+- ETA
+- Geofences
+- Stops
+
+Use WebSockets/Django Channels for real-time updates where available.
+
+Fallback to efficient polling if WebSockets are unavailable.
+
+Do not expose exact GPS coordinates to unauthorized users.
+
+Public tracking should use a configurable privacy policy such as approximate location, city/region, or exact location depending on administrator settings.
+
+============================================================
+21. GPS AUTOMATION
+============================================================
+
+Implement automation:
+
+When a vehicle/cargo:
+- Starts moving → optionally set trip to ACTIVE
+- Enters origin geofence → arrival event
+- Leaves origin geofence → departure event
+- Enters destination geofence → arrival event
+- Stops unexpectedly → configurable alert
+- Exceeds speed threshold → alert
+- GPS becomes offline → alert
+- Battery becomes low → alert
+
+Automation must be configurable.
+
+Do not automatically mark final DELIVERY as complete from GPS alone. Require authorized confirmation/scan/OTP/signature where appropriate.
+
+============================================================
+22. ETA
+============================================================
+
+Calculate estimated arrival using:
+- Route distance
+- Current GPS position
+- Speed
+- Historical/configured travel time
+- Stops
+- Configured route rules
+
+Clearly mark ETA as estimated.
+
+Do not claim exact arrival time.
+
+============================================================
+23. GEOFENCING
+============================================================
+
+Support geofences for:
+- Branches
+- Warehouses
+- Customer locations
+- Ports
+- Airports
+- Border points
+- Delivery areas
+
+Record:
+- Entered
+- Exited
+- Timestamp
+- GPS coordinates
+- Device
+- Related trip/cargo
+
+============================================================
+24. CUSTOMER PORTAL
+============================================================
+
+Customers can:
+- Login
+- View own shipments
+- Search own cargo
+- Track cargo
+- See status timeline
+- See permitted live location
+- View packages
+- View invoices
+- View payment history
+- Download documents
+- Request pickup/delivery
+- Submit claims
+- Receive notifications
+
+Customers must never access other customers' data.
+
+============================================================
+25. PUBLIC CARGO TRACKING
+============================================================
+
+Create a public tracking page.
+
+Input:
+Tracking number
+
+Show only configurable public information:
+- Tracking number
+- Status
+- Origin
+- Destination
+- Current city/region or permitted location
+- ETA
+- Status timeline
+
+Do not expose:
+- Internal notes
+- Private documents
+- Financial details
+- Sensitive customer information
+- Driver personal data
+- Exact GPS unless enabled by policy
+
+Add rate limiting and anti-abuse protection.
+
+============================================================
+26. DELIVERY MANAGEMENT
+============================================================
+
+Delivery statuses:
+READY_FOR_DELIVERY
+ASSIGNED
+OUT_FOR_DELIVERY
+ATTEMPTED
+DELIVERED
+FAILED
+RETURNED
+
+Proof of Delivery must support:
+- Recipient name
+- Phone
+- OTP
+- Digital signature
+- Photo
+- GPS coordinates
+- Date/time
+- Delivery officer/driver
+- Notes
+
+Generate a POD document automatically after successful delivery.
+
+============================================================
+27. PAYMENT AND BILLING
+============================================================
+
+Implement a complete billing system.
+
+Support:
+- Quotations
+- Pricing rules
+- Taxes
+- Discounts
+- Insurance
+- Handling fees
+- Storage fees
+- Pickup fees
+- Delivery fees
+- Shipping fees
+- Invoices
+- Receipts
+- Payments
+- Refunds
+- Credit notes
+- Customer balances
+
+Payment statuses:
+UNPAID
+PARTIALLY_PAID
+PAID
+OVERPAID
+REFUNDED
+CANCELLED
+
+Calculate payment status from actual transactions, not a manually editable field.
+
+Use Decimal for all money.
+
+============================================================
+28. PAYMENT GATEWAY ARCHITECTURE
+============================================================
+
+Build a provider-agnostic payment layer.
+
+Interface:
+PaymentProvider
+
+Implement:
+- Sandbox/test provider
+- Generic provider adapter architecture
+- Webhook handling
+- Transaction verification
+- Idempotency
+- Payment reconciliation
+
+The architecture must allow future integration with Tanzanian mobile-money/payment providers and international card providers without rewriting billing logic.
+
+Payment flow:
+Create invoice
+→ Customer initiates payment
+→ Provider processes
+→ Webhook/callback received
+→ Verify transaction
+→ Store transaction
+→ Update invoice
+→ Update cargo payment status
+→ Generate receipt
+→ Notify customer
+
+Never trust the browser alone to mark payments successful.
+
+============================================================
+29. DOCUMENT MANAGEMENT
+============================================================
+
+Create a dedicated document module.
+
+Document types:
+- Booking Confirmation
+- Cargo Receipt
+- Quotation
+- Invoice
+- Receipt
+- Waybill
+- Shipping Label
+- Package Label
+- Manifest
+- Loading Sheet
+- Dispatch Note
+- Trip Sheet
+- Delivery Note
+- Proof of Delivery
+- Claim Form
+- Damage Report
+- Payment Statement
+
+Each document:
+- Has a unique document number
+- Is linked to relevant entity
+- Has generated date
+- Has creator
+- Has status
+- Has version
+- Has template
+- Has secure file storage
+
+============================================================
+30. DOCUMENT GENERATION
+============================================================
+
+Generate professional PDFs.
+
+Include:
+- Company logo
+- Company details
+- Document number
+- Date
+- Customer
+- Shipment details
+- Package details
+- Financial details where applicable
+- QR code
+- Barcode
+- Terms and conditions
+- Authorized signature section
+- Footer
+
+Use configurable templates.
+
+Do not regenerate historical documents destructively.
+
+Store document versions.
+
+============================================================
+31. DOCUMENT NUMBERING
+============================================================
+
+Implement configurable numbering sequences.
+
+Examples:
+BK-2026-000182
+WB-2026-000182
+INV-2026-000945
+RCT-2026-001102
+MAN-2026-000451
+POD-2026-000378
+
+Ensure concurrency-safe number generation.
+
+Never generate duplicate numbers under concurrent requests.
+
+============================================================
+32. NOTIFICATIONS
+============================================================
+
+Support:
+- In-app notifications
+- Email
+- SMS adapter
+- WhatsApp adapter architecture
+
+Events:
+- Booking created
+- Cargo received
+- Cargo dispatched
+- Cargo in transit
+- Cargo arrived
+- Ready for delivery
+- Out for delivery
+- Delivered
+- Payment received
+- Invoice generated
+- Payment overdue
+- Claim update
+- GPS alert
+
+Use Celery for sending external notifications so page requests remain fast.
+
+Implement notification templates and user preferences.
+
+============================================================
+33. CLAIMS AND DAMAGE MANAGEMENT
+============================================================
+
+Create:
+- Lost cargo claim
+- Damaged cargo claim
+- Missing package claim
+- Wrong delivery claim
+- Delay claim
+
+Workflow:
+SUBMITTED
+UNDER_INVESTIGATION
+APPROVED
+REJECTED
+COMPENSATED
+CLOSED
+
+Support evidence/document uploads and internal notes.
+
+============================================================
+34. DASHBOARD
+============================================================
+
+Create a high-quality dashboard.
+
+Cards:
+- Total cargo
+- Today's bookings
+- In transit
+- At warehouse
+- Ready for delivery
+- Delivered
+- Pending payments
+- Revenue
+
+Charts:
+- Cargo volume by month
+- Revenue by month
+- Cargo by destination
+- Cargo by branch
+- Cargo status distribution
+- Delivery performance
+- Warehouse utilization
+
+Live panel:
+- Active trips
+- GPS online/offline
+- Recent cargo events
+- Recent payments
+- Alerts
+
+Use optimized aggregation queries.
+
+Do not make dozens of database queries per dashboard request.
+
+Cache expensive statistics with Redis and invalidate/refresh appropriately.
+
+============================================================
+35. REPORTS
+============================================================
+
+Reports:
+- Daily cargo
+- Monthly cargo
+- Revenue
+- Outstanding balances
+- Branch performance
+- Destination analysis
+- Delivery performance
+- Delayed shipments
+- Lost/damaged cargo
+- Warehouse utilization
+- Vehicle utilization
+- Driver performance
+- GPS tracking history
+- Payment reconciliation
+- Customer statement
+- Audit report
+
+Export:
+- PDF
+- Excel
+- CSV
+- Print
+
+Use background jobs for large exports.
+
+============================================================
+36. AUDIT LOGGING
+============================================================
+
+Record important actions:
+- Login/logout
+- User creation
+- Permission changes
+- Cargo creation/update
+- Status changes
+- Cargo movement
+- Payment creation
+- Refund
+- Invoice cancellation
+- Document generation
+- GPS device assignment
+- Vehicle assignment
+- Delivery confirmation
+- Configuration changes
+
+Audit record:
+- Actor
+- Action
+- Entity
+- Entity ID
+- Before data where appropriate
+- After data where appropriate
+- IP
+- User agent
+- Timestamp
+- Branch
+- Request/correlation ID
+
+Do not store sensitive secrets/passwords.
+
+Audit logs should be append-oriented and protected from ordinary users.
+
+============================================================
+37. PERFORMANCE REQUIREMENTS
+============================================================
+
+The system must be optimized for high response speed.
+
+Implement:
+- PostgreSQL indexes
+- select_related
+- prefetch_related
+- annotate/aggregation
+- pagination
+- server-side search
+- Redis caching
+- Celery background jobs
+- database connection pooling strategy
+- lazy loading where appropriate
+- efficient serializers
+- avoid N+1 queries
+- optimized dashboard queries
+- CDN/object storage architecture for production assets
+- compressed/minified frontend assets
+- WebSocket updates instead of excessive polling
+- efficient GPS storage/retention strategy
+- asynchronous PDF/report generation
+
+Set sensible pagination defaults such as 25–50 rows.
+
+Never render thousands of records on one page.
+
+Add database query tests/optimization checks for critical endpoints.
+
+============================================================
+38. GPS DATA PERFORMANCE
+============================================================
+
+GPS can generate large volumes of data.
+
+Design for scale:
+- Index device + timestamp
+- Index related vehicle/package/shipment
+- Configurable tracking frequency
+- Deduplicate identical points
+- Optional retention/archive policy
+- Efficient route history queries
+- Limit map history by time range
+- Simplify/aggregate points for long routes where appropriate
+
+Do not load an entire year's GPS history into a map at once.
+
+============================================================
+39. API DESIGN
+============================================================
+
+Create versioned REST API:
+
+/api/v1/
+
+Endpoints for:
+- authentication
+- users
+- customers
+- branches
+- cargo
+- packages
+- warehouses
+- vehicles
+- drivers
+- trips
+- manifests
+- GPS devices
+- GPS positions
+- tracking
+- deliveries
+- invoices
+- payments
+- documents
+- notifications
+- claims
+- reports
+
+Use:
+- serializers
+- permissions
+- filters
+- pagination
+- ordering
+- search
+- throttling
+- OpenAPI schema
+
+Document the API using Swagger/OpenAPI.
+
+============================================================
+40. MOBILE-READY ARCHITECTURE
+============================================================
+
+The backend must be ready for a future Flutter mobile application.
+
+Create APIs for:
+Driver:
+- login
+- assigned trips
+- assigned cargo
+- cargo scan
+- delivery
+- POD
+- GPS status
+
+Warehouse:
+- login
+- receive cargo
+- scan package
+- move package
+- dispatch
+
+Customer:
+- login
+- track cargo
+- payments
+- documents
+
+Do not tightly couple mobile behavior to HTML pages.
+
+============================================================
+41. BARCODE AND QR SCANNING
+============================================================
+
+Support:
+- QR generation
+- barcode generation
+- camera scanning where browser/device supports it
+- hardware barcode scanners
+- package lookup
+- shipment lookup
+
+Scanning must be fast.
+
+After scan:
+- identify cargo/package
+- verify permissions
+- display status
+- allow authorized action
+
+============================================================
+42. UI PAGES
+============================================================
+
+Create complete responsive pages for:
+
+Authentication:
+- Login
+- Register/customer registration
+- Forgot password
+- Reset password
+- Verify email
+- 2FA
+
+Dashboard:
+- Main dashboard
+- Operational dashboard
+- Transportation dashboard
+- Finance dashboard
+
+Cargo:
+- Cargo list
+- Create cargo
+- Edit cargo
+- Cargo detail
+- Cargo search
+- Cargo timeline
+- Package management
+
+Warehouse:
+- Warehouse list
+- Warehouse detail
+- Zones
+- Locations
+- Receiving
+- Put-away
+- Movements
+- Sorting
+- Dispatch
+- Stocktaking
+
+Transportation:
+- Vehicles
+- Vehicle detail
+- Drivers
+- Driver detail
+- Trips
+- Trip detail
+- Routes
+- Manifests
+- Loading
+- Live tracking
+- GPS devices
+- GPS history
+- Geofences
+
+Delivery:
+- Delivery queue
+- Delivery detail
+- POD
+- Delivery history
+
+Finance:
+- Quotations
+- Invoices
+- Invoice detail
+- Payments
+- Payment transactions
+- Refunds
+- Customer statements
+
+Documents:
+- Document center
+- Templates
+- Generated documents
+- Versions
+
+Customers:
+- Customer list
+- Customer detail
+- Customer portal
+- Customer statements
+
+Claims:
+- Claims list
+- Claim detail
+- Investigation
+
+Reports:
+- Reports dashboard
+- Report builder/filter pages
+- Export history
+
+Administration:
+- Users
+- Roles
+- Permissions
+- Branches
+- Warehouses
+- Pricing
+- Taxes
+- Payment settings
+- Notification settings
+- Document templates
+- Numbering
+- GPS settings
+- System settings
+- Theme customization
+- Audit logs
+
+============================================================
+43. UI COMPONENTS
+============================================================
+
+Create reusable components:
+- Sidebar
+- Header
+- Breadcrumb
+- Stat card
+- Data table
+- Search box
+- Filter drawer
+- Status badge
+- Timeline
+- Modal
+- Drawer
+- Toast
+- Dropdown
+- Tabs
+- Pagination
+- Empty state
+- Loading skeleton
+- Confirmation dialog
+- File upload
+- QR display
+- Barcode display
+- Map panel
+- GPS status indicator
+- Timeline event card
+- Payment summary
+- Document card
+
+============================================================
+44. RESPONSIVE DESIGN
+============================================================
+
+Must work correctly on:
+- Desktop
+- Laptop
+- Tablet
+- Android phones
+- iPhone-sized screens
+
+On mobile:
+- Collapsible sidebar
+- Responsive tables
+- Card-based data where necessary
+- Sticky action bar
+- Touch-friendly controls
+- Responsive maps
+- Mobile scanning interface
+
+============================================================
+45. ACCESSIBILITY
+============================================================
+
+Implement:
+- semantic HTML
+- keyboard navigation
+- visible focus states
+- sufficient contrast
+- ARIA labels where needed
+- accessible forms
+- accessible tables
+- reduced motion support
+- clear validation errors
+
+============================================================
+46. AUTOMATION ENGINE
+============================================================
+
+Use Celery/Celery Beat for:
+- overdue payment reminders
+- cargo aging alerts
+- delivery reminders
+- scheduled reports
+- notification dispatch
+- GPS offline alerts
+- low battery alerts
+- ETA checks
+- document generation
+- large exports
+- cleanup/retention tasks
+
+Provide retry policies and failure logging.
+
+Critical tasks should be idempotent.
+
+============================================================
+47. ERROR HANDLING
+============================================================
+
+Create professional error handling:
+- User-friendly validation messages
+- 404 page
+- 403 page
+- 500 page
+- API error format
+- Logging
+- Correlation/request IDs
+- No stack traces in production
+- Graceful external-service failures
+
+============================================================
+48. LOGGING AND MONITORING
+============================================================
+
+Configure:
+- Application logs
+- Security logs
+- Celery logs
+- Payment logs without sensitive secrets
+- GPS ingestion logs
+- Audit logs
+- Error tracking architecture
+
+Provide health endpoints:
+- /health/
+- /health/db/
+- /health/redis/
+
+Do not expose sensitive system details publicly.
+
+============================================================
+49. CONFIGURATION
+============================================================
+
+Use environment variables.
+
+Create:
+.env.example
+
+Include placeholders for:
+SECRET_KEY
+DEBUG
+ALLOWED_HOSTS
+DATABASE_URL
+REDIS_URL
+CELERY_BROKER_URL
+CELERY_RESULT_BACKEND
+EMAIL settings
+SMS provider
+WhatsApp provider
+Payment provider
+Storage provider
+Maps configuration
+GPS authentication secret
+JWT configuration
+
+Never commit actual credentials.
+
+============================================================
+50. SEED DATA
+============================================================
+
+Create realistic development seed data:
+- Organization
+- Branches
+- Warehouses
+- Users
+- Roles
+- Customers
+- Vehicles
+- Drivers
+- GPS devices
+- Cargo
+- Packages
+- Trips
+- Manifests
+- Invoices
+- Payments
+- Documents
+- Notifications
+
+Create a clearly documented development admin account mechanism. Do not hard-code a production password.
+
+============================================================
+51. TESTING
+============================================================
+
+Create comprehensive tests for:
+- authentication
+- authorization
+- branch restrictions
+- customer ownership
+- cargo CRUD
+- status transitions
+- package scanning
+- warehouse movements
+- manifest loading
+- GPS ingestion
+- GPS assignment
+- geofence events
+- delivery
+- OTP/POD
+- invoices
+- payments
+- webhooks
+- idempotency
+- document generation
+- notification tasks
+- audit logging
+- API permissions
+- public tracking privacy
+
+Test security boundaries explicitly.
+
+============================================================
+52. DATABASE MIGRATIONS
+============================================================
+
+Generate complete migrations.
+
+The project must work from a clean database:
+
+python manage.py migrate
+
+No manual database modifications should be required.
+
+============================================================
+53. DOCUMENTATION
+============================================================
+
+Create:
+README.md
+INSTALLATION.md
+DEVELOPMENT.md
+DEPLOYMENT.md
+API.md
+SECURITY.md
+ARCHITECTURE.md
+
+Document:
+- Installation
+- Environment setup
+- Database
+- Redis
+- Celery
+- Running tests
+- Seed data
+- API
+- GPS integration
+- Payment integration
+- Document generation
+- Production deployment
+- Backup
+- Security configuration
+
+============================================================
+54. DOCKER
+============================================================
+
+Create:
+Dockerfile
+docker-compose.yml
+docker-compose.prod.yml
+.dockerignore
+
+Services:
+- web
+- nginx
+- postgres
+- redis
+- celery
+- celery-beat
+
+Ensure services have proper health checks and dependency handling.
+
+============================================================
+55. BACKUPS AND DATA SAFETY
+============================================================
+
+Document and configure production backup strategy.
+
+Database:
+- scheduled PostgreSQL backups
+- retention recommendations
+
+Documents:
+- object storage
+- versioning
+- backup strategy
+
+Critical records:
+- payments
+- invoices
+- cargo history
+- GPS history
+- audit logs
+
+Never physically delete financial/audit records unless a specific legally compliant retention policy permits it.
+
+============================================================
+56. DATA INTEGRITY
+============================================================
+
+Use:
+- unique constraints
+- foreign keys
+- database constraints
+- transactions
+- optimistic/concurrency handling where needed
+- idempotency keys
+- immutable financial transaction records where appropriate
+
+Critical operations must be atomic:
+- payment recording
+- cargo dispatch
+- manifest locking
+- delivery confirmation
+- document numbering
+
+============================================================
+57. PERFORMANCE TARGETS
+============================================================
+
+Design for:
+- fast initial dashboard rendering
+- fast cargo search
+- efficient pagination
+- efficient map updates
+- efficient API responses
+- low database query count
+
+Avoid unnecessary JavaScript frameworks and excessive dependencies.
+
+Use asynchronous jobs for heavy work.
+
+============================================================
+58. UI STATES
+============================================================
+
+Every major page must have:
+- Loading state
+- Empty state
+- Error state
+- Success state
+- Permission denied state
+- Confirmation state
+
+Forms must show:
+- field-level validation
+- server validation
+- submission progress
+- success notification
+- error notification
+
+============================================================
+59. FINAL IMPLEMENTATION REQUIREMENTS
+============================================================
+
+Generate an actual complete Django project.
+
+Required:
+- requirements.txt or pyproject.toml
+- manage.py
+- settings structure
+- URLs
+- models
+- migrations
+- admin configuration
+- services
+- selectors/query optimization
+- serializers
+- views/viewsets
+- permissions
+- filters
+- forms
+- templates
+- static assets
+- JavaScript
+- CSS/Tailwind configuration
+- Celery configuration
+- Redis configuration
+- Channels/WebSocket configuration
+- PDF generation
+- QR/barcode generation
+- APIs
+- tests
+- Docker
+- Nginx
+- documentation
+- seed data
+- environment configuration
+
+Do not stop after creating models.
+
+Do not create UI pages that have no backend functionality.
+
+Do not create backend endpoints that have no usable frontend where a frontend is required.
+
+============================================================
+60. DEVELOPMENT QUALITY RULES
+============================================================
+
+Follow:
+- DRY
+- SOLID
+- KISS where appropriate
+- clean architecture
+- secure defaults
+- typed Python where useful
+- meaningful naming
+- reusable services
+- modular apps
+- small focused functions
+- clear documentation
+- proper exception handling
+- database optimization
+- automated tests
+
+Avoid:
+- giant views
+- duplicated logic
+- raw SQL unless justified
+- N+1 queries
+- hard-coded credentials
+- hard-coded business rules
+- hard-coded theme colors
+- insecure file access
+- trusting client-side authorization
+- trusting payment callbacks without verification
+- exposing sensitive GPS data
+- storing passwords in plaintext
+- fake "live tracking" with random coordinates
+
+============================================================
+61. BUSINESS RULES
+============================================================
+
+Implement configurable business rules:
+- Pricing by route
+- Pricing by weight
+- Pricing by volume
+- Pricing by cargo type
+- Customer-specific pricing
+- Branch-specific pricing
+- Tax rules
+- Discount rules
+- Storage fees
+- Insurance
+- Delivery charges
+- Pickup charges
+- Credit limits
+- Payment terms
+- Cargo retention rules
+
+Do not hard-code Tanzania-only assumptions into the core architecture. Make country/currency/tax/payment configuration extensible.
+
+Default development configuration may use:
+- Tanzania
+- TZS
+- Africa/Dar_es_Salaam timezone
+
+============================================================
+62. SEARCH AND FILTER UX
+============================================================
+
+Create an advanced filter system.
+
+Filters:
+- Status
+- Branch
+- Warehouse
+- Origin
+- Destination
+- Customer
+- Date
+- Weight
+- Payment status
+- Delivery status
+- Vehicle
+- Driver
+- GPS status
+
+Allow users to clear filters and save personal filter preferences where useful.
+
+============================================================
+63. REAL-TIME FEATURES
+============================================================
+
+Use WebSockets for:
+- GPS position updates
+- Dashboard operational alerts
+- New cargo events
+- Delivery status updates
+- Payment notifications
+- System notifications
+
+Implement graceful fallback to polling.
+
+Ensure WebSocket authorization is enforced.
+
+============================================================
+64. MAP PROVIDER ARCHITECTURE
+============================================================
+
+Use Leaflet for map rendering.
+
+Do not assume a paid map provider is required for the frontend.
+
+Use a configurable tile provider through environment/configuration.
+
+Implement provider abstraction so the map provider can be changed later.
+
+Never expose private API keys unnecessarily.
+
+============================================================
+65. PRIVACY
+============================================================
+
+Implement privacy controls:
+- Customer data isolation
+- GPS visibility rules
+- Document visibility rules
+- Financial information restrictions
+- Public tracking privacy
+- Audit access restrictions
+
+Provide configurable data retention policies.
+
+============================================================
+66. FINAL ACCEPTANCE CRITERIA
+============================================================
+
+The generated system is acceptable only if a fresh developer can:
+
+1. Clone the project.
+2. Configure .env.
+3. Start PostgreSQL and Redis.
+4. Run migrations.
+5. Create/seed an admin.
+6. Start Django.
+7. Start Celery.
+8. Login.
+9. Create branches.
+10. Create warehouse.
+11. Create customer.
+12. Create cargo.
+13. Generate tracking ID, QR and barcode.
+14. Add packages.
+15. Receive cargo.
+16. Store it in warehouse.
+17. Create vehicle and driver.
+18. Register GPS device.
+19. Assign GPS to vehicle or cargo.
+20. Create trip and manifest.
+21. Load cargo.
+22. Send GPS position.
+23. See the cargo on the live map.
+24. See tracking history.
+25. Trigger geofence events.
+26. Arrive at destination.
+27. Create delivery.
+28. Complete POD with OTP/signature/photo/GPS.
+29. Generate delivery document.
+30. Generate invoice.
+31. Record payment.
+32. Generate receipt.
+33. Search cargo globally according to permissions.
+34. Customer logs in and sees only their own cargo.
+35. Public tracking works with restricted information.
+36. Reports work.
+37. Audit logs are generated.
+38. Theme can switch between light/dark/system.
+39. Theme colors can be customized by authorized administrators.
+40. Tests pass.
+41. Production Docker configuration works.
+42. No core feature is a fake/mock implementation.
+
+If Phase 2 (Differentiation Layer, Sections 69–77) is included, the system is
+additionally acceptable only if:
+
+43. Customer gets a live instant quote before booking, using the same pricing
+    engine as final billing (no duplicated calculation logic).
+44. A shipment can be billed on volumetric weight when it exceeds actual weight.
+45. A transit shipment can be tagged with a corridor/border post, and a border
+    crossing event is recorded when the geofence is triggered.
+46. A temperature-sensitive shipment logs sensor readings and raises an alert
+    on threshold breach.
+47. A customer can check status via USSD/IVR (or the simulator/test adapter)
+    with no smartphone or data connection required.
+48. A warehouse or driver action recorded offline syncs correctly once
+    connectivity returns, without creating duplicate records.
+49. If MULTI_TENANT_MODE is enabled, one organization can never query or
+    view another organization's data through any API, view, or report.
+50. An external system can subscribe to a webhook and receive a signed,
+    retried delivery for a shipment status change.
+
+============================================================
+67. GENERATION ORDER
+============================================================
+
+Build in this order:
+
+1. Project foundation
+2. Settings/configuration
+3. Database models
+4. Migrations
+5. Authentication
+6. RBAC and authorization
+7. Branch/customer management
+8. Cargo/package module
+9. Warehouse
+10. Transportation
+11. GPS tracking
+12. Live maps/WebSockets
+13. Delivery/POD
+14. Billing
+15. Payments
+16. Documents
+17. Notifications
+18. Claims
+19. Reports
+20. Dashboard
+21. Theme customization
+22. APIs/OpenAPI
+23. Tests
+24. Seed data
+25. Docker/deployment
+26. Documentation
+27. Security/performance review
+
+After implementation, perform a final consistency review:
+- Check imports
+- Check URL names
+- Check model relationships
+- Check migrations
+- Check templates
+- Check static assets
+- Check API routes
+- Check permissions
+- Check Celery tasks
+- Check WebSockets
+- Check payment idempotency
+- Check document access
+- Check GPS privacy
+- Check N+1 queries
+- Check tests
+- Check production settings
+
+Fix all errors found.
+
+============================================================
+67B. PHASE 2 GENERATION ORDER (DIFFERENTIATION LAYER)
+============================================================
+
+Only begin once Phase 1 passes every item in Section 66. Recommended order,
+ranked by effort vs. business value (highest value/lowest effort first):
+
+28. Volumetric weight billing + instant quote calculator (Section 73)
+    — reuses the existing pricing engine; immediate customer-facing value.
+29. Cross-border & regional trade module (Section 70)
+    — highest strategic value given Tanzania's transit-corridor position.
+30. Low-connectivity & inclusive access channels (Section 72)
+    — USSD/IVR/offline sync/localization; broadens the addressable customer base.
+31. Fleet intelligence & sustainability (Section 74)
+    — builds on GPS data already being captured in Phase 1.
+32. IoT & cold-chain sensor integration (Section 71)
+    — only prioritize this earlier if the first real client handles
+      perishables/pharma cargo.
+33. AI & intelligence layer (Section 69)
+    — start with rule-based heuristics; defer trained-model prediction
+      until sufficient historical data exists.
+34. Risk, fraud & SLA management (Section 75)
+35. Webhooks & open integration layer (Section 77)
+36. Multi-tenant SaaS architecture (Section 76)
+    — treat as an architecture decision made BEFORE Phase 1 begins if
+      reselling to multiple companies is the actual business goal; retrofitting
+      tenant isolation after launch is expensive. If the first deployment is
+      for a single company, defer this indefinitely.
+
+============================================================
+68. EXPECTED OUTPUT
+============================================================
+
+Return/build the complete project with:
+- Full source code
+- Complete directory tree
+- Database schema
+- API
+- Frontend
+- Admin
+- Tests
+- Documentation
+- Docker setup
+- Seed data
+- Configuration
+- Security hardening
+- Performance optimization
+
+The result must be a professional, maintainable, secure and scalable Cargo Management & Logistics Tracking System suitable for real business deployment.
+
+Do not simplify the requirements unless technically necessary. If a feature depends on an external service, implement a clean provider interface and a working local/test adapter so the system remains runnable.
+
+============================================================
+PART II — DIFFERENTIATION LAYER (PHASE 2, OPTIONAL)
+============================================================
+
+The sections below extend the core system with capabilities that go beyond
+what typical cargo/freight management software offers. Build order and
+prioritization guidance is in Section 67B. Every feature here must follow the
+same rules as Phase 1: no fake data, no mock "AI," no hardcoded results —
+implement a real, working, testable version, using rule-based logic where a
+trained model is not yet justified by available data.
+
+============================================================
+69. AI & INTELLIGENCE LAYER
+============================================================
+
+Implement this as a pluggable "intelligence" service layer (strategy-pattern
+interface) so rule-based heuristics can be swapped for trained models later
+without changing calling code.
+
+Predictive ETA:
+- Improve on the linear ETA in Section 22 using historical trip data: route,
+  time of day, day of week, border/warehouse dwell time, driver history.
+- Always expose a confidence range, never a single false-precision number.
+
+Route and load optimization:
+- Multi-stop route optimization (vehicle routing problem) to minimize
+  distance/fuel for multi-drop trips.
+- Load/consolidation optimization (bin-packing) to maximize vehicle
+  utilization when grouping shipments into a manifest.
+
+Anomaly detection:
+- Flag route deviations, unexplained long stops, out-of-hours movement, or
+  GPS speed inconsistent with the vehicle type.
+- Feed detected anomalies into the existing GPSAlert/automation engine
+  (Section 21) rather than creating a parallel alert system.
+
+Demand forecasting:
+- Branch/route-level historical volume forecasting to support warehouse
+  staffing and fleet capacity planning.
+
+Pricing recommendations:
+- Suggest rate adjustments based on route demand and capacity utilization.
+- Recommendations require human approval before affecting any invoice —
+  never auto-adjust a customer's charge without explicit confirmation.
+
+Risk/fraud scoring:
+- Score shipments where declared value, route, or customer pattern deviates
+  significantly from historical norms, and route them for manual review
+  rather than auto-rejecting.
+
+============================================================
+70. CROSS-BORDER & REGIONAL TRADE MODULE
+============================================================
+
+Tanzania's ports and road/rail corridors carry substantial transit cargo for
+landlocked neighboring countries — build this as a first-class capability,
+not an afterthought.
+
+Corridor and route metadata:
+- Tag each Route as domestic or transit, and record which corridor it
+  belongs to (e.g., a central corridor toward the Great Lakes region, or a
+  southern corridor toward Zambia/Malawi/DRC).
+
+Border crossing entities:
+- BorderPost model with its own geofence, expected dwell time, and a
+  BorderCrossingEvent history (entry/exit timestamp, related trip/cargo,
+  documents checked).
+
+Customs and documentation:
+- HS (Harmonized System) code field at package/cargo level.
+- Certificate of Origin, Bill of Lading reference, and customs bond/duty
+  status fields.
+- Extend the Section 29 document type list with: Customs Declaration,
+  Transit Bond Document, and Regional Transit Document.
+- Provide a clean adapter interface for national single-window/electronic
+  customs clearance systems (submit declaration, poll status) — implement a
+  working local/test adapter so the system runs without live government
+  system credentials, per the execution rule in the master prompt header.
+
+Multi-currency invoicing:
+- Store every ledger entry in one canonical currency.
+- Allow customer-facing quotes/invoices to display in a customer-selected
+  currency using a configurable, auditable FX rate service.
+- Never let display-currency conversion affect the stored canonical amount.
+
+Regional partner/agent network:
+- Model for destination-country agents who take handover of cargo at the
+  border or final destination.
+- Give agents a scoped portal login limited to shipments assigned to them —
+  same object-level authorization pattern as Section 7, not a separate
+  security model.
+
+============================================================
+71. IOT & COLD-CHAIN SENSOR INTEGRATION
+============================================================
+
+Extend tracking beyond GPS location using the same architectural pattern as
+GPSDevice/GPSDeviceAssignment/GPSPosition (Section 18) so the two systems
+share consistent conventions.
+
+Sensor abstraction layer:
+- Support temperature, humidity, shock/tilt, light-exposure, and door-open
+  sensors, attachable to a package or container.
+- Threshold-based alerts (e.g., a temperature excursion on perishable or
+  pharmaceutical cargo) feed the same alert/automation engine as GPS
+  (Section 21) rather than a separate one.
+
+Digital e-seals:
+- Record a tamper-evident seal ID at loading.
+- Verify seal integrity at each checkpoint/geofence; a mismatch raises a
+  security alert immediately, not at end-of-trip reconciliation.
+
+Cold-chain compliance reporting:
+- Generate a temperature-over-time report per shipment as a delivery
+  document (Section 30), so customers receive proof of cold-chain
+  compliance alongside the proof of delivery.
+
+============================================================
+72. LOW-CONNECTIVITY & INCLUSIVE ACCESS CHANNELS
+============================================================
+
+Most cargo tracking systems assume a smartphone and reliable data. Design
+for the device and network realities of the actual customer base instead.
+
+USSD tracking:
+- A menu-driven USSD flow (session-based, no persistent connection) letting
+  a customer check shipment status by tracking number from any phone.
+- Implement through a provider-agnostic USSD gateway adapter, following the
+  same adapter pattern as the payment gateway (Section 28).
+
+IVR/voice status line:
+- A fallback voice menu for customers who are not comfortable with text
+  interfaces, using the same tracking data as the USSD and web channels.
+
+Offline-first warehouse/driver experience:
+- Barcode scans, warehouse movements, and POD capture must queue locally on
+  the device/browser and sync automatically once connectivity returns.
+- Sync must be conflict-safe and idempotent — a scan performed offline and
+  synced late must never create a duplicate movement/event record.
+
+Localization:
+- Swahili and English throughout every customer-facing surface: web,
+  in-app, SMS, WhatsApp, USSD, IVR prompts, and generated documents.
+- Build this on a proper i18n architecture (translation files, not
+  hardcoded strings) so additional languages can be added later without
+  touching business logic.
+
+============================================================
+73. SELF-SERVICE & GROWTH FEATURES
+============================================================
+
+Instant quote calculator:
+- Customer enters origin, destination, weight/volume, and cargo type and
+  receives a live estimated price before booking.
+- Must call the same pricing engine used for final billing (Section 27) —
+  never a duplicated or approximate calculation that can drift out of sync.
+
+Volumetric (dimensional) weight billing:
+- Automatically bill on the greater of actual weight vs. volumetric weight
+  (length × width × height ÷ a configurable divisor per cargo type).
+- This is standard practice in international freight but frequently missing
+  from smaller/local systems, and directly protects margin on bulky,
+  low-density cargo.
+
+Recurring and templated shipments:
+- Let contract customers save a shipment as a template and schedule it to
+  recur (e.g., a weekly supply run) without re-entering details each time.
+
+Corporate/API self-onboarding:
+- Bulk booking via CSV upload or authenticated API for high-volume B2B
+  customers, validated through the exact same rules as a manual booking —
+  no relaxed validation path for bulk/API input.
+
+Loyalty and volume-tier pricing:
+- Optional, per-organization configurable tiered pricing and referral
+  tracking for repeat customers.
+
+============================================================
+74. FLEET INTELLIGENCE & SUSTAINABILITY
+============================================================
+
+Driver scorecards:
+- Derive a simple performance score per driver from the existing GPS
+  stream: harsh braking/acceleration events, speeding frequency, and
+  on-time delivery percentage — surfaced as a trend, not just raw alerts.
+
+Predictive maintenance:
+- Estimate mileage/engine-hours from GPS distance traveled and trigger
+  service reminders ahead of the fixed calendar-based inspection dates
+  already tracked in Section 16.
+
+Fuel and cost tracking:
+- Fuel consumption and cost-per-kilometer per vehicle and per route, to
+  support margin analysis alongside the revenue reports in Section 35.
+
+Carbon emissions estimate:
+- Estimate emissions per shipment/route (distance × a mode-based emission
+  factor) and surface it to customers — increasingly requested by
+  NGO/corporate clients for their own sustainability reporting.
+
+============================================================
+75. RISK, FRAUD & SLA MANAGEMENT
+============================================================
+
+SLA management:
+- Configurable service levels (e.g., express vs. standard) with defined
+  target transit times.
+- Automatic breach detection that escalates to the branch manager, going
+  beyond the passive ETA display in Section 22.
+
+Watchlists:
+- Flag customers or addresses associated with repeated claims, chargebacks,
+  or other fraud indicators.
+- Surface this as a warning at booking time for staff judgment — never an
+  automatic hard block, to avoid wrongly penalizing legitimate customers.
+
+Declared-value consistency checks:
+- Flag mismatches between declared value and insured value at booking to
+  reduce claims fraud exposure before a shipment moves.
+
+============================================================
+76. MULTI-TENANT SAAS ARCHITECTURE (OPTIONAL DEPLOYMENT MODE)
+============================================================
+
+This system may be operated as one company's internal platform, or resold
+as a hosted product to multiple independent cargo/logistics companies.
+Design the Organization model as a true tenant boundary from the start so
+this decision does not require a rebuild later.
+
+- Tenant-scoped row-level isolation on every business table (organization_id
+  on all core models), enforced at the queryset/manager level — never
+  trusted from a request parameter alone.
+- Per-tenant branding, theme, document numbering sequences, and pricing
+  rules — extend the Section 5 theme settings to be tenant-scoped rather
+  than global.
+- Tenant-level subscription/billing metadata (plan, seat count, storage
+  usage) if this will be sold as SaaS.
+- A clear separation between platform-operator admin (cross-tenant access,
+  for the agency/vendor running the platform) and organization admin (a
+  customer's own admin, scoped to their tenant only).
+- Expose this as a single configuration flag — SINGLE_TENANT_MODE vs.
+  MULTI_TENANT_MODE — so the same codebase serves either deployment model.
+
+============================================================
+77. WEBHOOKS & OPEN INTEGRATION LAYER
+============================================================
+
+Outbound webhooks:
+- Let enterprise customers and regional partner agents subscribe to
+  shipment events (status change, POD captured, invoice issued).
+- Sign every payload, and implement retry with backoff for failed
+  deliveries — mirror the reliability expected of the inbound payment
+  webhook handling in Section 28.
+
+Inbound integration adapters:
+- Provide a clean adapter pattern for connecting a customer's own
+  ERP/e-commerce platform so their orders can automatically create
+  shipments, without bypassing standard booking validation.
+
+API key management:
+- Scoped API keys per integration (not the same as end-user JWT auth), with
+  visibility into usage and rate limits per key so integration partners can
+  be individually throttled or revoked without affecting others.
+
+============================================================
+END OF MASTER PROMPT
