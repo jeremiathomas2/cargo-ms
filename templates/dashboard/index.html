@@ -119,7 +119,7 @@
     </div>
     <div class="spotlight-grid">
         <div class="spot-field"><span>Tracking no.</span><strong>{{ cross_border_shipments.0.tracking_id|default:"SHN-TZ-2026-000124" }}</strong></div>
-        <div class="spot-field"><span>Consignee</span><strong>{{ cross_border_shipments.0.customer.name|default:"Copperbelt Mining Supplies" }}</strong></div>
+        <div class="spot-field"><span>Consignee</span><strong>{{ cross_border_shipments.0.customer.full_name|default:"Copperbelt Mining Supplies" }}</strong></div>
         <div class="spot-field"><span>Carrier</span><strong>TransAfrica Logistics</strong></div>
         <div class="spot-field"><span>Route</span><strong><span class="flag">🇹🇿</span> {{ cross_border_shipments.0.origin|default:"Dar es Salaam" }} → {{ cross_border_shipments.0.destination|default:"Lusaka" }} <span class="flag">🇿🇲</span></strong></div>
     </div>
