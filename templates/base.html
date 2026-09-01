@@ -7,6 +7,53 @@
     <title>{% block title %}Shehena — Cargo Management &amp; Logistics Tracking{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <script>
+    (function () {
+        var THEME_KEY = 'shehena-theme';
+        var html = document.documentElement;
+        var t = 'light';
+        try {
+            var saved = localStorage.getItem(THEME_KEY);
+            if (saved) {
+                t = saved;
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                t = 'dark';
+            }
+        } catch (e) {}
+        html.setAttribute('data-theme', t);
+        if (t === 'dark') {
+            html.classList.add('dark');
+            html.style.backgroundColor = '#0A0620';
+        } else {
+            html.classList.remove('dark');
+            html.style.backgroundColor = '#F3F4F9';
+        }
+        try {
+            if (!localStorage.getItem(THEME_KEY)) localStorage.setItem(THEME_KEY, t);
+        } catch (e) {}
+        html.classList.add('no-fouc');
+        var done = false;
+        var reveal = function () {
+            if (done) return;
+            done = true;
+            html.classList.add('no-fouc-ready');
+            setTimeout(function () {
+                html.classList.remove('no-fouc', 'no-fouc-ready');
+                try { html.style.backgroundColor = ''; } catch (e) {}
+            }, 120);
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', reveal, { once: true });
+        } else {
+            reveal();
+        }
+        setTimeout(reveal, 800);
+    })();
+    </script>
+    <style>
+        html.no-fouc body { opacity: 0; }
+        html.no-fouc-ready body { opacity: 1; transition: opacity .12s ease; }
+    </style>
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;0,6..12,800;0,6..12,900;1,6..12,600&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>

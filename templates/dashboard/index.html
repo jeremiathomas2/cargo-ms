@@ -89,19 +89,54 @@
 
     <div class="panel map-panel">
         <div class="panel-head">
-            <div>
-                <h2>Live tracking</h2>
-                <p class="sub" id="mapSub">Following active shipment</p>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-[12px] bg-brand/10 flex items-center justify-center flex-shrink-0">
+                    <svg class="icon text-brand" style="width:20px;height:20px;"><use href="#i-map"/></svg>
+                </div>
+                <div>
+                    <h2 style="display:flex;align-items:center;gap:8px;">
+                        Live tracking
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-success/10 text-success">
+                            <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
+                            LIVE
+                        </span>
+                    </h2>
+                    <p class="sub" id="mapSub">Following active shipment</p>
+                </div>
             </div>
-            <a href="{% url 'gps_tracking:live_tracking' %}" class="btn btn-ghost" style="padding:7px 14px; font-size:12px;">
-                <svg class="icon"><use href="#i-map"/></svg> Full map
+            <a href="{% url 'gps_tracking:live_tracking' %}" class="btn btn-ghost !py-2 !px-3.5" style="gap:6px;font-size:12px;">
+                <svg class="icon" style="width:15px;height:15px;"><use href="#i-map"/></svg> Full map
             </a>
         </div>
         <div id="map"></div>
         <div class="map-stats">
-            <div class="map-stat"><span>Distance</span><strong id="mapDistance">—</strong></div>
-            <div class="map-stat"><span>Average speed</span><strong id="mapSpeed">—</strong></div>
-            <div class="map-stat"><span>Last update</span><strong id="mapUpdate">—</strong></div>
+            <div class="map-stat">
+                <div class="flex items-center gap-2 mb-1.5">
+                    <div class="w-7 h-7 rounded-[10px] bg-info/10 flex items-center justify-center flex-shrink-0">
+                        <svg style="width:14px;height:14px;stroke:var(--info);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M6 19V5l12 14V5"/><path d="M18 7h2M21 7h-3M6 19h3M6 19H3"/></svg>
+                    </div>
+                    <span>Distance</span>
+                </div>
+                <strong id="mapDistance">—</strong>
+            </div>
+            <div class="map-stat">
+                <div class="flex items-center gap-2 mb-1.5">
+                    <div class="w-7 h-7 rounded-[10px] bg-secondary/10 flex items-center justify-center flex-shrink-0">
+                        <svg style="width:14px;height:14px;stroke:var(--secondary);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+                    </div>
+                    <span>Average speed</span>
+                </div>
+                <strong id="mapSpeed">—</strong>
+            </div>
+            <div class="map-stat">
+                <div class="flex items-center gap-2 mb-1.5">
+                    <div class="w-7 h-7 rounded-[10px] bg-brand/10 flex items-center justify-center flex-shrink-0">
+                        <svg style="width:14px;height:14px;stroke:var(--brand);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+                    </div>
+                    <span>Last update</span>
+                </div>
+                <strong id="mapUpdate">—</strong>
+            </div>
         </div>
         <div class="detail-card" id="detailCard"></div>
     </div>
@@ -218,7 +253,7 @@
   };
   function st(s){ return STATUS_LABEL[s] || STATUS_LABEL.pending; }
 
-  var STEPS = ["Booked","Received","Warehouse","In transit","Customs","Out for delivery","Delivered"];
+  var STEPS = ["Pending","Booked","Received","Warehouse","In transit","Customs","Out for delivery","Delivered"];
 
   // Build sample shipment data; mix in real queryset data if available
   var djangoShipments = [];
@@ -231,19 +266,19 @@
       carrier: "Shehena Line-Haul",
       eta: "{% if s.estimated_arrival %}{{ s.estimated_arrival|date:'M j, H:i' }}{% else %}TBD{% endif %}",
       route: "{{ s.origin|default:'—'|escapejs }} → {{ s.destination|default:'—'|escapejs }}",
-      step: {% if s.status == 'delivered' %}6{% elif s.status == 'out_for_delivery' %}5{% elif s.status == 'customs_hold' or s.status == 'arrived_destination' %}4{% elif s.status == 'in_transit' %}3{% elif s.status == 'in_warehouse' or s.status == 'sorted' or s.status == 'ready_for_dispatch' or s.status == 'loaded' %}2{% elif s.status == 'received' or s.status == 'awaiting_receiving' %}1{% else %}0{% endif %},
+      step: {% if s.status == 'delivered' %}7{% elif s.status == 'out_for_delivery' or s.status == 'ready_for_delivery' %}6{% elif s.status == 'customs_hold' or s.status == 'arrived_destination' %}5{% elif s.status == 'in_transit' or s.status == 'loaded' %}4{% elif s.status == 'in_warehouse' or s.status == 'sorted' or s.status == 'ready_for_dispatch' %}3{% elif s.status == 'received' %}2{% elif s.status == 'awaiting_receiving' or s.status == 'booked' %}1{% else %}0{% endif %},
       progress: {% if s.status == 'delivered' %}1{% elif s.status == 'in_transit' %}0.55{% elif s.status == 'out_for_delivery' %}0.9{% elif s.status == 'loaded' %}0.35{% elif s.status == 'ready_for_dispatch' %}0.3{% elif s.status == 'received' %}0.15{% elif s.status == 'customs_hold' %}0.8{% else %}0{% endif %},
       waypoints:[[-6.7924,39.2083],[-6.8235,37.6822],[-6.1730,35.7419],[-3.8480,32.6000],[-15.3875,28.3228]]
     });
   {% endfor %}
 
   var fallback = [
-    {id:"SHN-TZ-2026-000124", customer:"Copperbelt Mining Supplies", cargo:"Mining equipment parts", status:"in_transit", carrier:"TransAfrica Logistics", eta:"3 Sep, 18:00", route:"Dar es Salaam → Lusaka, ZM", step:3, progress:0.62, waypoints:[[-6.7924,39.2083],[-6.8235,37.6822],[-6.1730,35.7419],[-7.7669,35.6980],[-8.9094,33.4608],[-9.3000,32.7667],[-15.3875,28.3228]]},
-    {id:"SHN-TZ-2026-000131", customer:"Great Lakes Produce Co.", cargo:"Packaged foodstuffs", status:"in_transit", carrier:"Kilimanjaro Freight Lines", eta:"2 Sep, 09:00", route:"Dar es Salaam → Kigali, RW", step:3, progress:0.45, waypoints:[[-6.7924,39.2083],[-6.8235,37.6822],[-6.1730,35.7419],[-4.8180,34.7451],[-4.2133,33.1667],[-3.8480,32.6000],[-2.3833,30.7500],[-1.9441,30.0619]]},
-    {id:"SHN-TZ-2026-000118", customer:"Serengeti Textiles Ltd", cargo:"Raw cotton bales", status:"in_warehouse", carrier:"Shehena Line-Haul", eta:"Awaiting sort", route:"Mwanza → Dar es Salaam", step:2, progress:0, waypoints:[[-2.5164,32.9000],[-3.8480,32.6000],[-6.1730,35.7419],[-6.8235,37.6822],[-6.7924,39.2083]]},
+    {id:"SHN-TZ-2026-000124", customer:"Copperbelt Mining Supplies", cargo:"Mining equipment parts", status:"in_transit", carrier:"TransAfrica Logistics", eta:"3 Sep, 18:00", route:"Dar es Salaam → Lusaka, ZM", step:4, progress:0.62, waypoints:[[-6.7924,39.2083],[-6.8235,37.6822],[-6.1730,35.7419],[-7.7669,35.6980],[-8.9094,33.4608],[-9.3000,32.7667],[-15.3875,28.3228]]},
+    {id:"SHN-TZ-2026-000131", customer:"Great Lakes Produce Co.", cargo:"Packaged foodstuffs", status:"in_transit", carrier:"Kilimanjaro Freight Lines", eta:"2 Sep, 09:00", route:"Dar es Salaam → Kigali, RW", step:4, progress:0.45, waypoints:[[-6.7924,39.2083],[-6.8235,37.6822],[-6.1730,35.7419],[-4.8180,34.7451],[-4.2133,33.1667],[-3.8480,32.6000],[-2.3833,30.7500],[-1.9441,30.0619]]},
+    {id:"SHN-TZ-2026-000118", customer:"Serengeti Textiles Ltd", cargo:"Raw cotton bales", status:"in_warehouse", carrier:"Shehena Line-Haul", eta:"Awaiting sort", route:"Mwanza → Dar es Salaam", step:3, progress:0, waypoints:[[-2.5164,32.9000],[-3.8480,32.6000],[-6.1730,35.7419],[-6.8235,37.6822],[-6.7924,39.2083]]},
     {id:"SHN-TZ-2026-000142", customer:"Kilimanjaro Coffee Traders", cargo:"Green coffee beans, export", status:"pending", carrier:"Not yet assigned", eta:"Pickup scheduled", route:"Moshi → Mombasa, KE", step:0, progress:0, waypoints:[[-3.3500,37.3333],[-3.3869,36.6822],[-2.5450,36.7871],[-1.2921,36.8219],[-4.0435,39.6682]]},
-    {id:"SHN-TZ-2026-000109", customer:"Dodoma AgroExports", cargo:"Sunflower oil, 200 drums", status:"delivered", carrier:"Shehena Line-Haul", eta:"Delivered 28 Aug", route:"Dodoma → Dar es Salaam", step:6, progress:1, waypoints:[[-6.1730,35.7419],[-6.8235,37.6822],[-6.7924,39.2083]]},
-    {id:"SHN-TZ-2026-000137", customer:"Zanzibar Spice Traders", cargo:"Mixed spice consignment", status:"delayed", carrier:"Coastal Ferry Freight", eta:"Delayed — port congestion", route:"Dar es Salaam → Zanzibar", step:4, progress:0.8, waypoints:[[-6.7924,39.2083],[-6.1659,39.2026]]}
+    {id:"SHN-TZ-2026-000109", customer:"Dodoma AgroExports", cargo:"Sunflower oil, 200 drums", status:"delivered", carrier:"Shehena Line-Haul", eta:"Delivered 28 Aug", route:"Dodoma → Dar es Salaam", step:7, progress:1, waypoints:[[-6.1730,35.7419],[-6.8235,37.6822],[-6.7924,39.2083]]},
+    {id:"SHN-TZ-2026-000137", customer:"Zanzibar Spice Traders", cargo:"Mixed spice consignment", status:"delayed", carrier:"Coastal Ferry Freight", eta:"Delayed — port congestion", route:"Dar es Salaam → Zanzibar", step:5, progress:0.8, waypoints:[[-6.7924,39.2083],[-6.1659,39.2026]]}
   ];
 
   var shipments = djangoShipments.length ? djangoShipments : fallback;
@@ -314,14 +349,47 @@
   function renderDetail(s){
     var stepsHtml = STEPS.map(function(label, i){
       var cls = i < s.step ? "done" : (i === s.step ? "current" : "");
-      var icon = i < s.step ? '<svg class="icon"><use href="#i-check"/></svg>' : "";
+      var icon = i < s.step ? '<svg class="icon"><use href="#i-check"/></svg>' : (i === s.step ? '<span class="step-dot-inner"></span>' : '');
       return '<div class="step '+cls+'"><div class="step-dot">'+icon+'</div><span class="step-label">'+label+'</span><div class="step-line"></div></div>';
     }).join("");
     var sst = st(s.status);
+    var routeParts = s.route.split(" → ");
+    var origin = routeParts[0] || "Origin";
+    var dest = routeParts[1] || "Destination";
     detailEl.innerHTML =
-      '<div class="detail-top"><div><div class="detail-id">'+s.id+'</div><div class="detail-carrier">'+s.carrier+' · '+s.cargo+'</div></div>'+
-      '<span class="badge '+sst.badge+'">'+sst.label+'</span></div>'+
-      '<div class="stepper">'+stepsHtml+'</div>';
+      '<div class="px-5 pt-5 pb-3 border-b border-gray-200/80 dark:border-[#291F55]/80">'+
+        '<div class="flex items-start justify-between gap-3 flex-wrap">'+
+          '<div class="min-w-0 flex-1">'+
+            '<div class="flex items-center gap-2 flex-wrap mb-1.5">'+
+              '<div class="w-8 h-8 rounded-[10px] bg-brand/10 flex items-center justify-center flex-shrink-0">'+
+                '<svg class="icon text-brand" style="width:15px;height:15px;"><use href="#i-package"/></svg>'+
+              '</div>'+
+              '<div class="min-w-0">'+
+                '<div class="detail-id !text-[14.5px] leading-tight truncate">'+s.id+'</div>'+
+                '<div class="text-[10.5px] font-bold text-faint dark:text-[#8981B8] mt-0.5 flex items-center gap-1">'+
+                  '<svg style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>'+
+                  s.eta+
+                '</div>'+
+              '</div>'+
+            '</div>'+
+            '<div class="detail-carrier !mt-2 flex items-center gap-1.5">'+
+              '<svg class="icon text-secondary" style="width:13px;height:13px;"><use href="#i-truck"/></svg>'+
+              s.carrier+' <span class="text-faint dark:text-[#8981B8]">·</span> '+s.cargo+
+            '</div>'+
+            '<div class="mt-3 flex items-center gap-1.5 text-[11px] font-bold text-muted dark:text-[#B2ACD6]">'+
+              '<div class="w-2 h-2 rounded-full bg-success flex-shrink-0"></div>'+
+              '<span class="truncate">'+origin+'</span>'+
+              '<svg class="w-3 h-3 flex-shrink-0 stroke-current fill-none stroke-[2] stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'+
+              '<div class="w-2 h-2 rounded-full bg-danger flex-shrink-0"></div>'+
+              '<span class="truncate">'+dest+'</span>'+
+            '</div>'+
+          '</div>'+
+          '<span class="badge '+sst.badge+' !px-2.5 !py-1 !text-[10.5px]">'+sst.label+'</span>'+
+        '</div>'+
+      '</div>'+
+      '<div class="px-5 py-4">'+
+        '<div class="stepper">'+stepsHtml+'</div>'+
+      '</div>';
   }
 
   /* ============ MAP ============ */

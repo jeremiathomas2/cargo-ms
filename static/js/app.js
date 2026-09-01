@@ -5,34 +5,86 @@
   var htmlEl = document.documentElement;
   var themeBtn = document.getElementById("themeToggle");
   window._tileLayer = null;
+  var THEME_KEY = "shehena-theme";
 
-  function applyTheme(t){
-    htmlEl.setAttribute("data-theme", t);
-    if(t === "dark"){ htmlEl.classList.add("dark"); }
-    else { htmlEl.classList.remove("dark"); }
-    if(themeBtn){
-      var useEl = themeBtn.querySelector(".knob svg use");
-      if(useEl){ useEl.setAttribute("href", t==="dark" ? "#i-moon" : "#i-sun"); }
-    }
-    try{ localStorage.setItem("shehena-theme", t); }catch(e){}
+  function getStoredTheme(){
+    try{ return localStorage.getItem(THEME_KEY); }catch(e){ return null; }
+  }
+  function setStoredTheme(t){
+    try{ localStorage.setItem(THEME_KEY, t); }catch(e){}
+  }
+
+  function syncKnobIcon(t){
+    if(!themeBtn) return;
+    var useEl = themeBtn.querySelector(".knob svg use");
+    if(!useEl) return;
+    var val = t === "dark" ? "#i-moon" : "#i-sun";
+    useEl.setAttribute("href", val);
+    useEl.setAttributeNS("http://www.w3.org/1999/xlink", "href", val);
+  }
+  function syncMapTiles(t){
     if(window.L && window._tileLayer){
       var url = t==="dark"
         ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
         : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-      window._tileLayer.setUrl(url);
+      try{ window._tileLayer.setUrl(url); }catch(e){}
     }
   }
+
+  function writeThemeAttrs(t){
+    htmlEl.setAttribute("data-theme", t);
+    if(t === "dark"){ htmlEl.classList.add("dark"); }
+    else { htmlEl.classList.remove("dark"); }
+  }
+
+  function applyTheme(t){
+    writeThemeAttrs(t);
+    setStoredTheme(t);
+    syncKnobIcon(t);
+    syncMapTiles(t);
+  }
+
+  (function initTheme(){
+    var current = htmlEl.getAttribute("data-theme") || "light";
+    var stored = getStoredTheme();
+
+    if(!stored){
+      setStoredTheme(current);
+    } else if(stored !== current){
+      writeThemeAttrs(stored);
+      current = stored;
+    }
+
+    syncKnobIcon(current);
+
+    if(window.L){
+      syncMapTiles(current);
+    } else if(document.readyState === "loading"){
+      document.addEventListener("DOMContentLoaded", function once(){
+        syncMapTiles(htmlEl.getAttribute("data-theme"));
+      }, { once: true });
+    }
+
+    if(window.matchMedia){
+      try{
+        var mql = window.matchMedia("(prefers-color-scheme: dark)");
+        var listener = function(e){
+          if(!getStoredTheme()){
+            applyTheme(e.matches ? "dark" : "light");
+          }
+        };
+        if(mql.addEventListener) mql.addEventListener("change", listener);
+        else if(mql.addListener) mql.addListener(listener);
+      }catch(err){}
+    }
+  })();
+
   if(themeBtn){
     themeBtn.addEventListener("click", function(){
-      applyTheme(htmlEl.getAttribute("data-theme")==="dark" ? "light" : "dark");
+      var next = htmlEl.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      applyTheme(next);
     });
   }
-  (function initTheme(){
-    var saved = null;
-    try{ saved = localStorage.getItem("shehena-theme"); }catch(e){}
-    if(!saved && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) saved = "dark";
-    applyTheme(saved || "light");
-  })();
 
   /* ============ SIDEBAR TOGGLES ============ */
   var sidebar = document.getElementById("sidebar");
@@ -57,20 +109,29 @@
   }
 
   /* ============ DROPDOWNS ============ */
+  function closeAllDropdowns(){
+    document.querySelectorAll(".dropdown.open").forEach(function(d){ d.classList.remove("open"); });
+  }
   function setupDropdown(btnId, dropId){
     var btn = document.getElementById(btnId), drop = document.getElementById(dropId);
     if(!btn || !drop) return;
     btn.addEventListener("click", function(e){
       e.stopPropagation();
+      e.preventDefault();
       var isOpen = drop.classList.contains("open");
-      document.querySelectorAll(".dropdown.open").forEach(function(d){ d.classList.remove("open"); });
+      closeAllDropdowns();
       if(!isOpen) drop.classList.add("open");
+    });
+    drop.addEventListener("click", function(e){
+      if(e.target.closest("a") || e.target.closest("button[type='submit']")) return;
+      e.stopPropagation();
     });
   }
   setupDropdown("notifBtn", "notifDropdown");
   setupDropdown("userBtn", "userDropdown");
-  document.addEventListener("click", function(){
-    document.querySelectorAll(".dropdown.open").forEach(function(d){ d.classList.remove("open"); });
+  document.addEventListener("click", closeAllDropdowns);
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape") closeAllDropdowns();
   });
 
   /* ============ GLOBAL SEARCH (shipment filter helper ============ */

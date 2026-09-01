@@ -102,47 +102,132 @@
 </div>
 
 <div class="panel" style="margin-bottom: 20px;">
-    <div class="filter-row">
-        <div class="filter-row-left">
-            <div class="chip-group">
-                <a href="{% url 'cargo:list' %}" class="chip {% if not status_filter %}active{% endif %}">All</a>
-                <a href="?status=booked" class="chip {% if status_filter == 'booked' %}active{% endif %}">Booked</a>
-                <a href="?status=in_transit" class="chip {% if status_filter == 'in_transit' %}active{% endif %}">In Transit</a>
-                <a href="?status=in_warehouse" class="chip {% if status_filter == 'in_warehouse' %}active{% endif %}">Warehouse</a>
-                <a href="?status=customs_hold" class="chip {% if status_filter == 'customs_hold' %}active{% endif %}">Customs</a>
-                <a href="?status=out_for_delivery" class="chip {% if status_filter == 'out_for_delivery' %}active{% endif %}">Delivery</a>
-                <a href="?status=delivered" class="chip {% if status_filter == 'delivered' %}active{% endif %}">Delivered</a>
-                <a href="?status=delayed" class="chip {% if status_filter == 'delayed' %}active{% endif %}">
-                    <svg class="icon"><use href="#i-alert"/></svg>
-                    Issues
-                </a>
+    <div class="border-b border-gray-100 dark:border-[#291F55] px-5 pt-5 pb-4">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+                <h3 class="text-[15px] font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+                    <svg class="icon text-brand"><use href="#i-filter"/></svg>
+                    Filter Shipments
+                </h3>
+                <p class="text-[11.5px] text-muted dark:text-[#B2ACD6] font-semibold mt-1">Narrow down results by status, type, priority or search by tracking info</p>
             </div>
+            {% if status_filter or search or cargo_type or priority %}
+            <a href="{% url 'cargo:list' %}" class="inline-flex items-center gap-1.5 text-[12px] font-bold px-3 py-1.5 rounded-[10px] border border-gray-200 dark:border-[#291F55] bg-card-2 dark:bg-card-dark2 text-muted dark:text-[#B2ACD6] hover:border-danger hover:text-danger transition-colors">
+                <svg class="w-3.5 h-3.5 stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                Clear Filters
+            </a>
+            {% endif %}
         </div>
-        <div class="filter-row-right">
-            <form method="get" action="{% url 'cargo:list' %}" class="flex items-center gap-2 flex-wrap">
-                {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
-                <div class="search-field" style="width: 280px;">
-                    <svg class="icon"><use href="#i-search"/></svg>
-                    <input type="text" name="q" value="{{ search }}" placeholder="Search tracking, sender, receiver...">
-                </div>
-                <select name="cargo_type" onchange="this.form.submit()">
-                    <option value="">All Types</option>
+    </div>
+
+    <div class="px-5 py-4 border-b border-gray-100 dark:border-[#291F55]">
+        <div class="flex items-center gap-2 mb-3">
+            <svg class="w-4 h-4 stroke-current fill-none stroke-[1.8] stroke-linecap-round stroke-linejoin-round text-muted dark:text-[#8981B8]"><path d="M3 6h18M7 12h10M10 18h4"/></svg>
+            <span class="text-[11.5px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider">Status</span>
+        </div>
+        <div class="chip-group">
+            <a href="{% url 'cargo:list' %}" class="chip {% if not status_filter %}active{% endif %}">
+                <svg class="icon"><use href="#i-grid"/></svg>
+                All
+                <span class="ml-1 inline-flex items-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold bg-gray-200/70 dark:bg-[#291F55] text-gray-700 dark:text-[#B2ACD6] {% if not status_filter %}!bg-white/20 !text-white{% endif %}">
+                    {{ status_counts.booked|default:0|add:status_counts.awaiting_receiving|default:0|add:status_counts.received|default:0|add:status_counts.in_warehouse|default:0|add:status_counts.sorted|default:0|add:status_counts.ready_for_dispatch|default:0|add:status_counts.loaded|default:0|add:status_counts.in_transit|default:0|add:status_counts.arrived_destination|default:0|add:status_counts.customs_hold|default:0|add:status_counts.ready_for_delivery|default:0|add:status_counts.out_for_delivery|default:0|add:status_counts.delivery_attempted|default:0|add:status_counts.delivered|default:0|add:status_counts.returned|default:0|add:status_counts.lost|default:0|add:status_counts.damaged|default:0|add:status_counts.cancelled|default:0 }}
+                </span>
+            </a>
+            <a href="?status=booked" class="chip {% if status_filter == 'booked' %}active{% endif %}">
+                <svg class="icon"><use href="#i-clipboard"/></svg>
+                Booked
+                <span class="ml-1 inline-flex items-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold bg-gray-200/70 dark:bg-[#291F55] text-gray-700 dark:text-[#B2ACD6] {% if status_filter == 'booked' %}!bg-white/20 !text-white{% endif %}">
+                    {{ status_counts.booked|default:0|add:status_counts.awaiting_receiving|default:0 }}
+                </span>
+            </a>
+            <a href="?status=in_transit" class="chip {% if status_filter == 'in_transit' %}active{% endif %}">
+                <svg class="icon"><use href="#i-truck"/></svg>
+                In Transit
+                <span class="ml-1 inline-flex items-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold bg-gray-200/70 dark:bg-[#291F55] text-gray-700 dark:text-[#B2ACD6] {% if status_filter == 'in_transit' %}!bg-white/20 !text-white{% endif %}">
+                    {{ status_counts.in_transit|default:0|add:status_counts.loaded|default:0|add:status_counts.out_for_delivery|default:0 }}
+                </span>
+            </a>
+            <a href="?status=in_warehouse" class="chip {% if status_filter == 'in_warehouse' %}active{% endif %}">
+                <svg class="icon"><use href="#i-warehouse"/></svg>
+                Warehouse
+                <span class="ml-1 inline-flex items-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold bg-gray-200/70 dark:bg-[#291F55] text-gray-700 dark:text-[#B2ACD6] {% if status_filter == 'in_warehouse' %}!bg-white/20 !text-white{% endif %}">
+                    {{ status_counts.in_warehouse|default:0|add:status_counts.received|default:0|add:status_counts.sorted|default:0|add:status_counts.ready_for_dispatch|default:0|add:status_counts.arrived_destination|default:0|add:status_counts.ready_for_delivery|default:0 }}
+                </span>
+            </a>
+            <a href="?status=customs_hold" class="chip {% if status_filter == 'customs_hold' %}active{% endif %}">
+                <svg class="icon"><use href="#i-shield"/></svg>
+                Customs
+                <span class="ml-1 inline-flex items-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold bg-gray-200/70 dark:bg-[#291F55] text-gray-700 dark:text-[#B2ACD6] {% if status_filter == 'customs_hold' %}!bg-white/20 !text-white{% endif %}">
+                    {{ status_counts.customs_hold|default:0 }}
+                </span>
+            </a>
+            <a href="?status=out_for_delivery" class="chip {% if status_filter == 'out_for_delivery' %}active{% endif %}">
+                <svg class="icon"><use href="#i-package"/></svg>
+                Delivery
+                <span class="ml-1 inline-flex items-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold bg-gray-200/70 dark:bg-[#291F55] text-gray-700 dark:text-[#B2ACD6] {% if status_filter == 'out_for_delivery' %}!bg-white/20 !text-white{% endif %}">
+                    {{ status_counts.ready_for_delivery|default:0|add:status_counts.out_for_delivery|default:0|add:status_counts.delivery_attempted|default:0 }}
+                </span>
+            </a>
+            <a href="?status=delivered" class="chip {% if status_filter == 'delivered' %}active{% endif %}">
+                <svg class="icon"><use href="#i-check"/></svg>
+                Delivered
+                <span class="ml-1 inline-flex items-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold bg-gray-200/70 dark:bg-[#291F55] text-gray-700 dark:text-[#B2ACD6] {% if status_filter == 'delivered' %}!bg-white/20 !text-white{% endif %}">
+                    {{ status_counts.delivered|default:0 }}
+                </span>
+            </a>
+            <a href="?status=delayed" class="chip {% if status_filter == 'delayed' %}active{% endif %}">
+                <svg class="icon"><use href="#i-alert"/></svg>
+                Issues
+                <span class="ml-1 inline-flex items-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold bg-gray-200/70 dark:bg-[#291F55] text-gray-700 dark:text-[#B2ACD6] {% if status_filter == 'delayed' %}!bg-white/20 !text-white{% endif %}">
+                    {{ status_counts.returned|default:0|add:status_counts.lost|default:0|add:status_counts.damaged|default:0|add:status_counts.cancelled|default:0 }}
+                </span>
+            </a>
+        </div>
+    </div>
+
+    <div class="px-5 py-4">
+        <form method="get" action="{% url 'cargo:list' %}" class="flex items-center gap-2.5 flex-wrap">
+            {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+            <div class="search-field" style="width: 320px; max-width:100%;">
+                <svg class="icon"><use href="#i-search"/></svg>
+                <input type="text" name="q" value="{{ search }}" placeholder="Search tracking ID, sender name, receiver name...">
+                {% if search %}
+                <a href="?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if cargo_type %}cargo_type={{ cargo_type }}&{% endif %}{% if priority %}priority={{ priority }}{% endif %}" class="ml-1 flex items-center justify-center w-5 h-5 rounded-full bg-gray-200/60 dark:bg-[#291F55] hover:bg-danger/20 hover:text-danger transition-colors flex-shrink-0">
+                    <svg class="w-3 h-3 stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round text-muted dark:text-[#8981B8] hover:text-danger"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </a>
+                {% endif %}
+            </div>
+            <div class="relative">
+                <select name="cargo_type" onchange="this.form.submit()" class="appearance-none pr-8">
+                    <option value="">All Cargo Types</option>
                     {% for val,label in cargo_type_choices %}
                     <option value="{{ val }}" {% if cargo_type == val %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
-                <select name="priority" onchange="this.form.submit()">
+                <svg class="w-3.5 h-3.5 stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round text-muted dark:text-[#8981B8] pointer-events-none absolute right-3 top-1/2 -translate-y-1/2"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+            <div class="relative">
+                <select name="priority" onchange="this.form.submit()" class="appearance-none pr-8">
                     <option value="">All Priority</option>
                     {% for val,label in priority_choices %}
                     <option value="{{ val }}" {% if priority == val %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
-                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                <svg class="w-3.5 h-3.5 stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round text-muted dark:text-[#8981B8] pointer-events-none absolute right-3 top-1/2 -translate-y-1/2"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+            <div class="flex items-center gap-2 ml-auto">
+                {% if cargo_type or priority or search %}
+                <a href="?{% if status_filter %}status={{ status_filter }}{% endif %}" class="chip !px-3.5">
+                    <svg class="w-3.5 h-3.5 stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+                    Reset
+                </a>
+                {% endif %}
+                <button type="submit" class="btn btn-primary !py-2 !px-4 !text-[12.5px]">
                     <svg class="icon"><use href="#i-filter"/></svg>
-                    Apply
+                    Apply Filters
                 </button>
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
 </div>
 
