@@ -54,6 +54,15 @@
         html.no-fouc body { opacity: 0; }
         html.no-fouc-ready body { opacity: 1; transition: opacity .12s ease; }
     </style>
+    <script>
+    (function () {
+        if (!window.__SHEHENA_VITE_NOOP) {
+            window.__SHEHENA_VITE_NOOP = true;
+            Object.defineProperty(window, '__vite_plugin_react_preamble_installed__', { value: true, configurable: false, writable: false });
+            Object.defineProperty(window, '__vite_is_plugin_prelude__', { value: true, configurable: false, writable: false });
+        }
+    })();
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;0,6..12,800;0,6..12,900;1,6..12,600&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>

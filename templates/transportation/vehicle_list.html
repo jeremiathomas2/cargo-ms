@@ -2,148 +2,588 @@
 {% load static %}
 
 {% block content %}
+{% url 'transportation:vehicle_list' as list_url %}
+
 <div class="page-head">
     <div>
-        <h1 class="page-title">Fleet & Vehicles</h1>
-        <p class="page-sub">Trucks, vans, trailers and equipment — maintenance & status</p>
+        <h1>Fleet &amp; Vehicles</h1>
+        <p>Trucks, vans, trailers and equipment — live status, utilization and compliance</p>
     </div>
-    <div class="page-head-actions">
+    <div class="flex items-end gap-3 flex-wrap">
         <div class="range-select">
             <svg class="icon"><use href="#i-clock"/></svg>
-            <span>Fleet snapshot</span>
-            <svg class="chev"><use href="#i-chevron-down"/></svg>
+            <span>Fleet snapshot — {{ today|date:"M d, Y" }}</span>
+            <svg class="chev" style="width:15px;height:15px;"><use href="#i-chevron-down"/></svg>
         </div>
+        <button class="btn btn-primary" {% if request.user.is_staff %}{% endif %}>
+            <svg class="icon"><use href="#i-plus"/></svg>
+            <span class="btn-text">Register Vehicle</span>
+        </button>
     </div>
 </div>
 
 <div class="stat-grid">
     <div class="stat-card">
-        <div class="stat-top"><div class="stat-icon bg-brand/10 text-brand"><svg class="icon"><use href="#i-truck"/></svg></div></div>
-        <div class="stat-value">{{ vehicles.paginator.count }}</div>
-        <div class="stat-label">Total Vehicles</div>
+        <div class="stat-top">
+            <div class="stat-icon bg-brand/10 text-brand"><svg class="icon"><use href="#i-truck"/></svg></div>
+            <div class="stat-trend trend-up">
+                <svg><use href="#i-up"/></svg>{{ status_counts.total|default:0 }}
+            </div>
+        </div>
+        <div class="stat-value">{{ status_counts.total|default:0 }}</div>
+        <div class="stat-label">Total fleet</div>
     </div>
     <div class="stat-card">
-        <div class="stat-top"><div class="stat-icon bg-success/10 text-success"><svg class="icon"><use href="#i-check"/></svg></div></div>
-        <div class="stat-value">{% for v in vehicles %}{% if v.status == 'available' and forloop.counter %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not vehicles %}0{% endif %}</div>
+        <div class="stat-top">
+            <div class="stat-icon bg-success/10 text-success"><svg class="icon"><use href="#i-check"/></svg></div>
+            <div class="stat-trend trend-up">
+                <svg><use href="#i-up"/></svg>
+                {% if status_counts.total > 0 %}{{ status_counts.available|default:0|stringformat:".0f" }}%{% else %}0%{% endif %}
+            </div>
+        </div>
+        <div class="stat-value">{{ status_counts.available|default:0 }}</div>
         <div class="stat-label">Available</div>
     </div>
     <div class="stat-card">
-        <div class="stat-top"><div class="stat-icon bg-secondary/10 text-secondary"><svg class="icon"><use href="#i-route"/></svg></div></div>
-        <div class="stat-value">{% for v in vehicles %}{% if v.status == 'on_route' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not vehicles %}0{% endif %}</div>
-        <div class="stat-label">On Route</div>
+        <div class="stat-top">
+            <div class="stat-icon bg-info/10 text-info"><svg class="icon"><use href="#i-route"/></svg></div>
+            <div class="stat-trend trend-up">
+                <svg><use href="#i-up"/></svg>{{ totals.total_trips|default:0 }}
+            </div>
+        </div>
+        <div class="stat-value">{{ status_counts.on_route|default:0 }}</div>
+        <div class="stat-label">On route</div>
     </div>
     <div class="stat-card">
-        <div class="stat-top"><div class="stat-icon bg-warning/10 text-warning"><svg class="icon"><use href="#i-alert"/></svg></div></div>
-        <div class="stat-value">{% for v in vehicles %}{% if v.status == 'maintenance' %}{% if forloop.first %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %}{% if not vehicles %}0{% endif %}</div>
+        <div class="stat-top">
+            <div class="stat-icon bg-warning/10 text-warning"><svg class="icon"><use href="#i-alert"/></svg></div>
+            <div class="stat-trend trend-down">
+                <svg><use href="#i-down"/></svg>{{ status_counts.maintenance|default:0 }}
+            </div>
+        </div>
+        <div class="stat-value">{{ status_counts.maintenance|default:0 }}</div>
         <div class="stat-label">Maintenance</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon bg-secondary/10 text-secondary"><svg class="icon"><use href="#i-layers"/></svg></div>
+            <div class="stat-trend trend-up">
+                <svg><use href="#i-up"/></svg>kg
+            </div>
+        </div>
+        <div class="stat-value" title="{{ totals.total_capacity_kg|default:0 }} kg">
+            {% with total_cap=totals.total_capacity_kg|default:0 %}
+                {% if total_cap|stringformat:"s"|length > 6 %}
+                    {{ total_cap|stringformat:".0f"|slice:":-6"|default:0 }}.<span class="text-[18px]">{{ total_cap|stringformat:".0f"|slice:"-6:-5" }}</span>M
+                {% else %}
+                    {{ total_cap|stringformat:".0f" }}
+                {% endif %}
+            {% endwith %}
+        </div>
+        <div class="stat-label">Total payload capacity</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon bg-brand/10 text-brand"><svg class="icon"><use href="#i-pin"/></svg></div>
+            <div class="stat-trend trend-up">
+                <svg><use href="#i-up"/></svg>
+                {% with gps=totals.with_gps|default:0 total=status_counts.total|default:0 %}
+                    {% if total > 0 %}{{ gps|stringformat:".0f"|floatformat:0 }}%{% else %}0%{% endif %}
+                {% endwith %}
+            </div>
+        </div>
+        <div class="stat-value">{{ totals.with_gps|default:0 }}</div>
+        <div class="stat-label">GPS-tracked units</div>
     </div>
 </div>
 
-<div class="panel" style="margin-bottom: 20px;">
-    <div class="filter-row">
-        <div class="chip-group">
-            <a href="{% url 'transportation:vehicle_list' %}" class="chip {% if not status_filter and not type_filter %}active{% endif %}">All</a>
-            {% for val,label in status_choices %}
-            <a href="?status={{ val }}" class="chip {% if status_filter == val %}active{% endif %}">{{ label }}</a>
+<div class="grid-main">
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <h2>Fleet health &amp; compliance</h2>
+                <div class="sub">Insurance &amp; inspection expiry in the next 30 days</div>
+            </div>
+            <a href="?expiring=1" class="panel-more" title="Filter list to show expiring units" aria-label="Filter expiring">
+                <svg><use href="#i-filter"/></svg>
+            </a>
+        </div>
+        <div class="chart-box" style="padding:8px 20px 18px;">
+            <div class="grid grid-cols-2 gap-3 mb-4" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="p-4 rounded-[12px]" style="background:var(--card-2); border:1px solid var(--border);">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--danger-soft); color:var(--danger);">
+                            <svg class="icon" style="width:16px;height:16px;"><use href="#i-alert"/></svg>
+                        </div>
+                        <div>
+                            <div class="text-[11px] fw-7 t-faint">Compliance horizon</div>
+                            <div class="text-[16px] fw-8">Expiring (30d)</div>
+                        </div>
+                        <div class="ml-auto">
+                            <span class="badge b-danger">{{ expiring|length }}</span>
+                        </div>
+                    </div>
+                    <div class="progress-shell mb-0">
+                        <div class="progress-bar" style="width:{% widthratio expiring|length status_counts.total|default:1 100 %}%;background:var(--danger);"></div>
+                    </div>
+                </div>
+                <div class="p-4 rounded-[12px]" style="background:var(--card-2); border:1px solid var(--border);">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--success-soft); color:var(--success);">
+                            <svg class="icon" style="width:16px;height:16px;"><use href="#i-shield"/></svg>
+                        </div>
+                        <div>
+                            <div class="text-[11px] fw-7 t-faint">Fleet utilization</div>
+                            <div class="text-[16px] fw-8">Usage score</div>
+                        </div>
+                        <div class="ml-auto">
+                            {% with trips=totals.total_trips|default:0 fleet=status_counts.total|default:1 %}
+                                <span class="badge b-info">{% widthratio trips fleet 1 %}</span>
+                            {% endwith %}
+                        </div>
+                    </div>
+                    <div class="progress-shell mb-0">
+                        {% with trips=totals.total_trips|default:0 fleet=status_counts.total|default:1 target=90 %}
+                            {% if fleet > 0 %}
+                                {% widthratio trips fleet 1 as avg %}
+                                <div class="progress-bar" style="width:{% widthratio avg target 100 %}%;background:var(--info);"></div>
+                            {% else %}
+                                <div class="progress-bar" style="width:0%;background:var(--info);"></div>
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-head" style="padding:8px 0 10px;">
+                <div>
+                    <h2 style="font-size:14px;">Upcoming &amp; expired</h2>
+                    <div class="sub">Sorted by next expiry date</div>
+                </div>
+            </div>
+
+            <div style="max-height:360px;overflow-y:auto;padding:0 4px;">
+                {% for v in expiring %}
+                    <a href="{% url 'transportation:vehicle_detail' pk=v.pk %}" class="notif-row" style="display:flex;gap:10px;padding:10px 10px;border-radius:var(--radius-sm);">
+                        <div class="notif-icon" style="{% if v.insurance_expiry and today >= v.insurance_expiry %}background:var(--danger-soft);{% elif v.inspection_expiry and today >= v.inspection_expiry %}background:var(--danger-soft);{% elif v.insurance_soon or v.inspection_soon %}background:var(--warning-soft);{% else %}background:var(--info-soft);{% endif %}">
+                            <svg style="stroke:{% if v.insurance_expiry and today >= v.insurance_expiry %}var(--danger);{% elif v.inspection_expiry and today >= v.inspection_expiry %}var(--danger);{% elif v.insurance_soon or v.inspection_soon %}var(--warning);{% else %}var(--info);{% endif %}">
+                                <use href="#i-clipboard"/>
+                            </svg>
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div class="flex items-center gap-2 mb-1">
+                                <strong style="font-size:13px;font-weight:800;color:var(--text);">{{ v.registration_number }}</strong>
+                                <span class="badge" style="font-size:10px;">{{ v.get_vehicle_type_display }}</span>
+                                {% if v.insurance_expiry and today >= v.insurance_expiry %}
+                                    <span class="badge b-danger">Insurance overdue</span>
+                                {% elif v.inspection_expiry and today >= v.inspection_expiry %}
+                                    <span class="badge b-danger">Inspection overdue</span>
+                                {% elif v.insurance_soon %}
+                                    <span class="badge b-warning">Insurance soon</span>
+                                {% elif v.inspection_soon %}
+                                    <span class="badge b-warning">Inspection soon</span>
+                                {% endif %}
+                            </div>
+                            <div style="font-size:12px;color:var(--text-muted);font-weight:600;">
+                                {% if v.insurance_expiry %}
+                                    Insurance: <strong style="color:var(--text);">{{ v.insurance_expiry|date:"M d, Y" }}</strong>
+                                {% endif %}
+                                {% if v.inspection_expiry %}
+                                    <span class="mx-2" style="color:var(--text-faint);">·</span>
+                                    Inspection: <strong style="color:var(--text);">{{ v.inspection_expiry|date:"M d, Y" }}</strong>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="empty-state" style="padding:40px 20px;">
+                        <div class="icon"><svg><use href="#i-shield"/></svg></div>
+                        <p>All vehicles are in compliance. No upcoming expiries.</p>
+                    </div>
+                    {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <h2>Type mix</h2>
+                <div class="sub">Composition of the fleet by vehicle type</div>
+            </div>
+            <div class="panel-more"><svg><use href="#i-layers"/></svg></div>
+        </div>
+        <div class="chart-box">
+            {% with total=status_counts.total|default:1 palette=palette %}
+            {% for t in type_counts_list %}
+                <div class="mb-3">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[12.5px] fw-7 t-muted">{{ t.label }}</span>
+                        <span class="text-[12.5px] fw-8" style="color:var(--text);">
+                            {{ t.count }}
+                            <span class="t-faint fw-6 ml-1" style="font-weight:600;color:var(--text-faint);">
+                                ({% widthratio t.count total 100 %}%)
+                            </span>
+                        </span>
+                    </div>
+                    <div class="progress-shell">
+                        {% if t.value == 'truck' %}
+                            <div class="progress-bar" style="width:{% widthratio t.count total 100 %}%;background:var(--brand);"></div>
+                        {% elif t.value == 'trailer' %}
+                            <div class="progress-bar" style="width:{% widthratio t.count total 100 %}%;background:var(--info);"></div>
+                        {% elif t.value == 'van' %}
+                            <div class="progress-bar" style="width:{% widthratio t.count total 100 %}%;background:var(--success);"></div>
+                        {% elif t.value == 'pickup' %}
+                            <div class="progress-bar" style="width:{% widthratio t.count total 100 %}%;background:var(--secondary);"></div>
+                        {% elif t.value == 'flatbed' %}
+                            <div class="progress-bar" style="width:{% widthratio t.count total 100 %}%;background:var(--warning);"></div>
+                        {% elif t.value == 'tanker' %}
+                            <div class="progress-bar" style="width:{% widthratio t.count total 100 %}%;background:var(--danger);"></div>
+                        {% elif t.value == 'container_truck' %}
+                            <div class="progress-bar" style="width:{% widthratio t.count total 100 %}%;background:var(--navy);"></div>
+                        {% else %}
+                            <div class="progress-bar" style="width:{% widthratio t.count total 100 %}%;background:var(--text-muted);"></div>
+                        {% endif %}
+                    </div>
+                </div>
             {% endfor %}
+            {% endwith %}
+
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[12.5px] fw-7 t-muted">Total fleet capacity</span>
+                </div>
+                <div class="grid gap-3" style="display:grid;grid-template-columns:repeat(2,1fr);">
+                    <div class="p-3 rounded-[12px]" style="background:var(--card-2);border:1px solid var(--border);">
+                        <div class="text-[10.5px] fw-8 t-faint uppercase tracking-wider mb-1">Payload</div>
+                        <div class="text-[15px] fw-8" style="color:var(--text);">
+                            {{ totals.total_capacity_kg|default:0|stringformat:".0f" }} <span class="t-faint fw-6" style="font-size:11px;">kg</span>
+                        </div>
+                    </div>
+                    <div class="p-3 rounded-[12px]" style="background:var(--card-2);border:1px solid var(--border);">
+                        <div class="text-[10.5px] fw-8 t-faint uppercase tracking-wider mb-1">Volume</div>
+                        <div class="text-[15px] fw-8" style="color:var(--text);">
+                            {{ totals.total_volume_m3|default:0|stringformat:".1f" }} <span class="t-faint fw-6" style="font-size:11px;">m³</span>
+                        </div>
+                    </div>
+                    <div class="p-3 rounded-[12px]" style="background:var(--card-2);border:1px solid var(--border);">
+                        <div class="text-[10.5px] fw-8 t-faint uppercase tracking-wider mb-1">Total trips</div>
+                        <div class="text-[15px] fw-8" style="color:var(--text);">
+                            {{ totals.total_trips|default:0|stringformat:".0f" }}
+                        </div>
+                    </div>
+                    <div class="p-3 rounded-[12px]" style="background:var(--card-2);border:1px solid var(--border);">
+                        <div class="text-[10.5px] fw-8 t-faint uppercase tracking-wider mb-1">Total distance</div>
+                        <div class="text-[15px] fw-8" style="color:var(--text);">
+                            {% with km=totals.total_km|default:0 %}
+                                {% if km|stringformat:".0f"|length > 6 %}
+                                    {{ km|stringformat:".0f"|slice:":-6" }}.<span style="font-size:11px;">{{ km|stringformat:".0f"|slice:"-6:-5" }}</span>M <span class="t-faint fw-6" style="font-size:11px;">km</span>
+                                {% else %}
+                                    {{ km|stringformat:".0f" }} <span class="t-faint fw-6" style="font-size:11px;">km</span>
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel" style="margin-bottom:18px;">
+    <div class="filter-row">
+        <div class="filter-row-left">
+            <div class="chip-group">
+                <a href="{{ list_url }}"
+                   class="chip {% if not status_filter and not type_filter and not branch_filter and not search and not only_expiring %}active{% endif %}">
+                    <svg class="icon"><use href="#i-grid"/></svg>
+                    All <span class="ml-1" style="padding:1px 7px;border-radius:999px;{% if not status_filter and not type_filter and not branch_filter and not search and not only_expiring %}background:rgba(255,255,255,.18);color:#fff;{% else %}background:var(--card);border:1px solid var(--border);color:var(--text-muted);{% endif %} font-weight:800;font-size:10.5px;">
+                        {{ status_counts.total|default:0 }}
+                    </span>
+                </a>
+                {% for val,label in status_choices %}
+                    {% if val == 'available' or val == 'on_route' or val == 'maintenance' or val == 'retired' %}
+                        {% if val == 'available' %}
+                            {% with count=status_counts.available|default:0 %}
+                                <a href="?status={{ val }}"
+                                   class="chip {% if status_filter == val %}active{% endif %}">
+                                    <svg><use href="#i-check"/></svg>{{ label }}
+                                    <span class="ml-1" style="padding:1px 7px;border-radius:999px;{% if status_filter == val %}background:rgba(255,255,255,.18);color:#fff;{% else %}background:var(--card);border:1px solid var(--border);color:var(--text-muted);{% endif %} font-weight:800;font-size:10.5px;">{{ count }}</span>
+                                </a>
+                            {% endwith %}
+                        {% elif val == 'on_route' %}
+                            {% with count=status_counts.on_route|default:0 %}
+                                <a href="?status={{ val }}"
+                                   class="chip {% if status_filter == val %}active{% endif %}">
+                                    <svg><use href="#i-route"/></svg>{{ label }}
+                                    <span class="ml-1" style="padding:1px 7px;border-radius:999px;{% if status_filter == val %}background:rgba(255,255,255,.18);color:#fff;{% else %}background:var(--card);border:1px solid var(--border);color:var(--text-muted);{% endif %} font-weight:800;font-size:10.5px;">{{ count }}</span>
+                                </a>
+                            {% endwith %}
+                        {% elif val == 'maintenance' %}
+                            {% with count=status_counts.maintenance|default:0 %}
+                                <a href="?status={{ val }}"
+                                   class="chip {% if status_filter == val %}active{% endif %}">
+                                    <svg><use href="#i-alert"/></svg>{{ label }}
+                                    <span class="ml-1" style="padding:1px 7px;border-radius:999px;{% if status_filter == val %}background:rgba(255,255,255,.18);color:#fff;{% else %}background:var(--card);border:1px solid var(--border);color:var(--text-muted);{% endif %} font-weight:800;font-size:10.5px;">{{ count }}</span>
+                                </a>
+                            {% endwith %}
+                        {% elif val == 'retired' %}
+                            {% with count=status_counts.retired|default:0 %}
+                                <a href="?status={{ val }}"
+                                   class="chip {% if status_filter == val %}active{% endif %}">
+                                    <svg><use href="#i-trash"/></svg>{{ label }}
+                                    <span class="ml-1" style="padding:1px 7px;border-radius:999px;{% if status_filter == val %}background:rgba(255,255,255,.18);color:#fff;{% else %}background:var(--card);border:1px solid var(--border);color:var(--text-muted);{% endif %} font-weight:800;font-size:10.5px;">{{ count }}</span>
+                                </a>
+                            {% endwith %}
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                <a href="?expiring=1"
+                   class="chip {% if only_expiring %}active{% endif %}">
+                    <svg><use href="#i-shield"/></svg>Expiring
+                    <span class="ml-1" style="padding:1px 7px;border-radius:999px;{% if only_expiring %}background:rgba(255,255,255,.18);color:#fff;{% else %}background:var(--card);border:1px solid var(--border);color:var(--text-muted);{% endif %} font-weight:800;font-size:10.5px;">{{ expiring|length }}</span>
+                </a>
+            </div>
         </div>
         <div class="filter-row-right">
             <form method="get" class="flex items-center gap-2 flex-wrap">
-                <div class="search-field" style="width: 240px;">
+                {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+                {% if type_filter %}<input type="hidden" name="type" value="{{ type_filter }}">{% endif %}
+                {% if branch_filter %}<input type="hidden" name="branch" value="{{ branch_filter }}">{% endif %}
+                {% if only_expiring %}<input type="hidden" name="expiring" value="1">{% endif %}
+                <div class="search-field">
                     <svg class="icon"><use href="#i-search"/></svg>
-                    <input type="text" name="q" value="{{ search }}" placeholder="Reg no, make, model...">
+                    <input type="text" name="q" value="{{ search }}"
+                           placeholder="Reg no, make, model, branch, driver…" id="searchInput">
                 </div>
-                <select name="type" class="chip" onchange="this.form.submit()">
-                    <option value="">All Types</option>
+                <select name="type" class="appearance-none relative pr-8" onchange="this.form.submit()">
+                    <option value="">All types</option>
                     {% for val,label in type_choices %}
-                    <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
-                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                {% if branches %}
+                <select name="branch" class="appearance-none relative pr-8" onchange="this.form.submit()">
+                    <option value="">All branches</option>
+                    {% for b in branches %}
+                        <option value="{{ b.id }}" {% if branch_filter == b.id|stringformat:"s" or branch_filter == b.code %}selected{% endif %}>
+                            {% if b.code %}{{ b.code }} · {% endif %}{{ b.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+                <button type="submit" class="btn btn-ghost">
                     <svg class="icon"><use href="#i-filter"/></svg>
-                    Go
+                    Apply
                 </button>
+                {% if search or status_filter or type_filter or branch_filter or only_expiring %}
+                    <a href="{{ list_url }}" class="btn btn-ghost" style="border-color:var(--danger);color:var(--danger);">
+                        <svg class="icon"><use href="#i-trash"/></svg> Clear
+                    </a>
+                {% endif %}
             </form>
         </div>
     </div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-    {% for v in vehicles %}
-    <a href="{% url 'transportation:vehicle_detail' pk=v.pk %}" class="panel card-shadow hover:shadow-lg transition-shadow overflow-hidden group block">
-        <div class="h-32 bg-gradient-to-br from-secondary/20 via-brand/10 to-info/10 dark:from-secondary/10 dark:via-brand/5 dark:to-info/5 relative overflow-hidden flex items-end">
-            <div class="absolute right-5 bottom-5 opacity-20 group-hover:opacity-30 transition-opacity">
-                <svg class="w-32 h-32" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 40V18h28v-6h18v6h10v22h-6"/><rect x="6" y="40" width="52" height="10" rx="2"/><circle cx="18" cy="54" r="5"/><circle cx="46" cy="54" r="5"/></svg>
-            </div>
-            <div class="p-5 relative w-full flex items-end justify-between">
-                <div>
-                    <span class="chip" style="font-size: 11px;">{{ v.get_vehicle_type_display }}</span>
-                    <h3 class="text-[18px] font-black text-gray-900 dark:text-white mt-1 tracking-tight font-mono">{{ v.registration_number }}</h3>
-                </div>
-                <div>
-                    {% if v.status == 'available' %}<span class="b-delivered">Available</span>
-                    {% elif v.status == 'on_route' %}<span class="b-transit">On Route</span>
-                    {% elif v.status == 'maintenance' %}<span class="b-delayed">Maintenance</span>
-                    {% else %}<span class="b-pending">{{ v.get_status_display }}</span>{% endif %}
-                </div>
-            </div>
-        </div>
-        <div class="p-5 border-t border-gray-200 dark:border-[#291F55]">
-            <div class="grid grid-cols-2 gap-3 mb-4">
-                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2">
-                    <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Make / Model</div>
-                    <div class="text-[12.5px] font-extrabold text-gray-900 dark:text-white truncate">{{ v.make|default:"—" }} {{ v.model_name|default:"" }}</div>
-                </div>
-                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2">
-                    <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Year</div>
-                    <div class="text-[12.5px] font-extrabold text-gray-900 dark:text-white">{{ v.year|default:"—" }}</div>
-                </div>
-                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2">
-                    <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Payload</div>
-                    <div class="text-[12.5px] font-extrabold text-gray-900 dark:text-white">{{ v.max_capacity_kg }} kg</div>
-                </div>
-                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2">
-                    <div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Total Trips</div>
-                    <div class="text-[12.5px] font-extrabold text-gray-900 dark:text-white">{{ v.total_trips }}</div>
-                </div>
-            </div>
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2 min-w-0">
-                    {% if v.assigned_branch %}<span class="chip" style="font-size: 11px;">{{ v.assigned_branch.code }}</span>{% endif %}
-                    {% if v.gps_device %}<span class="chip" style="font-size: 11px; background: var(--success-bg); color: var(--success); border-color: var(--success-border);">GPS Active</span>{% endif %}
-                    {% if v.drivers.count > 0 %}<span class="chip" style="font-size: 11px;">{{ v.drivers.count }} driver{{ v.drivers.count|pluralize }}</span>{% endif %}
-                </div>
-                <svg class="w-4 h-4 text-muted dark:text-[#8981B8] group-hover:text-brand group-hover:translate-x-1 transition-all stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
-            </div>
-        </div>
-    </a>
-    {% empty %}
-    <div class="panel md:col-span-2 xl:col-span-3">
-        <div class="px-6 py-14 text-center">
-            <div class="flex flex-col items-center gap-3">
-                <div class="w-14 h-14 rounded-full bg-card-2 dark:bg-card-dark2 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-faint dark:text-[#8981B8] stroke-current fill-none stroke-[1.8]" viewBox="0 0 24 24"><path d="M1 3h11v11H1z"/><path d="M12 6h5l3 3v5h-8z"/><circle cx="5.5" cy="15.5" r="2"/><circle cx="18.5" cy="15.5" r="2"/></svg>
-                </div>
-                <p class="text-sm font-semibold text-faint dark:text-[#8981B8]">No vehicles found. Register your first truck.</p>
+<div class="panel">
+    <div class="panel-head">
+        <div>
+            <h2>Vehicle directory</h2>
+            <div class="sub">
+                Showing {{ vehicles.start_index }}–{{ vehicles.end_index }}
+                of {{ vehicles.paginator.count }} units
+                {% if search %} · filter: “{{ search }}”{% endif %}
             </div>
         </div>
     </div>
-    {% endfor %}
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width:36%;">Vehicle</th>
+                    <th>Status</th>
+                    <th>Branch</th>
+                    <th style="width:22%;">Utilization</th>
+                    <th>Trips</th>
+                    <th>KM</th>
+                    <th>Compliance</th>
+                    <th style="text-align:right;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in vehicles %}
+                <tr class="group">
+                    <td>
+                        <a href="{% url 'transportation:vehicle_detail' pk=v.pk %}" class="fleet-row" style="display:flex;align-items:center;gap:12px;padding:2px 0;">
+                            <div class="fleet-icon" style="background:{% if v.status == 'available' %}var(--success-soft);color:var(--success);{% elif v.status == 'on_route' %}var(--info-soft);color:var(--info);{% elif v.status == 'maintenance' %}var(--warning-soft);color:var(--warning);{% else %}var(--border-gray-200);color:var(--text-faint);{% endif %};">
+                                <svg><use href="#i-truck"/></svg>
+                            </div>
+                            <div class="fleet-body" style="flex:1;min-width:0;">
+                                <strong style="font-size:13px;font-weight:800;display:block;color:var(--text);letter-spacing:-.005em;">
+                                    {{ v.registration_number }}
+                                    <span class="chip ml-2" style="padding:1px 8px;font-size:10.5px;border-radius:999px;">
+                                        {{ v.get_vehicle_type_display }}
+                                    </span>
+                                </strong>
+                                <span style="font-size:11.5px;color:var(--text-muted);font-weight:600;">
+                                    {{ v.make|default:"—" }}
+                                    {% if v.model_name %} {{ v.model_name }}{% endif %}
+                                    {% if v.year %} · {{ v.year }}{% endif %}
+                                    {% if v.max_capacity_kg and v.max_capacity_kg > 0 %} · {{ v.max_capacity_kg|stringformat:".0f" }}kg{% endif %}
+                                </span>
+                            </div>
+                        </a>
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-2">
+                            {% if v.status == 'available' %}
+                                <span class="dot-status" style="background:var(--success);box-shadow:0 0 0 3px var(--success-soft);"></span>
+                                <span class="badge b-delivered">Available</span>
+                            {% elif v.status == 'on_route' %}
+                                <span class="dot-status" style="background:var(--info);box-shadow:0 0 0 3px var(--info-soft);"></span>
+                                <span class="badge b-transit">On Route</span>
+                            {% elif v.status == 'maintenance' %}
+                                <span class="dot-status" style="background:var(--warning);box-shadow:0 0 0 3px var(--warning-soft);"></span>
+                                <span class="badge b-delayed">Maintenance</span>
+                            {% elif v.status == 'retired' %}
+                                <span class="dot-status" style="background:var(--text-faint);"></span>
+                                <span class="badge b-pending">Retired</span>
+                            {% else %}
+                                <span class="badge b-pending">{{ v.get_status_display }}</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="td-muted">
+                        {% if v.assigned_branch %}
+                            <div class="fw-7" style="color:var(--text);font-size:13px;font-weight:700;">
+                                {% if v.assigned_branch.code %}<span class="chip" style="padding:1px 8px;font-size:10.5px;border-radius:999px;">{{ v.assigned_branch.code }}</span>{% endif %}
+                                <span class="ml-1">{{ v.assigned_branch.name }}</span>
+                            </div>
+                        {% else %}
+                            <span class="t-faint fw-6" style="color:var(--text-faint);font-weight:600;">— unassigned</span>
+                        {% endif %}
+                        <div style="margin-top:2px;">
+                            {% if v.gps_device %}
+                                <span class="badge b-info" style="font-size:10px;padding:2px 7px;">GPS</span>
+                            {% endif %}
+                            {% with dc=v.drivers.all|length %}
+                                {% if dc > 0 %}
+                                    <span class="badge b-pending" style="font-size:10px;padding:2px 7px;margin-left:4px;">{{ dc }} driver{{ dc|pluralize }}</span>
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="mb-1 flex items-center justify-between">
+                            <span class="text-[11.5px] fw-7 t-faint">Utilization</span>
+                            <span class="text-[11.5px] fw-8" style="color:var(--text);">{{ v.utilization_pct|default:0 }}%</span>
+                        </div>
+                        <div class="progress-shell" style="height:6px;">
+                            <div class="progress-bar"
+                                 style="width:{{ v.utilization_pct|default:0 }}%;
+                                        background:{{ v.utilization_color }};">
+                            </div>
+                        </div>
+                        <div class="mt-2 flex items-center justify-between">
+                            <span class="text-[10.5px] fw-7 t-faint">Odometer vs cap</span>
+                            <span class="text-[10.5px] fw-8 t-muted">{{ v.km_util|default:0 }}%</span>
+                        </div>
+                        <div class="progress-shell" style="height:4px;background:var(--border);">
+                            <div class="progress-bar" style="width:{{ v.km_util|default:0 }}%;background:var(--secondary);"></div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="text-[14px] fw-8" style="color:var(--text);">{{ v.total_trips|default:0|stringformat:".0f" }}</div>
+                        <div class="text-[11px] fw-6 t-faint">completed</div>
+                    </td>
+                    <td>
+                        <div class="text-[14px] fw-8" style="color:var(--text);">
+                            {% with km=v.total_km|default:0 %}
+                                {% if km|stringformat:".0f"|length > 6 %}
+                                    {{ km|stringformat:".0f"|slice:":-6" }}.{{ km|stringformat:".0f"|slice:"-6:-5" }}M
+                                {% else %}
+                                    {{ km|stringformat:".0f" }}
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                        <div class="text-[11px] fw-6 t-faint">km traveled</div>
+                    </td>
+                    <td>
+                        {% if v.compliance_issue %}
+                            {% if v.insurance_overdue %}
+                                <span class="badge b-danger" style="margin-bottom:2px;">Insurance overdue</span>
+                                <div class="text-[10.5px] fw-7 t-muted">{{ v.insurance_expiry|date:"M d, Y" }}</div>
+                            {% elif v.inspection_overdue %}
+                                <span class="badge b-danger" style="margin-bottom:2px;">Inspection overdue</span>
+                                <div class="text-[10.5px] fw-7 t-muted">{{ v.inspection_expiry|date:"M d, Y" }}</div>
+                            {% elif v.insurance_soon %}
+                                <span class="badge b-warning" style="margin-bottom:2px;">Insurance</span>
+                                <div class="text-[10.5px] fw-7 t-muted">{{ v.insurance_expiry|date:"M d" }}</div>
+                            {% elif v.inspection_soon %}
+                                <span class="badge b-warning" style="margin-bottom:2px;">Inspection</span>
+                                <div class="text-[10.5px] fw-7 t-muted">{{ v.inspection_expiry|date:"M d" }}</div>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge b-delivered" style="font-size:10px;padding:2px 7px;">In compliance</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:right;">
+                        <div class="inline-flex items-center gap-1" style="opacity:0;transition:opacity .15s ease;" data-actions>
+                            <a href="{% url 'transportation:vehicle_detail' pk=v.pk %}"
+                               class="icon-btn" title="View vehicle" style="width:32px;height:32px;border-radius:9px;">
+                                <svg class="icon" style="width:16px;height:16px;"><use href="#i-eye"/></svg>
+                            </a>
+                            <button class="icon-btn" title="Edit" style="width:32px;height:32px;border-radius:9px;">
+                                <svg class="icon" style="width:16px;height:16px;"><use href="#i-edit"/></svg>
+                            </button>
+                            <button class="icon-btn" title="Assign driver" style="width:32px;height:32px;border-radius:9px;">
+                                <svg class="icon" style="width:16px;height:16px;"><use href="#i-users"/></svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg><use href="#i-truck"/></svg></div>
+                            <p>No vehicles match your filters. Clear filters or register your first truck.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if vehicles.has_other_pages %}
+        {% with active_qs='' %}
+        {% include 'components/pagination.html' with page_obj=vehicles %}
+        {% endwith %}
+    {% endif %}
 </div>
 
-{% if vehicles.has_other_pages %}
-<nav class="mt-5 flex items-center justify-between gap-3 px-5 py-3.5 panel flex-wrap">
-    <p class="text-xs font-semibold text-muted dark:text-[#B2ACD6]">Page {{ vehicles.number }} of {{ vehicles.paginator.num_pages }}</p>
-    <div class="flex items-center gap-1.5">
-        <a href="{% if vehicles.has_previous %}?page={{ vehicles.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% else %}#{% endif %}"
-           class="inline-flex items-center gap-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-muted dark:text-[#B2ACD6] hover:border-info {% if not vehicles.has_previous %}opacity-50 pointer-events-none{% endif %}">
-            <svg class="w-3.5 h-3.5 stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Prev
-        </a>
-        <a href="{% if vehicles.has_next %}?page={{ vehicles.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% else %}#{% endif %}"
-           class="inline-flex items-center gap-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-muted dark:text-[#B2ACD6] hover:border-info {% if not vehicles.has_next %}opacity-50 pointer-events-none{% endif %}">
-            Next <svg class="w-3.5 h-3.5 stroke-current fill-none stroke-2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
-        </a>
-    </div>
-</nav>
-{% endif %}
+<script>
+(function(){
+    var rows = document.querySelectorAll('.data-table tbody tr.group');
+    rows.forEach(function(tr){
+        var actions = tr.querySelector('[data-actions]');
+        if(!actions) return;
+        tr.addEventListener('mouseenter', function(){ actions.style.opacity = '1'; });
+        tr.addEventListener('mouseleave', function(){ actions.style.opacity = '0'; });
+    });
+    var selWraps = document.querySelectorAll('select.appearance-none');
+    selWraps.forEach(function(sel){
+        var wrap = document.createElement('div');
+        wrap.style.position = 'relative';
+        wrap.style.display = 'inline-flex';
+        sel.parentNode.insertBefore(wrap, sel);
+        wrap.appendChild(sel);
+        var ico = document.createElement('span');
+        ico.innerHTML = '<svg class="icon" style="width:15px;height:15px;pointer-events:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);"><use href="#i-chevron-down"/></svg>';
+        wrap.appendChild(ico.firstChild);
+    });
+})();
+</script>
 {% endblock %}

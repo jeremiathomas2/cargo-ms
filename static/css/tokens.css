@@ -999,3 +999,27 @@ canvas{max-width:100%; height:auto !important;}
 .\!text-\[10\.5px\]{font-size:10.5px !important;}
 .\!px-2\.5{padding-left:0.625rem !important;padding-right:0.625rem !important;}
 .\!py-1{padding-top:0.25rem !important;padding-bottom:0.25rem !important;}
+
+/* Progress / utilization bars (used by fleet overview, compliance, type mix) */
+.progress-shell{
+  height:8px;
+  width:100%;
+  border-radius:999px;
+  background:var(--border);
+  overflow:hidden;
+}
+.progress-bar{
+  display:block;
+  height:100%;
+  border-radius:999px;
+  background:var(--brand);
+  transition:width .35s ease;
+}
+
+/* Chevron overlay helpers for select.appearance-none wrapper */
+.select-wrap{position:relative;display:inline-flex;}
+.select-wrap svg.chev-inside{
+  position:absolute; right:12px; top:50%;
+  transform:translateY(-50%); pointer-events:none;
+  color:var(--text-muted);
+}
