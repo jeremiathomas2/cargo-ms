@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Risk Scores</h1>
+        <p>Shipment-level risk scoring with flags</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'risk_management:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-shield"/></svg> Overview</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.05s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'risk_management:risk_score_list' %}" class="chip {% if not reviewed_filter %}active{% endif %}">All</a>
+            <a href="?reviewed=0" class="chip {% if reviewed_filter == '0' %}active{% endif %}">Unreviewed</a>
+            <a href="?reviewed=1" class="chip {% if reviewed_filter == '1' %}active{% endif %}">Reviewed</a>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Shipment</th>
+                    <th>Score</th>
+                    <th>Flags</th>
+                    <th>Status</th>
+                    <th class="text-right">Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in risks %}
+                <tr>
+                    <td><a href="{% url 'cargo:detail' pk=r.shipment.pk %}" style="font-size:11.5px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ r.shipment.tracking_id }}</a></td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:70px; height:8px; background:var(--card-2); border-radius:999px; overflow:hidden;">
+                                <div style="width:{{ r.risk_score }}%; height:100%; background:{% if r.risk_score >= 70 %}var(--danger){% elif r.risk_score >= 40 %}var(--warning){% else %}var(--success){% endif %};"></div>
+                            </div>
+                            <span style="font-size:12px; font-weight:800;">{{ r.risk_score }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        {% for f in r.flags %}
+                        <span class="badge b-delayed">{{ f }}</span>
+                        {% empty %}<span class="td-faint">—</span>
+                        {% endfor %}
+                    </td>
+                    <td><span class="badge {% if r.reviewed %}b-delivered{% else %}b-pending{% endif %}">{% if r.reviewed %}Reviewed{% else %}Pending Review{% endif %}</span></td>
+                    <td class="text-right"><span class="td-faint">{{ r.created_at|timesince }} ago</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-shield"/></svg></div>
+                            <p>No risk scores computed.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if risks.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ risks.number }} of {{ risks.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if risks.has_previous %}?page={{ risks.previous_page_number }}{% endif %}" class="page-btn {% if not risks.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if risks.has_next %}?page={{ risks.next_page_number }}{% endif %}" class="page-btn {% if not risks.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

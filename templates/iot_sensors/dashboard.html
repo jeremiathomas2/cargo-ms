@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>IoT Sensors</h1>
+        <p>Cold-chain, shock, tilt and tamper monitoring across the network</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'iot_sensors:alert_list' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-alert"/></svg> Alerts</a>
+        <a href="{% url 'iot_sensors:sensor_list' %}" class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg> View Devices</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-pin"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_devices }}</div>
+        <div class="stat-label">Total Sensors</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-check"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_active }}</div>
+        <div class="stat-label">Active Devices</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--danger-soft); color:var(--danger);"><svg class="icon"><use href="#i-alert"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_alerts_open }}</div>
+        <div class="stat-label">Open Alerts</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-down"/></svg></div>
+        </div>
+        <div class="stat-value">{{ low_battery }}</div>
+        <div class="stat-label">Low Battery</div>
+    </div>
+</div>
+
+<div class="grid-2 reveal" style="animation-delay:.08s">
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <h3>Latest Alerts</h3>
+                <p>Unacknowledged sensor events</p>
+            </div>
+            <a href="{% url 'iot_sensors:alert_list' %}" class="link-more">View all</a>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Sensor</th>
+                        <th>Type</th>
+                        <th>Severity</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in alerts %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'iot_sensors:sensor_detail' pk=a.sensor.pk %}" style="font-size:12.5px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ a.sensor.tracker_id }}</a>
+                            <div class="td-faint">{{ a.message|truncatechars:40 }}</div>
+                        </td>
+                        <td><span class="badge b-pending">{{ a.get_alert_type_display }}</span></td>
+                        <td><span class="badge {% if a.severity == 'critical' %}b-delayed{% elif a.severity == 'high' %}b-delayed{% elif a.severity == 'medium' %}b-pending{% else %}b-info{% endif %}">{{ a.get_severity_display }}</span></td>
+                        <td><span class="td-faint">{{ a.created_at|timesince }} ago</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4"><div class="data-table-empty"><p>No alerts recorded.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <h3>Recent Readings</h3>
+                <p>Latest telemetry from connected devices</p>
+            </div>
+            <a href="{% url 'iot_sensors:sensor_list' %}" class="link-more">View all</a>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Sensor</th>
+                        <th>Temp</th>
+                        <th>Humidity</th>
+                        <th>Shock</th>
+                        <th class="text-right">Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in recent_readings %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'iot_sensors:sensor_detail' pk=r.sensor.pk %}" style="font-size:12.5px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ r.sensor.tracker_id }}</a>
+                        </td>
+                        <td>{{ r.temperature|default:"—" }}°C</td>
+                        <td>{{ r.humidity|default:"—" }}%</td>
+                        <td>{{ r.shock_level|default:"—" }}g</td>
+                        <td class="text-right"><span class="td-faint">{{ r.timestamp|timesince }} ago</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5"><div class="data-table-empty"><p>No telemetry captured yet.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

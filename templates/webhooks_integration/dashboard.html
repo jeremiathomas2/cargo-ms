@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Webhooks &amp; Integrations</h1>
+        <p>Outbound webhooks, delivery status and integration logs</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'webhooks_integration:subscription_list' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-up"/></svg> Subscriptions</a>
+        <a href="{% url 'webhooks_integration:log_list' %}" class="btn btn-primary"><svg class="icon"><use href="#i-file"/></svg> Logs</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-up"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_subscriptions }}</div>
+        <div class="stat-label">Subscriptions</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-check"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_active }}</div>
+        <div class="stat-label">Active Endpoints</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--danger-soft); color:var(--danger);"><svg class="icon"><use href="#i-alert"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_failed }}</div>
+        <div class="stat-label">Failed Deliveries</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-file"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_logs }}</div>
+        <div class="stat-label">Integration Logs</div>
+    </div>
+</div>
+
+<div class="grid-2 reveal" style="animation-delay:.08s">
+    <div class="panel">
+        <div class="panel-head">
+            <div><h3>Subscription Endpoints</h3><p>Registered webhook URLs</p></div>
+            <a href="{% url 'webhooks_integration:subscription_list' %}" class="link-more">View all</a>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>URL</th><th>Organization</th><th>Events</th><th class="text-right">Status</th></tr></thead>
+                <tbody>
+                    {% for s in subscriptions %}
+                    <tr>
+                        <td><span style="font-size:12px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text);">{{ s.url|truncatechars:38 }}</span></td>
+                        <td><span style="font-size:12px; font-weight:700; color:var(--text-muted);">{{ s.organization.name }}</span></td>
+                        <td><span class="td-faint">{{ s.events|length }} event{{ s.events|length|pluralize }}</span></td>
+                        <td class="text-right"><span class="badge {% if s.is_active %}b-delivered{% else %}b-delayed{% endif %}">{% if s.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4"><div class="data-table-empty"><p>No webhook subscriptions.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div><h3>Recent Deliveries</h3><p>Webhook dispatch attempts</p></div>
+            <a href="{% url 'webhooks_integration:delivery_list' %}" class="link-more">View all</a>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Event</th><th>Endpoint</th><th>Status</th><th class="text-right">Attempts</th></tr></thead>
+                <tbody>
+                    {% for d in deliveries %}
+                    <tr>
+                        <td><span class="badge b-info">{{ d.event_type }}</span></td>
+                        <td><span style="font-size:12px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text-muted);">{{ d.subscription.url|truncatechars:24 }}</span></td>
+                        <td><span class="badge {% if d.delivered %}b-delivered{% else %}b-delayed{% endif %}">{% if d.delivered %}Delivered{% else %}Failed{% endif %}</span></td>
+                        <td class="text-right"><span class="td-faint">{{ d.attempts }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4"><div class="data-table-empty"><p>No deliveries yet.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

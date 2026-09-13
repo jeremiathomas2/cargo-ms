@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Corridor Routes</h1>
+        <p>Central, Southern and Northern trade corridors</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'cross_border:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-route"/></svg> Overview</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.05s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Corridor</th>
+                    <th>Type</th>
+                    <th>Countries</th>
+                    <th>Treaty Route</th>
+                    <th class="text-right">Route</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in corridors %}
+                <tr>
+                    <td><span style="font-size:12.5px; font-weight:800; color:var(--text);">{{ c.corridor_name }}</span></td>
+                    <td><span class="badge b-warehouse">{{ c.get_corridor_type_display }}</span></td>
+                    <td>
+                        {% for country in c.countries %}
+                        <span class="badge b-info">{{ country }}</span>
+                        {% empty %}<span class="td-faint">—</span>
+                        {% endfor %}
+                    </td>
+                    <td><span class="badge {% if c.is_treaty_route %}b-delivered{% else %}b-pending{% endif %}">{% if c.is_treaty_route %}Yes{% else %}No{% endif %}</span></td>
+                    <td class="text-right">
+                        {% if c.route %}
+                        <a href="{% url 'transportation:route_list' %}" style="font-size:12px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text);">{{ c.route.code|default:c.route.name }}</a>
+                        {% else %}<span class="td-faint">—</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5"><div class="data-table-empty"><p>No corridor routes configured.</p></div></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if corridors.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ corridors.number }} of {{ corridors.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if corridors.has_previous %}?page={{ corridors.previous_page_number }}{% endif %}" class="page-btn {% if not corridors.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if corridors.has_next %}?page={{ corridors.next_page_number }}{% endif %}" class="page-btn {% if not corridors.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

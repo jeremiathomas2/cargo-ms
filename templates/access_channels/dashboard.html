@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Access Channels</h1>
+        <p>USSD, IVR, offline sync and localized translations</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'access_channels:ussd_list' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-bell"/></svg> USSD</a>
+        <a href="{% url 'access_channels:translation_list' %}" class="btn btn-primary"><svg class="icon"><use href="#i-file"/></svg> Translations</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-bell"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_ussd }}</div>
+        <div class="stat-label">USSD Sessions</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-cash"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_ivr }}</div>
+        <div class="stat-label">IVR Calls</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-up"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_sync_pending }}</div>
+        <div class="stat-label">Pending Syncs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-layers"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_languages }}</div>
+        <div class="stat-label">Languages</div>
+    </div>
+</div>
+
+<div class="grid-2 reveal" style="animation-delay:.08s">
+    <div class="panel">
+        <div class="panel-head">
+            <div><h3>Recent USSD Sessions</h3><p>Last interactions</p></div>
+            <a href="{% url 'access_channels:ussd_list' %}" class="link-more">View all</a>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Session</th><th>Phone</th><th>Tracking</th><th class="text-right">Status</th></tr></thead>
+                <tbody>
+                    {% for s in ussd %}
+                    <tr>
+                        <td><span style="font-size:12px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ s.session_id|truncatechars:22 }}</span></td>
+                        <td><span style="font-size:12.5px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text);">{{ s.phone_number }}</span></td>
+                        <td><span class="td-faint">{{ s.tracking_number }}</span></td>
+                        <td class="text-right"><span class="badge {% if s.status == 'active' %}b-transit{% elif s.status == 'completed' %}b-delivered{% else %}b-delayed{% endif %}">{{ s.get_status_display }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4"><div class="data-table-empty"><p>No USSD sessions.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div><h3>Recent IVR Calls</h3><p>Voice interactions</p></div>
+            <a href="{% url 'access_channels:ivr_list' %}" class="link-more">View all</a>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Call ID</th><th>Phone</th><th>Tracking</th><th>Duration</th><th class="text-right">Status</th></tr></thead>
+                <tbody>
+                    {% for c in ivr %}
+                    <tr>
+                        <td><span style="font-size:12px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ c.call_id|truncatechars:18 }}</span></td>
+                        <td><span style="font-size:12.5px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text);">{{ c.phone_number }}</span></td>
+                        <td><span class="td-faint">{{ c.tracking_number }}</span></td>
+                        <td><span style="font-size:12px; font-weight:700; color:var(--text);">{{ c.duration_seconds }}s</span></td>
+                        <td class="text-right"><span class="badge {% if c.status == 'completed' %}b-delivered{% else %}b-delayed{% endif %}">{{ c.get_status_display }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5"><div class="data-table-empty"><p>No IVR calls.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

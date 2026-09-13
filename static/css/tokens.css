@@ -227,18 +227,18 @@ svg.icon{width:19px; height:19px; stroke:currentColor; fill:none; stroke-width:1
 .icon-btn:hover{color:var(--text); border-color:var(--info);}
 .menu-toggle{display:none;}
 
-.search-field{
-  flex:1; max-width:420px;
+.header-search{
+  flex:1; max-width:420px; min-width:0;
   display:flex; align-items:center; gap:9px;
   background:var(--card-2); border:1px solid var(--border); border-radius:var(--radius-pill);
   padding:9px 16px;
 }
-.search-field svg{color:var(--text-faint); width:17px; height:17px;}
-.search-field input{
+.header-search svg{color:var(--text-faint); width:17px; height:17px; flex-shrink:0;}
+.header-search input{
   border:none; outline:none; background:transparent; width:100%;
   font-family:inherit; font-size:13.5px; color:var(--text);
 }
-.search-field input::placeholder{color:var(--text-faint);}
+.header-search input::placeholder{color:var(--text-faint);}
 
 .topbar-spacer{flex:1;}
 .topbar-actions{display:flex; align-items:center; gap:10px;}
@@ -799,7 +799,7 @@ canvas{max-width:100%; height:auto !important;}
 }
 @media(max-width:760px){
   .content{padding:18px 14px 40px;}
-  .topbar{padding:12px 14px;}
+  .topbar{padding:12px 14px; gap:10px;}
   .stat-grid{grid-template-columns:repeat(2, 1fr); gap:10px;}
   .stat-card{padding:14px;}
   .stat-value{font-size:19px;}
@@ -811,11 +811,22 @@ canvas{max-width:100%; height:auto !important;}
   .btn-primary{padding:10px 12px;}
   .page-head h1{font-size:21px;}
 }
+@media(max-width:640px){
+  .topbar .header-search{max-width:240px; padding:8px 12px;}
+  .topbar .header-search input{font-size:12.5px;}
+  .notif-wrap .dropdown{width:min(320px, calc(100vw - 24px));}
+  .user-wrap .dropdown{right:0; left:auto;}
+}
 @media(max-width:520px){
   .stat-grid{grid-template-columns:1fr 1fr;}
   .spotlight-grid{grid-template-columns:1fr;}
   .search-field{display:none;}
+  .header-search{display:none;}
+  .topbar-actions{gap:6px;}
+  .topbar .btn-primary{padding:10px 11px;}
   .user-meta{display:none !important;}
+  .user-wrap .dropdown{right:-14px; width:min(220px, calc(100vw - 24px));}
+  .notif-wrap .dropdown{right:-60px;}
 }
 
 @media (prefers-reduced-motion: reduce){

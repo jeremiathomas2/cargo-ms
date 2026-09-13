@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>SLA Breaches</h1>
+        <p>Deliveries that missed their committed transit window</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'risk_management:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-shield"/></svg> Overview</a>
+        <a href="{% url 'risk_management:sla_level_list' %}" class="btn btn-primary"><svg class="icon"><use href="#i-clock"/></svg> SLA Levels</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.05s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'risk_management:breach_list' %}" class="chip {% if not severity_filter and not resolved_filter %}active{% endif %}">All</a>
+            {% for val,label in severity_choices %}
+            <a href="?severity={{ val }}" class="chip {% if severity_filter == val %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+            <a href="?resolved=0" class="chip {% if resolved_filter == '0' %}active{% endif %}">Unresolved</a>
+            <a href="?resolved=1" class="chip {% if resolved_filter == '1' %}active{% endif %}">Resolved</a>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Shipment</th>
+                    <th>SLA Level</th>
+                    <th>Severity</th>
+                    <th>Expected</th>
+                    <th>Actual</th>
+                    <th>Breach</th>
+                    <th class="text-right">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in breaches %}
+                <tr>
+                    <td><a href="{% url 'cargo:detail' pk=b.shipment.pk %}" style="font-size:11.5px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ b.shipment.tracking_id }}</a></td>
+                    <td><span class="badge b-info">{{ b.sla_level.code }}</span></td>
+                    <td><span class="badge {% if b.severity == 'critical' or b.severity == 'major' %}b-delayed{% else %}b-pending{% endif %}">{{ b.get_severity_display }}</span></td>
+                    <td><span style="font-size:12px; font-weight:700; color:var(--text);">{{ b.expected_arrival|date:"M j, H:i" }}</span></td>
+                    <td><span class="td-faint">{% if b.actual_arrival %}{{ b.actual_arrival|date:"M j, H:i" }}{% else %}—{% endif %}</span></td>
+                    <td><span style="font-size:12px; font-weight:800; color:var(--danger);">{{ b.breach_duration_hours }} hrs</span></td>
+                    <td class="text-right"><span class="badge {% if b.resolved %}b-delivered{% else %}b-delayed{% endif %}">{% if b.resolved %}Resolved{% else %}Open{% endif %}</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-alert"/></svg></div>
+                            <p>No SLA breaches match the current filter.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if breaches.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ breaches.number }} of {{ breaches.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if breaches.has_previous %}?page={{ breaches.previous_page_number }}{% endif %}" class="page-btn {% if not breaches.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if breaches.has_next %}?page={{ breaches.next_page_number }}{% endif %}" class="page-btn {% if not breaches.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

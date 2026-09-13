@@ -13,7 +13,7 @@ from .models import (
 class ETAProjectionAdmin(admin.ModelAdmin):
     list_display = ("shipment", "predicted_arrival", "model_version", "created_at")
     list_filter = ("model_version", "created_at")
-    search_fields = ("shipment__tracking_number",)
+    search_fields = ("shipment__tracking_id",)
 
 
 @admin.register(RouteOptimization)

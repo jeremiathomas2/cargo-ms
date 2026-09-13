@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head">
+    <div class="flex items-center gap-4 flex-wrap">
+        <a href="{% url 'customers:list' %}" class="icon-btn" style="padding: 10px;">
+            <svg class="w-5 h-5 stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
+        <div>
+            <h1 class="page-title" style="margin-bottom: 0;">{% if editing %}Edit Customer{% else %}Add Customer{% endif %}</h1>
+            <p class="page-sub" style="margin-top: 4px;">
+                {% if editing %}Update {{ customer.full_name }}'s account{% else %}Register a new client account{% endif %}
+            </p>
+        </div>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'customers:list' %}" class="btn ghost">Cancel</a>
+        <button type="submit" form="customerForm" class="btn btn-primary">
+            <svg class="icon"><use href="#i-check"/></svg>
+            {% if editing %}Save Changes{% else %}Create Customer{% endif %}
+        </button>
+    </div>
+</div>
+
+<form id="customerForm" method="post" class="space-y-5">
+    {% csrf_token %}
+
+    <div class="panel">
+        <div class="flex items-center gap-3 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+            <div class="w-9 h-9 rounded-[11px] bg-brand/10 flex items-center justify-center">
+                <svg class="icon text-brand"><use href="#i-users"/></svg>
+            </div>
+            <div>
+                <h2 class="text-[15px] font-extrabold text-gray-900 dark:text-white">Account Details</h2>
+                <p class="text-[11px] text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Customer type, identity and contact info</p>
+            </div>
+        </div>
+        <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="md:col-span-2">
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Customer Type</label>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {% for val,label in type_choices %}
+                    <label class="inline-flex items-center gap-2.5 cursor-pointer p-3.5 rounded-[12px] bg-card-2 dark:bg-card-dark2 border border-gray-200 dark:border-[#291F55] {% if editing and customer.customer_type == val %}border-brand ring-2 ring-brand/20{% elif not editing and forloop.first %}border-brand ring-2 ring-brand/20{% endif %}">
+                        <input type="radio" name="customer_type" value="{{ val }}" {% if editing and customer.customer_type == val %}checked{% elif not editing and forloop.first %}checked{% endif %} class="w-4 h-4 rounded-full border-gray-300 dark:border-[#291F55] text-brand focus:ring-brand">
+                        <span class="text-[13px] font-bold text-gray-900 dark:text-white">{{ label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            <div id="fieldCompany">
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Company Name</label>
+                <input type="text" name="company_name" value="{% if editing %}{{ customer.company_name }}{% endif %}" placeholder="e.g., Bidco Tanzania Ltd" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white placeholder:text-faint dark:placeholder:text-[#8981B8] focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div id="fieldFirstName" class="md:col-span-1">
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">First Name</label>
+                <input type="text" name="first_name" value="{% if editing %}{{ customer.first_name }}{% endif %}" placeholder="e.g., Jane" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white placeholder:text-faint dark:placeholder:text-[#8981B8] focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div id="fieldLastName">
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Last Name</label>
+                <input type="text" name="last_name" value="{% if editing %}{{ customer.last_name }}{% endif %}" placeholder="e.g., Mwanga" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white placeholder:text-faint dark:placeholder:text-[#8981B8] focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Phone *</label>
+                <input type="text" name="phone" required value="{% if editing %}{{ customer.phone }}{% endif %}" placeholder="+255..." class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Secondary Phone</label>
+                <input type="text" name="secondary_phone" value="{% if editing %}{{ customer.secondary_phone }}{% endif %}" placeholder="+255..." class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Email</label>
+                <input type="email" name="email" value="{% if editing %}{{ customer.email }}{% endif %}" placeholder="name@company.com" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Tax ID / TIN</label>
+                <input type="text" name="tax_id" value="{% if editing %}{{ customer.tax_id }}{% endif %}" placeholder="e.g., 123-456-789" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Credit Limit (TZS)</label>
+                <input type="number" name="credit_limit" step="0.01" min="0" value="{% if editing %}{{ customer.credit_limit }}{% else %}0{% endif %}" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Payment Terms (days)</label>
+                <input type="number" name="payment_terms_days" min="0" value="{% if editing %}{{ customer.payment_terms_days }}{% else %}30{% endif %}" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div class="md:col-span-2">
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Notes</label>
+                <textarea name="notes" rows="2" placeholder="Internal notes about this customer..." class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 resize-none">{% if editing %}{{ customer.notes }}{% endif %}</textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="flex items-center gap-3 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+            <div class="w-9 h-9 rounded-[11px] bg-primary/10 flex items-center justify-center">
+                <svg class="icon text-primary"><use href="#i-pin"/></svg>
+            </div>
+            <div>
+                <h2 class="text-[15px] font-extrabold text-gray-900 dark:text-white">Primary Address</h2>
+                <p class="text-[11px] text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Main physical location of the customer</p>
+            </div>
+        </div>
+        {% with customer.addresses.all as addresses %}
+        <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Address Type</label>
+                <select name="address_type" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                    <option value="all" {% if editing and addresses.0.address_type == 'all' %}selected{% endif %}>All</option>
+                    <option value="pickup" {% if editing and addresses.0.address_type == 'pickup' %}selected{% endif %}>Pickup</option>
+                    <option value="delivery" {% if editing and addresses.0.address_type == 'delivery' %}selected{% endif %}>Delivery</option>
+                    <option value="billing" {% if editing and addresses.0.address_type == 'billing' %}selected{% endif %}>Billing</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Label</label>
+                <input type="text" name="address_label" value="{% if editing %}{{ addresses.0.label }}{% endif %}" placeholder="e.g., Head Office" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div class="md:col-span-2">
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Address Line 1</label>
+                <input type="text" name="address_line1" value="{% if editing %}{{ addresses.0.address_line1 }}{% endif %}" placeholder="Street, building, plot number" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div class="md:col-span-2">
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Address Line 2</label>
+                <input type="text" name="address_line2" value="{% if editing %}{{ addresses.0.address_line2 }}{% endif %}" placeholder="Suite, floor, block" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">City</label>
+                <input type="text" name="city" value="{% if editing %}{{ addresses.0.city }}{% endif %}" placeholder="Dar es Salaam" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Region</label>
+                <input type="text" name="region" value="{% if editing %}{{ addresses.0.region }}{% endif %}" placeholder="e.g., Dar es Salaam" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Country</label>
+                <input type="text" name="country" value="{% if editing %}{{ addresses.0.country }}{% else %}Tanzania{% endif %}" placeholder="Tanzania" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Postal Code</label>
+                <input type="text" name="postal_code" value="{% if editing %}{{ addresses.0.postal_code }}{% endif %}" placeholder="e.g., 14104" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Contact Person</label>
+                <input type="text" name="contact_person" value="{% if editing %}{{ addresses.0.contact_person }}{% endif %}" placeholder="e.g., John Mushi" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Contact Phone</label>
+                <input type="text" name="contact_phone" value="{% if editing %}{{ addresses.0.contact_phone }}{% endif %}" placeholder="+255..." class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+        </div>
+        {% endwith %}
+    </div>
+
+    <div class="panel">
+        <div class="flex items-center gap-3 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+            <div class="w-9 h-9 rounded-[11px] bg-success/10 flex items-center justify-center">
+                <svg class="icon text-success"><use href="#i-phone"/></svg>
+            </div>
+            <div>
+                <h2 class="text-[15px] font-extrabold text-gray-900 dark:text-white">Primary Contact</h2>
+                <p class="text-[11px] text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Main point of contact for this account</p>
+            </div>
+        </div>
+        {% with customer.contacts.all as contacts %}
+        <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Contact Name</label>
+                <input type="text" name="contact_name" value="{% if editing %}{{ contacts.0.name }}{% endif %}" placeholder="e.g., Asha Omar" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Title / Role</label>
+                <input type="text" name="contact_title" value="{% if editing %}{{ contacts.0.title }}{% endif %}" placeholder="e.g., Procurement Manager" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Contact Email</label>
+                <input type="email" name="contact_email" value="{% if editing %}{{ contacts.0.email }}{% endif %}" placeholder="name@company.com" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Contact Phone</label>
+                <input type="text" name="contact_phone_number" value="{% if editing %}{{ contacts.0.phone }}{% endif %}" placeholder="+255..." class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+        </div>
+        {% endwith %}
+    </div>
+
+    {% if editing %}
+    <div class="panel">
+        <div class="flex items-center gap-3 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+            <div class="w-9 h-9 rounded-[11px] bg-warning/10 flex items-center justify-center">
+                <svg class="icon text-warning"><use href="#i-alert"/></svg>
+            </div>
+            <div>
+                <h2 class="text-[15px] font-extrabold text-gray-900 dark:text-white">Account Status</h2>
+                <p class="text-[11px] text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Activation state and risk flags</p>
+            </div>
+        </div>
+        <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Status</label>
+                <select name="status" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                    {% for val,label in customer.STATUS_CHOICES %}
+                    <option value="{{ val }}" {% if customer.status == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="md:col-span-1">
+                <label class="inline-flex items-center gap-2.5 cursor-pointer p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2 mt-6">
+                    <input type="checkbox" name="is_watchlisted" {% if customer.is_watchlisted %}checked{% endif %} class="w-4 h-4 rounded border-gray-300 dark:border-[#291F55] text-brand focus:ring-brand">
+                    <span class="text-[13px] font-bold text-gray-900 dark:text-white">Watchlisted</span>
+                </label>
+            </div>
+            <div class="md:col-span-2">
+                <label class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider mb-1.5 block">Watchlist Reason</label>
+                <input type="text" name="watchlist_reason" value="{{ customer.watchlist_reason }}" placeholder="Reason for watchlist flag..." class="w-full px-4 py-3 rounded-[12px] border border-gray-200 dark:border-[#291F55] bg-card dark:bg-card-dark text-[13px] font-bold text-gray-900 dark:text-white focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var radios = document.querySelectorAll('input[name="customer_type"]');
+    var company = document.getElementById('fieldCompany');
+    var first = document.getElementById('fieldFirstName');
+    var last = document.getElementById('fieldLastName');
+    function toggle(type) {
+        var isCompany = type === 'company';
+        company.style.display = isCompany ? '' : 'none';
+        first.style.display = isCompany ? 'none' : '';
+        last.style.display = isCompany ? 'none' : '';
+        if (isCompany) company.querySelector('.md\\:col-span-1') && first.classList.add('md:col-span-1');
+    }
+    radios.forEach(function (r) {
+        r.addEventListener('change', function () { toggle(r.value); });
+    });
+    var checked = document.querySelector('input[name="customer_type"]:checked');
+    if (checked) toggle(checked.value);
+})();
+</script>
+{% endblock %}

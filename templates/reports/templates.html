@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Report Templates</h1>
+        <p>Scheduled and reusable report configurations</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="#new-template" class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg> New Template</a>
+    </div>
+</div>
+
+<form method="post" action="{% url 'reports:templates' %}" id="new-template" class="panel reveal" style="margin-bottom:20px; animation-delay:.08s;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="create_template">
+    <div style="padding:18px 20px; border-bottom:1px solid var(--border);">
+        <h2 style="font-size:14px; font-weight:800;">Create New Template</h2>
+        <p class="sub">Define a reusable report with fixed parameters</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4" style="padding:20px;">
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Template Name</label>
+            <input type="text" name="name" required placeholder="Weekly revenue pack" class="input-field" style="margin-top:6px;">
+        </div>
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Report Type</label>
+            <select name="report_type" required class="input-field" style="margin-top:6px;">
+                <option value="">— Select type —</option>
+                {% for value, label in report_type_choices %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Organization</label>
+            <select name="organization" required class="input-field" style="margin-top:6px;">
+                <option value="">— Select tenant —</option>
+                {% for o in organizations %}
+                <option value="{{ o.pk }}">{{ o.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+            <label style="display:flex; align-items:center; gap:9px; font-size:13px; font-weight:800; cursor:pointer;">
+                <input type="checkbox" name="is_active" checked style="width:16px; height:16px; accent-color:var(--brand);">
+                Active
+            </label>
+        </div>
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--border); display:flex; justify-content:flex-end;">
+        <button type="submit" class="btn btn-primary" style="margin:0;"><svg class="icon"><use href="#i-plus"/></svg> Save Template</button>
+    </div>
+</form>
+
+<div class="panel reveal" style="animation-delay:.1s">
+    <div class="filter-row" style="border:none;">
+        <div class="chip-group">
+            <a href="{% url 'reports:templates' %}" class="chip {% if not search %}active{% endif %}">All</a>
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2">
+                <div class="search-field" style="width:320px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Template name, type, organization...">
+                </div>
+                <button type="submit" class="chip" style="background:var(--brand); color:#fff; border-color:var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Template</th>
+                    <th>Report Type</th>
+                    <th>Organization</th>
+                    <th>Status</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in templates %}
+                <tr>
+                    <td style="font-size:13px; font-weight:800;">{{ t.name }}</td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ t.get_report_type_display }}</td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ t.organization.name|default:"—" }}</td>
+                    <td>
+                        <span class="badge {% if t.is_active %}b-delivered{% else %}b-delayed{% endif %}">{% if t.is_active %}Active{% else %}Inactive{% endif %}</span>
+                    </td>
+                    <td class="text-right">
+                        <div style="display:inline-flex; gap:6px;">
+                            <form method="post" action="{% url 'reports:templates' %}" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="toggle_template">
+                                <input type="hidden" name="template_id" value="{{ t.pk }}">
+                                <button type="submit" class="chip" style="font-size:11px;">{% if t.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+                            </form>
+                            <form method="post" action="{% url 'reports:templates' %}" style="display:inline;" onsubmit="return confirm('Delete this template?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_template">
+                                <input type="hidden" name="template_id" value="{{ t.pk }}">
+                                <button type="submit" class="chip" style="font-size:11px; background:var(--danger-soft); color:var(--danger); border-color:var(--danger);">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-file"/></svg></div>
+                            <p>No report templates yet. Create your first one above.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if templates.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ templates.number }} of {{ templates.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if templates.has_previous %}?page={{ templates.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not templates.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if templates.has_next %}?page={{ templates.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not templates.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

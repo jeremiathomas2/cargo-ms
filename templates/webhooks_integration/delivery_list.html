@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Webhook Deliveries</h1>
+        <p>Dispatch attempts, HTTP status and retry tracking</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'webhooks_integration:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-up"/></svg> Overview</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.05s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'webhooks_integration:delivery_list' %}" class="chip {% if not delivered_filter %}active{% endif %}">All</a>
+            <a href="?delivered=1" class="chip {% if delivered_filter == '1' %}active{% endif %}">Delivered</a>
+            <a href="?delivered=0" class="chip {% if delivered_filter == '0' %}active{% endif %}">Failed</a>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Event</th>
+                    <th>Endpoint</th>
+                    <th>HTTP</th>
+                    <th>Attempts</th>
+                    <th class="text-right">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in deliveries %}
+                <tr>
+                    <td><span class="badge b-info">{{ d.event_type }}</span></td>
+                    <td><span style="font-size:12px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text-muted);">{{ d.subscription.url|truncatechars:40 }}</span></td>
+                    <td><span style="font-size:12px; font-weight:800; font-family:ui-monospace, monospace; color:{% if d.response_status and d.response_status < 400 %}var(--success){% else %}var(--danger){% endif %};">{% if d.response_status %}{{ d.response_status }}{% else %}—{% endif %}</span></td>
+                    <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ d.attempts }}</span></td>
+                    <td class="text-right"><span class="badge {% if d.delivered %}b-delivered{% else %}b-delayed{% endif %}">{% if d.delivered %}Delivered{% else %}Failed{% endif %}</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5"><div class="data-table-empty"><p>No deliveries recorded.</p></div></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if deliveries.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ deliveries.number }} of {{ deliveries.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if deliveries.has_previous %}?page={{ deliveries.previous_page_number }}{% endif %}" class="page-btn {% if not deliveries.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if deliveries.has_next %}?page={{ deliveries.next_page_number }}{% endif %}" class="page-btn {% if not deliveries.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

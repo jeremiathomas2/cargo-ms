@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Cross-Border Operations</h1>
+        <p>Border posts, customs declarations, corridors and regional agents</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'cross_border:declaration_list' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-file"/></svg> Declarations</a>
+        <a href="{% url 'cross_border:border_post_list' %}" class="btn btn-primary"><svg class="icon"><use href="#i-pin"/></svg> Border Posts</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-pin"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_posts }}</div>
+        <div class="stat-label">Border Posts</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-file"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_declarations }}</div>
+        <div class="stat-label">Customs Declarations</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-clock"/></svg></div>
+        </div>
+        <div class="stat-value">{{ pending_declarations }}</div>
+        <div class="stat-label">In Draft</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-route"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_crossings }}</div>
+        <div class="stat-label">Crossing Events</div>
+    </div>
+</div>
+
+<div class="grid-2 reveal" style="animation-delay:.08s">
+    <div class="panel">
+        <div class="panel-head">
+            <div><h3>Recent Declarations</h3><p>Latest customs submissions</p></div>
+            <a href="{% url 'cross_border:declaration_list' %}" class="link-more">View all</a>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Declaration</th><th>Shipment</th><th>HS Code</th><th>Value</th><th class="text-right">Status</th></tr></thead>
+                <tbody>
+                    {% for d in declarations %}
+                    <tr>
+                        <td><span style="font-size:12px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ d.declaration_number }}</span></td>
+                        <td><a href="{% url 'cargo:detail' pk=d.shipment.pk %}" style="font-size:11.5px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text-muted);">{{ d.shipment.tracking_id }}</a></td>
+                        <td><span class="badge b-warehouse">{{ d.hs_code }}</span></td>
+                        <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ d.declared_value }}</span></td>
+                        <td class="text-right"><span class="badge {% if d.status == 'approved' %}b-delivered{% elif d.status == 'rejected' %}b-delayed{% elif d.status == 'submitted' %}b-pending{% else %}b-info{% endif %}">{{ d.get_status_display }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5"><div class="data-table-empty"><p>No declarations yet.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div><h3>Recent Crossings</h3><p>Entry and exit events</p></div>
+            <a href="{% url 'cross_border:crossing_list' %}" class="link-more">View all</a>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Border Post</th><th>Trip</th><th>Type</th><th class="text-right">Time</th></tr></thead>
+                <tbody>
+                    {% for c in crossings %}
+                    <tr>
+                        <td><span style="font-size:12.5px; font-weight:800; color:var(--text);">{{ c.border_post.name }}</span></td>
+                        <td><span style="font-size:12px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text-muted);">{{ c.trip.trip_number|default:"—" }}</span></td>
+                        <td><span class="badge {% if c.event_type == 'entry' %}b-delivered{% else %}b-pending{% endif %}">{{ c.get_event_type_display }}</span></td>
+                        <td class="text-right"><span class="td-faint">{{ c.timestamp|timesince }} ago</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4"><div class="data-table-empty"><p>No crossing events.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

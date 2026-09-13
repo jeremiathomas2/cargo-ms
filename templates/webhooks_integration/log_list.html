@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Integration Logs</h1>
+        <p>Inbound and outbound third-party traffic</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'webhooks_integration:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-up"/></svg> Overview</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.05s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'webhooks_integration:log_list' %}" class="chip {% if not direction_filter and not status_filter %}active{% endif %}">All</a>
+            {% for val,label in direction_choices %}
+            <a href="?direction={{ val }}" class="chip {% if direction_filter == val %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+            <a href="?status=success" class="chip {% if status_filter == 'success' %}active{% endif %}">Success</a>
+            <a href="?status=failed" class="chip {% if status_filter == 'failed' %}active{% endif %}">Failed</a>
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2 flex-wrap">
+                <div class="search-field" style="width: 280px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Integration name, org...">
+                </div>
+                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Integration</th>
+                    <th>Organization</th>
+                    <th>Direction</th>
+                    <th>Status</th>
+                    <th>Error</th>
+                    <th class="text-right">Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for l in logs %}
+                <tr>
+                    <td><span style="font-size:12.5px; font-weight:800; color:var(--text);">{{ l.integration_name }}</span></td>
+                    <td><span style="font-size:12px; font-weight:700; color:var(--text-muted);">{{ l.organization.name }}</span></td>
+                    <td><span class="badge {% if l.direction == 'inbound' %}b-info{% else %}b-warehouse{% endif %}">{{ l.get_direction_display }}</span></td>
+                    <td><span class="badge {% if l.status == 'success' %}b-delivered{% else %}b-delayed{% endif %}">{{ l.get_status_display }}</span></td>
+                    <td><span class="td-faint">{{ l.error_message|default:"—"|truncatechars:35 }}</span></td>
+                    <td class="text-right"><span class="td-faint">{{ l.created_at|timesince }} ago</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6"><div class="data-table-empty"><p>No integration logs.</p></div></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if logs.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ logs.number }} of {{ logs.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if logs.has_previous %}?page={{ logs.previous_page_number }}{% endif %}" class="page-btn {% if not logs.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if logs.has_next %}?page={{ logs.next_page_number }}{% endif %}" class="page-btn {% if not logs.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

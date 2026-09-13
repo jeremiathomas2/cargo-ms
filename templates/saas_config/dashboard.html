@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>SaaS Configuration</h1>
+        <p>Multi-tenant organizations, plans and quotas</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'saas_config:organization_list' %}" class="btn btn-primary"><svg class="icon"><use href="#i-users"/></svg> Organizations</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-users"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_organizations }}</div>
+        <div class="stat-label">Organizations</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-check"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_active }}</div>
+        <div class="stat-label">Active Tenants</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-users"/></svg></div>
+        </div>
+        <div class="stat-value">{{ total_users_used }}</div>
+        <div class="stat-label">Users In Use</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-box"/></svg></div>
+        </div>
+        <div class="stat-value">{{ total_shipments_used }}</div>
+        <div class="stat-label">Shipments In Use</div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s">
+    <div class="panel-head">
+        <div><h3>Organizations</h3><p>Latest tenants on the platform</p></div>
+        <a href="{% url 'saas_config:organization_list' %}" class="link-more">View all</a>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Organization</th>
+                    <th>Plan</th>
+                    <th>Subdomain</th>
+                    <th>Timezone</th>
+                    <th>Currency</th>
+                    <th class="text-right">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in organizations %}
+                <tr>
+                    <td>
+                        <span style="display:inline-flex; align-items:center; gap:8px;">
+                            <span style="min-width:26px; text-align:center; border-radius:8px; padding:2px 6px; font-weight:800; font-size:12px; background:{{ o.primary_color }}20; color:{{ o.primary_color }};">{{ o.name|slice:":1"|upper }}</span>
+                            <a href="{% url 'saas_config:organization_detail' pk=o.pk %}" style="font-size:12.5px; font-weight:800; color:var(--text);">{{ o.name }}</a>
+                        </span>
+                    </td>
+                    <td><span class="badge b-info">{{ o.get_plan_display }}</span></td>
+                    <td><span style="font-size:12px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text-muted);">{{ o.subdomain|default:"—" }}</span></td>
+                    <td><span class="td-faint">{{ o.timezone }}</span></td>
+                    <td><span class="td-faint">{{ o.currency }}</span></td>
+                    <td class="text-right"><span class="badge {% if o.is_active %}b-delivered{% else %}b-delayed{% endif %}">{% if o.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6"><div class="data-table-empty"><p>No organizations yet.</p></div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

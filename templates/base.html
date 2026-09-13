@@ -63,17 +63,33 @@
         }
     })();
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;0,6..12,800;0,6..12,900;1,6..12,600&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-    <script src="https://unpkg.com/htmx.org@2.0.4/dist/ext/sse.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;0,6..12,800;0,6..12,900;1,6..12,600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;0,6..12,800;0,6..12,900;1,6..12,600&display=swap"></noscript>
     <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
     <script>
-    tailwind.config = {
+    window.LibsReady = (function () {
+        var pending = [];
+        var counter = 0;
+        function libsReady(){ return !!(window.Chart && window.L); }
+        setTimeout(function tick(){
+            counter++;
+            if (libsReady() || counter > 200) {
+                var q = pending; pending = [];
+                for (var i = 0; i < q.length; i++) { try { q[i](); } catch (e) {} }
+            } else {
+                setTimeout(tick, 100);
+            }
+        }, 100);
+        return function (fn) {
+            if (typeof fn !== 'function') return;
+            if (libsReady()) { try { fn(); } catch (e) {} }
+            else { pending.push(fn); }
+        };
+    })();
+    </script>
+    <script>
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
         theme: {
             extend: {
                 fontFamily: { sans: ['Nunito Sans', 'system-ui', 'sans-serif'] },
@@ -86,6 +102,13 @@
         darkMode: ['selector', '[data-theme="dark"]']
     }
     </script>
+    <script defer src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script defer src="https://unpkg.com/htmx.org@2.0.4/dist/ext/sse.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+    <link rel="preload" as="style" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" onload="this.onload=null;this.rel='stylesheet'">
+    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -143,7 +166,7 @@
         {% include 'components/topbar.html' %}
     </header>
 
-    <main class="content">
+    <main class="content" id="page-content" data-pjax-root>
         {% if messages %}
         <div class="mb-4" id="toast-container">
             {% for message in messages %}
@@ -156,6 +179,8 @@
         {% endif %}
 
         {% block content %}{% endblock %}
+
+        {% block extra_js %}{% endblock %}
     </main>
 </div>
 
@@ -164,6 +189,6 @@
 {% block modals %}{% endblock %}
 
 <script src="{% static 'js/app.js' %}"></script>
-{% block extra_js %}{% endblock %}
+<script src="{% static 'js/nav.js' %}"></script>
 </body>
 </html>

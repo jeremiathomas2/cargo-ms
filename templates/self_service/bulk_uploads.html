@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Bulk Booking Uploads</h1>
+        <p>Import shipment bookings from CSV or Excel spreadsheets</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="#upload-new" class="btn btn-primary"><svg class="icon"><use href="#i-upload"/></svg> Upload File</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-upload"/></svg></div>
+        </div>
+        <div class="stat-value">{{ uploads_page.paginator.count }}</div>
+        <div class="stat-label">Total Uploads</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-check"/></svg></div>
+        </div>
+        <div class="stat-value">{{ completed_count|default:0 }}</div>
+        <div class="stat-label">Completed</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--danger-soft); color:var(--danger);"><svg class="icon"><use href="#i-alert"/></svg></div>
+        </div>
+        <div class="stat-value">{{ failed_count|default:0 }}</div>
+        <div class="stat-label">Failed</div>
+    </div>
+</div>
+
+<form method="post" action="{% url 'self_service:bulk_uploads' %}" id="upload-new" enctype="multipart/form-data" class="panel reveal" style="margin-bottom:20px; animation-delay:.08s;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="upload_file">
+    <div style="padding:18px 20px; border-bottom:1px solid var(--border);">
+        <h2 style="font-size:14px; font-weight:800;">Upload Bookings File</h2>
+        <p class="sub">Supported formats: .csv, .xlsx, .xls. Max size 25 MB.</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center" style="padding:20px;">
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Select File</label>
+            <input type="file" name="file" accept=".csv,.xlsx,.xls" required class="input-field" style="margin-top:6px; padding:10px 14px;">
+        </div>
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--border); display:flex; justify-content:flex-end;">
+        <button type="submit" class="btn btn-primary" style="margin:0;"><svg class="icon"><use href="#i-upload"/></svg> Begin Upload</button>
+    </div>
+</form>
+
+<div class="panel reveal" style="animation-delay:.1s">
+    <div class="filter-row" style="border:none;">
+        <div class="chip-group">
+            <a href="{% url 'self_service:bulk_uploads' %}" class="chip active">All</a>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Status</th>
+                    <th>Rows</th>
+                    <th>Processed</th>
+                    <th>Errors</th>
+                    <th>Uploaded By</th>
+                    <th>Created</th>
+                    <th>Completed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in uploads_page %}
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div style="width:36px; height:36px; border-radius:10px; background:var(--brand-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <svg class="icon" style="width:16px;height:16px;color:var(--brand);"><use href="#i-file"/></svg>
+                            </div>
+                            <span style="font-size:13px; font-weight:800;">{{ u.file.name|default:"upload.csv" }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge {% if u.status == 'completed' %}b-delivered{% elif u.status == 'failed' %}b-delayed{% elif u.status == 'processing' %}b-info{% else %}b-warehouse{% endif %}">{{ u.get_status_display }}</span>
+                    </td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ u.total_rows }}</td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ u.processed_rows }}</td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ u.error_rows }}</td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ u.uploaded_by.get_full_name|default:u.uploaded_by.username }}</td>
+                    <td style="font-size:12px; font-weight:700; white-space:nowrap;">{{ u.created_at|date:"d M Y H:i" }}</td>
+                    <td style="font-size:12px; font-weight:700; white-space:nowrap;">
+                        {% if u.completed_at %}{{ u.completed_at|date:"d M Y H:i" }}{% else %}<span class="td-faint">—</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-upload"/></svg></div>
+                            <p>No bulk uploads yet. Upload your first file above.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if uploads_page.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ uploads_page.number }} of {{ uploads_page.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if uploads_page.has_previous %}?page={{ uploads_page.previous_page_number }}{% else %}#{% endif %}"
+               class="page-btn {% if not uploads_page.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if uploads_page.has_next %}?page={{ uploads_page.next_page_number }}{% else %}#{% endif %}"
+               class="page-btn {% if not uploads_page.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

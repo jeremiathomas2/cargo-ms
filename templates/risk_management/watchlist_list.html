@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Watchlist</h1>
+        <p>Flagged customers, addresses and phone numbers</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'risk_management:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-shield"/></svg> Overview</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.05s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'risk_management:watchlist_list' %}" class="chip {% if not active_filter %}active{% endif %}">All</a>
+            <a href="?active=1" class="chip {% if active_filter == '1' %}active{% endif %}">Active</a>
+            <a href="?active=0" class="chip {% if active_filter == '0' %}active{% endif %}">Inactive</a>
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2 flex-wrap">
+                <div class="search-field" style="width: 280px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Value or reason...">
+                </div>
+                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Value</th>
+                    <th>Reason</th>
+                    <th>Added By</th>
+                    <th>Status</th>
+                    <th class="text-right">Added</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for w in items %}
+                <tr>
+                    <td><span class="badge b-warehouse">{{ w.get_entity_type_display }}</span></td>
+                    <td><span style="font-size:12.5px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text);">{{ w.entity_value }}</span></td>
+                    <td><span class="td-faint">{{ w.reason|truncatechars:40 }}</span></td>
+                    <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ w.added_by.get_full_name|default:w.added_by.username }}</span></td>
+                    <td><span class="badge {% if w.is_active %}b-delivered{% else %}b-delayed{% endif %}">{% if w.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+                    <td class="text-right">
+                        <div style="font-size:12px; font-weight:700; color:var(--text);">{{ w.added_at|timesince }} ago</div>
+                        {% if w.expires_at %}<div class="td-faint">expires {{ w.expires_at|date:"M j" }}</div>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-eye"/></svg></div>
+                            <p>Watchlist is empty.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if items.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ items.number }} of {{ items.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if items.has_previous %}?page={{ items.previous_page_number }}{% endif %}" class="page-btn {% if not items.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if items.has_next %}?page={{ items.next_page_number }}{% endif %}" class="page-btn {% if not items.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -47,7 +47,7 @@
 <div class="panel reveal" style="margin-bottom: 20px; animation-delay:.08s">
     <div class="filter-row">
         <div class="chip-group">
-            <a href="{% url 'self_service:user_management' %}" class="chip {% if not status_filter and not role_filter %}active{% endif %}">All</a>
+            <a href="{% url 'self_service:users' %}" class="chip {% if not status_filter and not role_filter %}active{% endif %}">All</a>
             <a href="?status=active" class="chip {% if status_filter == 'active' %}active{% endif %}">Active</a>
             <a href="?status=inactive" class="chip {% if status_filter == 'inactive' %}active{% endif %}">Inactive</a>
             <a href="?status=staff" class="chip {% if status_filter == 'staff' %}active{% endif %}">Staff Only</a>
@@ -103,16 +103,14 @@
                     <td>
                         {% if u.role %}
                         <span class="badge {% if u.role.name == 'Admin' or u.role.name == 'Administrator' %}b-delayed{% elif u.role.name == 'Manager' %}b-transit{% else %}b-warehouse{% endif %}" style="text-transform:none;">{{ u.role.name|title }}</span>
-                        {% elif u.userprofile.role %}
-                        <span class="badge b-warehouse" style="text-transform:none;">{{ u.userprofile.role.name|title }}</span>
                         {% else %}
                         <span class="td-faint">—</span>
                         {% endif %}
                     </td>
-                    <td style="font-size:12.5px; font-weight:700;">{{ u.branch.name|default:u.userprofile.branch.name|default:"—" }}</td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ u.branch.name|default:"—" }}</td>
                     <td>
                         <div style="font-size:12.5px; font-weight:800;">{{ u.email|default:"—" }}</div>
-                        <div class="td-faint" style="font-family:ui-monospace, monospace; font-size:11.5px;">{{ u.phone|default:u.userprofile.phone|default:"—" }}</div>
+                        <div class="td-faint" style="font-family:ui-monospace, monospace; font-size:11.5px;">{{ u.phone|default:"—" }}</div>
                     </td>
                     <td style="font-size:12px; font-weight:700; white-space:nowrap;">
                         {% if u.last_login %}{{ u.last_login|timesince }} ago{% else %}<span class="td-faint">Never</span>{% endif %}
@@ -122,12 +120,11 @@
                     </td>
                     <td class="text-right">
                         <div style="display:inline-flex; gap:6px;">
-                            <form method="post" action="{% url 'self_service:user_edit' pk=u.pk %}" style="display:inline;">
+                            <a href="{% url 'accounts:user_update' pk=u.pk %}" class="chip" style="font-size:11px; text-decoration:none;">Edit</a>
+                            <form method="post" action="{% url 'self_service:users' %}" style="display:inline;" onsubmit="return confirm('Deactivate this user?');">
                                 {% csrf_token %}
-                                <button type="submit" class="chip" style="font-size:11px;">Edit</button>
-                            </form>
-                            <form method="post" action="{% url 'self_service:user_delete' pk=u.pk %}" style="display:inline;" onsubmit="return confirm('Deactivate this user?');">
-                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_user">
+                                <input type="hidden" name="user_id" value="{{ u.pk }}">
                                 <button type="submit" class="chip" style="font-size:11px; background:var(--danger-soft); color:var(--danger); border-color:var(--danger);">Deactivate</button>
                             </form>
                         </div>

@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Anomaly Detections</h1>
+        <p>Speed, route deviation, unauthorized use and dwell events</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'ai_intelligence:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-bar"/></svg> Overview</a>
+        <a href="{% url 'iot_sensors:sensor_list' %}" class="btn btn-primary"><svg class="icon"><use href="#i-pin"/></svg> Sensors</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.05s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'ai_intelligence:anomaly_list' %}" class="chip {% if not severity_filter and not type_filter %}active{% endif %}">All</a>
+            {% for val,label in severity_choices %}
+            <a href="?severity={{ val }}" class="chip {% if severity_filter == val %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+            {% for val,label in anomaly_types %}
+            <a href="?type={{ val }}" class="chip {% if type_filter == val %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Device</th>
+                    <th>Type</th>
+                    <th>Severity</th>
+                    <th>Location</th>
+                    <th>Description</th>
+                    <th class="text-right">Detected</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in anomalies %}
+                <tr>
+                    <td><span style="font-size:12.5px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ a.device.tracker_id }}</span></td>
+                    <td><span class="badge b-pending">{{ a.get_anomaly_type_display }}</span></td>
+                    <td><span class="badge {% if a.severity == 'critical' or a.severity == 'high' %}b-delayed{% elif a.severity == 'medium' %}b-pending{% else %}b-info{% endif %}">{{ a.get_severity_display }}</span></td>
+                    <td>{% if a.latitude %}<span class="td-faint">{{ a.latitude|floatformat:2 }}, {{ a.longitude|floatformat:2 }}</span>{% else %}—{% endif %}</td>
+                    <td><span class="td-faint">{{ a.description|truncatechars:45|default:"—" }}</span></td>
+                    <td class="text-right"><span class="td-faint">{{ a.detected_at|timesince }} ago</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-alert"/></svg></div>
+                            <p>No anomalies detected.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if anomalies.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ anomalies.number }} of {{ anomalies.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if anomalies.has_previous %}?page={{ anomalies.previous_page_number }}{% endif %}" class="page-btn {% if not anomalies.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if anomalies.has_next %}?page={{ anomalies.next_page_number }}{% endif %}" class="page-btn {% if not anomalies.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

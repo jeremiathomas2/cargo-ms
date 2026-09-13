@@ -5,42 +5,26 @@ import qrcode
 import barcode
 from barcode.writer import ImageWriter
 from django.conf import settings
-from django.db import connection, transaction
+from django.db import transaction
 from django.utils import timezone
+
+from core.models import DocumentNumberSequence, TrackingIdSequence
 
 
 def generate_tracking_id(prefix='CMS', country='TZ'):
     year = timezone.now().year
-    table_name = 'core_trackingidsequence'
-
-    with connection.cursor() as cursor:
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS %s (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                prefix VARCHAR(10) NOT NULL,
-                country VARCHAR(5) NOT NULL,
-                year INTEGER NOT NULL,
-                current_value INTEGER NOT NULL DEFAULT 0,
-                UNIQUE(prefix, country, year)
-            )
-            """ % table_name
-        )
 
     with transaction.atomic():
-        with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                INSERT INTO %s (prefix, country, year, current_value)
-                VALUES (%s, %s, %s, 1)
-                ON CONFLICT(prefix, country, year)
-                DO UPDATE SET current_value = current_value + 1
-                RETURNING current_value
-                """ % table_name,
-                [prefix, country, year],
-            )
-            row = cursor.fetchone()
-            seq_number = row[0] if row else 1
+        seq, created = TrackingIdSequence.objects.select_for_update().get_or_create(
+            prefix=prefix,
+            country=country,
+            year=year,
+            defaults={'current_value': 1},
+        )
+        if not created:
+            seq.current_value += 1
+            seq.save(update_fields=['current_value'])
+        seq_number = seq.current_value
 
     return f"{prefix}-{country}-{year}-{seq_number:08d}"
 
@@ -49,35 +33,16 @@ def generate_document_number(prefix, year=None):
     if year is None:
         year = timezone.now().year
 
-    table_name = 'core_documentnumbersequence'
-
-    with connection.cursor() as cursor:
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS %s (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                prefix VARCHAR(20) NOT NULL,
-                year INTEGER NOT NULL,
-                current_value INTEGER NOT NULL DEFAULT 0,
-                UNIQUE(prefix, year)
-            )
-            """ % table_name
-        )
-
     with transaction.atomic():
-        with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                INSERT INTO %s (prefix, year, current_value)
-                VALUES (%s, %s, 1)
-                ON CONFLICT(prefix, year)
-                DO UPDATE SET current_value = current_value + 1
-                RETURNING current_value
-                """ % table_name,
-                [prefix, year],
-            )
-            row = cursor.fetchone()
-            seq_number = row[0] if row else 1
+        seq, created = DocumentNumberSequence.objects.select_for_update().get_or_create(
+            prefix=prefix,
+            year=year,
+            defaults={'current_value': 1},
+        )
+        if not created:
+            seq.current_value += 1
+            seq.save(update_fields=['current_value'])
+        seq_number = seq.current_value
 
     return f"{prefix}-{year}-{seq_number:07d}"
 

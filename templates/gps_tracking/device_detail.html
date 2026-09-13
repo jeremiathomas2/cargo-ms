@@ -220,14 +220,12 @@
 
 {% block extra_js %}
 <script>
-(function(){
-    if (window.L) {
-        var lat = {% if device.last_latitude %}{{ device.last_latitude }}{% else %}-6.8220733{% endif %};
-        var lng = {% if device.last_longitude %}{{ device.last_longitude }}{% else %}39.2821518{% endif %};
-        var map = L.map('deviceMap').setView([lat, lng], 14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'&copy; OpenStreetMap'}).addTo(map);
-        L.marker([lat, lng]).addTo(map).bindPopup('<b>{{ device.tracker_id }}</b><br>{% if device.assigned_vehicle %}{{ device.assigned_vehicle.registration_number }}{% else %}Unassigned{% endif %}');
-    }
-})();
+LibsReady(function(){
+    var lat = {% if device.last_latitude %}{{ device.last_latitude }}{% else %}-6.8220733{% endif %};
+    var lng = {% if device.last_longitude %}{{ device.last_longitude }}{% else %}39.2821518{% endif %};
+    var map = L.map('deviceMap').setView([lat, lng], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'&copy; OpenStreetMap'}).addTo(map);
+    L.marker([lat, lng]).addTo(map).bindPopup('<b>{{ device.tracker_id }}</b><br>{% if device.assigned_vehicle %}{{ device.assigned_vehicle.registration_number }}{% else %}Unassigned{% endif %}');
+});
 </script>
 {% endblock %}

@@ -234,7 +234,7 @@
 {{ monthly_data|json_script:"monthly_data" }}
 {{ status_data|json_script:"status_data" }}
 <script>
-(function(){
+LibsReady(function(){
   "use strict";
 
   var STATUS_LABEL = {
@@ -650,6 +650,6 @@
   window.addEventListener("resize", function(){ map.invalidateSize(); });
   setTimeout(function(){ map.invalidateSize(); }, 200);
 
-})();
+});
 </script>
 {% endblock %}

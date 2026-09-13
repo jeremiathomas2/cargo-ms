@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Driver Scorecards</h1>
+        <p>Safety, efficiency and on-time performance</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'fleet_intelligence:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-truck"/></svg> Overview</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.05s">
+    <div class="filter-row">
+        <div class="filter-row-right" style="margin-left:auto;">
+            <form method="get" class="flex items-center gap-2 flex-wrap">
+                <div class="search-field" style="width: 280px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Driver name, license...">
+                </div>
+                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Driver</th>
+                    <th>Score</th>
+                    <th>Speeding</th>
+                    <th>Harsh Braking</th>
+                    <th>On-Time</th>
+                    <th>Avg Speed</th>
+                    <th>Fuel Used</th>
+                    <th class="text-right">Period</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in scorecards %}
+                <tr>
+                    <td><span style="font-size:12.5px; font-weight:800; color:var(--text);">{{ s.driver.first_name }} {{ s.driver.last_name }}</span></td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:52px; height:8px; background:var(--card-2); border-radius:999px; overflow:hidden;">
+                                <div style="width:{{ s.total_score }}%; height:100%; background:{% if s.total_score >= 80 %}var(--success){% elif s.total_score >= 50 %}var(--warning){% else %}var(--danger){% endif %};"></div>
+                            </div>
+                            <span style="font-size:12px; font-weight:800;">{{ s.total_score }}</span>
+                        </div>
+                    </td>
+                    <td><span class="badge {% if s.speeding_events == 0 %}b-delivered{% else %}b-delayed{% endif %}">{{ s.speeding_events }}</span></td>
+                    <td><span class="badge {% if s.harsh_braking_events == 0 %}b-delivered{% else %}b-pending{% endif %}">{{ s.harsh_braking_events }}</span></td>
+                    <td><span class="badge b-info">{{ s.on_time_deliveries }}/{{ s.total_deliveries }}</span></td>
+                    <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ s.avg_speed }} km/h</span></td>
+                    <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ s.fuel_consumed_l }} L</span></td>
+                    <td class="text-right"><span class="td-faint">{{ s.period_start|date:"M j" }} → {{ s.period_end|date:"M j" }}</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-users"/></svg></div>
+                            <p>No scorecards generated yet.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if scorecards.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ scorecards.number }} of {{ scorecards.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if scorecards.has_previous %}?page={{ scorecards.previous_page_number }}{% endif %}" class="page-btn {% if not scorecards.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if scorecards.has_next %}?page={{ scorecards.next_page_number }}{% endif %}" class="page-btn {% if not scorecards.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

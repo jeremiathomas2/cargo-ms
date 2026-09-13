@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Offline Sync Queue</h1>
+        <p>Pending actions captured on offline devices</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'access_channels:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-bell"/></svg> Overview</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.05s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'access_channels:sync_queue_list' %}" class="chip {% if not synced_filter %}active{% endif %}">All</a>
+            <a href="?synced=0" class="chip {% if synced_filter == '0' %}active{% endif %}">Pending</a>
+            <a href="?synced=1" class="chip {% if synced_filter == '1' %}active{% endif %}">Synced</a>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Device</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Status</th>
+                    <th class="text-right">Captured</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td><span style="font-size:12px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ item.device_id }}</span></td>
+                    <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ item.user.get_full_name|default:item.user.username }}</span></td>
+                    <td><span class="badge b-warehouse">{{ item.action_type }}</span></td>
+                    <td><span class="badge {% if item.synced %}b-delivered{% else %}b-pending{% endif %}">{% if item.synced %}Synced{% else %}Pending{% endif %}</span></td>
+                    <td class="text-right">
+                        <div style="font-size:12px; font-weight:700; color:var(--text);">{{ item.created_at|timesince }} ago</div>
+                        {% if item.synced_at %}<div class="td-faint">synced {{ item.synced_at|timesince }} ago</div>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5"><div class="data-table-empty"><p>Sync queue is empty.</p></div></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if items.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ items.number }} of {{ items.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if items.has_previous %}?page={{ items.previous_page_number }}{% endif %}" class="page-btn {% if not items.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if items.has_next %}?page={{ items.next_page_number }}{% endif %}" class="page-btn {% if not items.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

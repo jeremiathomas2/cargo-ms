@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Report Exports</h1>
+        <p>Requested report downloads — pick a format and report type</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="#new-export" class="btn btn-primary"><svg class="icon"><use href="#i-upload"/></svg> Request Export</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-file"/></svg></div>
+        </div>
+        <div class="stat-value">{{ exports.paginator.count }}</div>
+        <div class="stat-label">Total Exports</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-check"/></svg></div>
+        </div>
+        <div class="stat-value">{{ completed_count|default:0 }}</div>
+        <div class="stat-label">Completed</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-clock"/></svg></div>
+        </div>
+        <div class="stat-value">{{ pending_count|default:0 }}</div>
+        <div class="stat-label">Pending</div>
+    </div>
+</div>
+
+<form method="post" action="{% url 'reports:exports' %}" id="new-export" class="panel reveal" style="margin-bottom:20px; animation-delay:.08s;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="create_export">
+    <div style="padding:18px 20px; border-bottom:1px solid var(--border);">
+        <h2 style="font-size:14px; font-weight:800;">Request New Export</h2>
+        <p class="sub">Select a report type and format. Exports appear here once generated.</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end" style="padding:20px;">
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Report Type</label>
+            <select name="report_type" required class="input-field" style="margin-top:6px;">
+                <option value="">— Select report —</option>
+                {% for value, label in report_type_choices %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Format</label>
+            <select name="export_format" required class="input-field" style="margin-top:6px;">
+                {% for value, label in format_choices %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Organization (optional)</label>
+            <select name="organization" class="input-field" style="margin-top:6px;">
+                <option value="">— Any tenant —</option>
+                {% for o in organizations %}
+                <option value="{{ o.pk }}">{{ o.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--border); display:flex; justify-content:flex-end;">
+        <button type="submit" class="btn btn-primary" style="margin:0;"><svg class="icon"><use href="#i-upload"/></svg> Queue Export</button>
+    </div>
+</form>
+
+<div class="panel reveal" style="animation-delay:.1s">
+    <div class="filter-row" style="border:none;">
+        <div class="chip-group">
+            <a href="{% url 'reports:exports' %}" class="chip {% if not status_filter %}active{% endif %}">All</a>
+            <a href="?status=pending" class="chip {% if status_filter == 'pending' %}active{% endif %}">Pending</a>
+            <a href="?status=generating" class="chip {% if status_filter == 'generating' %}active{% endif %}">Generating</a>
+            <a href="?status=completed" class="chip {% if status_filter == 'completed' %}active{% endif %}">Completed</a>
+            <a href="?status=failed" class="chip {% if status_filter == 'failed' %}active{% endif %}">Failed</a>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Report</th>
+                    <th>Format</th>
+                    <th>Status</th>
+                    <th>Requested By</th>
+                    <th>Created</th>
+                    <th>Completed</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in exports %}
+                <tr>
+                    <td style="font-size:13px; font-weight:800;">{{ e.get_report_type_display }}</td>
+                    <td>
+                        <span class="badge {% if e.export_format == 'pdf' %}b-delayed{% elif e.export_format == 'excel' %}b-delivered{% else %}b-info{% endif %}" style="text-transform:uppercase;">{{ e.get_export_format_display }}</span>
+                    </td>
+                    <td>
+                        <span class="badge {% if e.status == 'completed' %}b-delivered{% elif e.status == 'failed' %}b-delayed{% elif e.status == 'generating' %}b-info{% else %}b-warehouse{% endif %}">{{ e.get_status_display }}</span>
+                    </td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ e.requested_by.get_full_name|default:e.requested_by.username }}</td>
+                    <td style="font-size:12px; font-weight:700; white-space:nowrap;">{{ e.created_at|date:"d M Y H:i" }}</td>
+                    <td style="font-size:12px; font-weight:700; white-space:nowrap;">
+                        {% if e.completed_at %}{{ e.completed_at|date:"d M Y H:i" }}{% else %}<span class="td-faint">—</span>{% endif %}
+                    </td>
+                    <td class="text-right">
+                        {% if e.status == 'completed' and e.file %}
+                        <a href="{{ e.file.url }}" class="chip" style="font-size:11px; text-decoration:none;">Download</a>
+                        {% endif %}
+                        <form method="post" action="{% url 'reports:exports' %}" style="display:inline;" onsubmit="return confirm('Remove this export record?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete_export">
+                            <input type="hidden" name="export_id" value="{{ e.pk }}">
+                            <button type="submit" class="chip" style="font-size:11px; background:var(--danger-soft); color:var(--danger); border-color:var(--danger);">Remove</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-file"/></svg></div>
+                            <p>No exports yet. Request one above.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if exports.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ exports.number }} of {{ exports.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if exports.has_previous %}?page={{ exports.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not exports.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if exports.has_next %}?page={{ exports.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not exports.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

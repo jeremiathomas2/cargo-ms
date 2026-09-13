@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>IVR Calls</h1>
+        <p>Voice-based tracking interactions</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'access_channels:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-bell"/></svg> Overview</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.05s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Call ID</th>
+                    <th>Phone</th>
+                    <th>Tracking No</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th class="text-right">Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in calls %}
+                <tr>
+                    <td><span style="font-size:12px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ c.call_id }}</span></td>
+                    <td><span style="font-size:12.5px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text);">{{ c.phone_number }}</span></td>
+                    <td><span style="font-size:12px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text-muted);">{{ c.tracking_number }}</span></td>
+                    <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ c.duration_seconds }}s</span></td>
+                    <td><span class="badge {% if c.status == 'completed' %}b-delivered{% else %}b-delayed{% endif %}">{{ c.get_status_display }}</span></td>
+                    <td class="text-right"><span class="td-faint">{{ c.created_at|timesince }} ago</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6"><div class="data-table-empty"><p>No IVR calls recorded.</p></div></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if calls.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ calls.number }} of {{ calls.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if calls.has_previous %}?page={{ calls.previous_page_number }}{% endif %}" class="page-btn {% if not calls.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if calls.has_next %}?page={{ calls.next_page_number }}{% endif %}" class="page-btn {% if not calls.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

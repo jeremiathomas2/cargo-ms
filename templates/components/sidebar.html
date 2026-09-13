@@ -34,8 +34,48 @@
         </a>
       </li>
       <li>
-        <a href="{% url 'transportation:manifest_list' %}" class="nav-item">
+        <a href="{% url 'transportation:manifest_list' %}" class="nav-item {% if request.resolver_match.namespace == 'transportation' %}active{% endif %}">
           <svg class="icon"><use href="#i-clipboard"/></svg><span class="label">Manifests</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'iot_sensors:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'iot_sensors' %}active{% endif %}">
+          <svg class="icon"><use href="#i-pin"/></svg><span class="label">IoT Sensors</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'ai_intelligence:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'ai_intelligence' %}active{% endif %}">
+          <svg class="icon"><use href="#i-layers"/></svg><span class="label">AI Intelligence</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'fleet_intelligence:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'fleet_intelligence' %}active{% endif %}">
+          <svg class="icon"><use href="#i-bar"/></svg><span class="label">Fleet Intel</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'risk_management:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'risk_management' %}active{% endif %}">
+          <svg class="icon"><use href="#i-shield"/></svg><span class="label">Risk Management</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'cross_border:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'cross_border' %}active{% endif %}">
+          <svg class="icon"><use href="#i-route"/></svg><span class="label">Cross-Border</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'webhooks_integration:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'webhooks_integration' %}active{% endif %}">
+          <svg class="icon"><use href="#i-up"/></svg><span class="label">Integrations</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'access_channels:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'access_channels' %}active{% endif %}">
+          <svg class="icon"><use href="#i-bell"/></svg><span class="label">Access Channels</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'saas_config:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'saas_config' %}active{% endif %}">
+          <svg class="icon"><use href="#i-users"/></svg><span class="label">SaaS Tenants</span>
         </a>
       </li>
     </ul>

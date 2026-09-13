@@ -66,10 +66,12 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="text-center" style="font-size:13px; font-weight:800;">{{ r.user_count|default:r.user_set.all|length }}</td>
+                        <td class="text-center" style="font-size:13px; font-weight:800;">{{ r.users.count }}</td>
                         <td>
-                            <form method="post" action="{% url 'self_service:role_toggle' pk=r.pk %}" style="display:inline;">
+                            <form method="post" action="{% url 'self_service:roles' %}" style="display:inline;">
                                 {% csrf_token %}
+                                <input type="hidden" name="action" value="toggle_role">
+                                <input type="hidden" name="role_id" value="{{ r.pk }}">
                                 <button type="submit" class="chip" style="font-size:11px;">Toggle</button>
                             </form>
                         </td>
@@ -88,9 +90,10 @@
             </table>
         </div>
         <div style="padding:16px 20px; border-top:1px solid var(--border);">
-            <form method="post" action="{% url 'self_service:role_create' %}" class="flex items-center gap-2 flex-wrap">
+            <form method="post" action="{% url 'self_service:roles' %}" class="flex items-center gap-2 flex-wrap">
                 {% csrf_token %}
                 <input type="text" name="name" required placeholder="New role name..." class="input-field" style="flex:1; min-width:180px;">
+                <input type="hidden" name="action" value="create_role">
                 <button type="submit" class="btn btn-primary" style="padding:10px 14px; font-size:12.5px; margin:0;"><svg class="icon"><use href="#i-plus"/></svg> Add</button>
             </form>
         </div>

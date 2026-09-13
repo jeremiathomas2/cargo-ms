@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1 style="font-family:ui-monospace, monospace;">{{ device.tracker_id }}</h1>
+        <p>{{ device.get_sensor_type_display }} · S/N {{ device.serial_number }}</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'iot_sensors:sensor_list' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-chevron-left"/></svg> Back</a>
+        <span class="badge {% if device.is_active %}b-delivered{% else %}b-delayed{% endif %}" style="font-size:13px;">{% if device.is_active %}Active{% else %}Inactive{% endif %}</span>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--danger-soft); color:var(--danger);"><svg class="icon"><use href="#i-up"/></svg></div>
+        </div>
+        <div class="stat-value">{% if readings.0.temperature %}{{ readings.0.temperature }}°{% else %}—{% endif %}</div>
+        <div class="stat-label">Latest Temp</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-down"/></svg></div>
+        </div>
+        <div class="stat-value">{% if readings.0.humidity %}{{ readings.0.humidity }}%{% else %}—{% endif %}</div>
+        <div class="stat-label">Humidity</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-map"/></svg></div>
+        </div>
+        <div class="stat-value">{{ device.battery_level }}%</div>
+        <div class="stat-label">Battery</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-alert"/></svg></div>
+        </div>
+        <div class="stat-value">{{ alerts|length }}</div>
+        <div class="stat-label">Alerts</div>
+    </div>
+</div>
+
+<div class="grid-2 reveal" style="animation-delay:.08s">
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <h3>Telemetry</h3>
+                <p>Latest 50 readings</p>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Temp</th>
+                        <th>Humidity</th>
+                        <th>Shock</th>
+                        <th>Light</th>
+                        <th class="text-right">Door</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in readings %}
+                    <tr>
+                        <td><span style="font-size:12px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text);">{{ r.timestamp|date:"M j, H:i" }}</span></td>
+                        <td>{{ r.temperature|default:"—" }}°C</td>
+                        <td>{{ r.humidity|default:"—" }}%</td>
+                        <td>{{ r.shock_level|default:"—" }}g</td>
+                        <td>{{ r.light_exposure|default:"—" }}</td>
+                        <td class="text-right">
+                            {% if r.door_open is not None %}
+                            <span class="badge {% if r.door_open %}b-delayed{% else %}b-info{% endif %}">{% if r.door_open %}Open{% else %}Closed{% endif %}</span>
+                            {% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6"><div class="data-table-empty"><p>No readings yet.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <h3>Alert History</h3>
+                <p>Events for this device</p>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Severity</th>
+                        <th>Value</th>
+                        <th class="text-right">Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in alerts %}
+                    <tr>
+                        <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ a.get_alert_type_display }}</span></td>
+                        <td><span class="badge {% if a.severity == 'critical' or a.severity == 'high' %}b-delayed{% elif a.severity == 'medium' %}b-pending{% else %}b-info{% endif %}">{{ a.get_severity_display }}</span></td>
+                        <td>{% if a.actual_value %}{{ a.actual_value }}{% else %}—{% endif %}</td>
+                        <td class="text-right"><span class="td-faint">{{ a.created_at|timesince }} ago</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4"><div class="data-table-empty"><p>No alerts.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -164,9 +164,9 @@
 
 {% block extra_js %}
 <script>
-(function(){
+LibsReady(function(){
     var zones = {{ geofences_json|safe }};
-    if (window.L && (zones||[]).length) {
+    if ((zones||[]).length) {
         var map = L.map('geoMap').setView([-6.8220733, 39.2821518], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'&copy; OpenStreetMap'}).addTo(map);
         var colors = ['#D96A16','#1DA36B','#38AEF2','#6D5BD0','#E19A1C','#E5484D','#8B5CF6'];
@@ -183,6 +183,6 @@
         });
         if (b.length) { try { map.fitBounds(b, {padding:[40,40]}); } catch(e){} }
     }
-})();
+});
 </script>
 {% endblock %}

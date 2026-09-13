@@ -91,3 +91,40 @@ class OrganizationScopedModel(TimeStampedModel):
 
     class Meta(TimeStampedModel.Meta):
         abstract = True
+
+
+class DocumentNumberSequence(models.Model):
+    prefix = models.CharField(max_length=20)
+    year = models.SmallIntegerField()
+    current_value = models.BigIntegerField(default=1)
+
+    class Meta:
+        ordering = ['prefix', 'year']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['prefix', 'year'],
+                name='uniq_document_number_sequence',
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.prefix}-{self.year}: {self.current_value}"
+
+
+class TrackingIdSequence(models.Model):
+    prefix = models.CharField(max_length=10)
+    country = models.CharField(max_length=5)
+    year = models.SmallIntegerField()
+    current_value = models.BigIntegerField(default=1)
+
+    class Meta:
+        ordering = ['prefix', 'country', 'year']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['prefix', 'country', 'year'],
+                name='uniq_tracking_id_sequence',
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.prefix}-{self.country}-{self.year}: {self.current_value}"

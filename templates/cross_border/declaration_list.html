@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Customs Declarations</h1>
+        <p>Declarations submitted for cross-border shipments</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'cross_border:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-route"/></svg> Overview</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.05s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'cross_border:declaration_list' %}" class="chip {% if not status_filter %}active{% endif %}">All</a>
+            {% for val,label in status_choices %}
+            <a href="?status={{ val }}" class="chip {% if status_filter == val %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2 flex-wrap">
+                <div class="search-field" style="width: 280px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Declaration no, HS code...">
+                </div>
+                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Declaration</th><th>Shipment</th><th>HS Code</th><th>Description</th>
+                    <th>Value</th><th>Duty</th><th class="text-right">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in declarations %}
+                <tr>
+                    <td><span style="font-size:12px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ d.declaration_number }}</span></td>
+                    <td><a href="{% url 'cargo:detail' pk=d.shipment.pk %}" style="font-size:11.5px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text-muted);">{{ d.shipment.tracking_id }}</a></td>
+                    <td><span class="badge b-warehouse">{{ d.hs_code }}</span></td>
+                    <td><span class="td-faint">{{ d.goods_description|truncatechars:35 }}</span></td>
+                    <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ d.declared_value }}</span></td>
+                    <td><span class="td-faint">{{ d.duty_amount }}</span></td>
+                    <td class="text-right"><span class="badge {% if d.status == 'approved' %}b-delivered{% elif d.status == 'rejected' %}b-delayed{% elif d.status == 'submitted' %}b-pending{% else %}b-info{% endif %}">{{ d.get_status_display }}</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7"><div class="data-table-empty"><p>No declarations match the current filter.</p></div></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if declarations.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ declarations.number }} of {{ declarations.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if declarations.has_previous %}?page={{ declarations.previous_page_number }}{% endif %}" class="page-btn {% if not declarations.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if declarations.has_next %}?page={{ declarations.next_page_number }}{% endif %}" class="page-btn {% if not declarations.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

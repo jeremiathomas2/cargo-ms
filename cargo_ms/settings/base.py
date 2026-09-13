@@ -111,6 +111,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "core.middleware.AuditMiddleware",
+    "core.middleware.ClearThreadLocalMiddleware",
 ]
 
 ROOT_URLCONF = "cargo_ms.urls"

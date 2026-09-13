@@ -1,3 +1,4 @@
+import json
 import logging
 
 from django.db.models.signals import post_save
@@ -9,21 +10,30 @@ from core.middleware import get_current_request
 logger = logging.getLogger(__name__)
 
 
-def _create_audit_log(user, action, model_name, object_id=None, details=None):
+def _create_audit_log(user, action, entity_type, entity_id=None, details=None, entity_str=""):
     ip_address = None
     request = get_current_request()
     if request:
         from core.utils import get_client_ip
         ip_address = get_client_ip(request)
+        if user is None and request.user.is_authenticated:
+            user = request.user
 
     try:
+        details = details or {}
         AuditLog.objects.create(
-            user=user,
+            actor=user,
             action=action,
-            model_name=model_name,
-            object_id=str(object_id) if object_id else None,
+            entity_type=entity_type,
+            entity_id=str(entity_id) if entity_id else "",
+            entity_str=str(entity_str) if entity_str else str(entity_id or ""),
+            after_data=details if isinstance(details, dict) else {},
+            details=json.dumps(details, default=str) if isinstance(details, dict) else str(details or ""),
             ip_address=ip_address,
-            details=details or {},
+            user_agent=request.META.get("HTTP_USER_AGENT", "")[:1000] if request else "",
+            request_id=request.META.get("HTTP_X_REQUEST_ID", "") if request else "",
+            branch=getattr(user, "branch", None) if user else None,
+            organization=getattr(user, "organization", None) if user else None,
         )
     except Exception as e:
         logger.error(f"Failed to create audit log: {e}")
@@ -31,31 +41,50 @@ def _create_audit_log(user, action, model_name, object_id=None, details=None):
 
 @receiver(post_save, sender='cargo.Shipment')
 def audit_cargo_status_change(sender, instance, created, update_fields=None, **kwargs):
-    if update_fields and 'status' in update_fields:
+    if created:
         _create_audit_log(
             user=getattr(instance, 'created_by', None),
-            action='status_change',
-            model_name='Shipment',
-            object_id=instance.pk,
+            action='create',
+            entity_type='Shipment',
+            entity_id=instance.pk,
+            entity_str=getattr(instance, 'tracking_id', None),
             details={
                 'tracking_id': getattr(instance, 'tracking_id', None),
                 'status': instance.status,
+                'origin': getattr(instance, 'origin', None),
+                'destination': getattr(instance, 'destination', None),
             },
         )
+    else:
+        if update_fields and 'status' in update_fields:
+            _create_audit_log(
+                user=getattr(instance, 'created_by', None),
+                action='status_change',
+                entity_type='Shipment',
+                entity_id=instance.pk,
+                entity_str=getattr(instance, 'tracking_id', None),
+                details={
+                    'tracking_id': getattr(instance, 'tracking_id', None),
+                    'status': instance.status,
+                },
+            )
 
 
 @receiver(post_save, sender='payments.Payment')
 def audit_payment_creation(sender, instance, created, **kwargs):
     if created:
         _create_audit_log(
-            user=getattr(instance, 'created_by', None),
+            user=getattr(instance, 'recorded_by', None),
             action='payment',
-            model_name='Payment',
-            object_id=instance.pk,
+            entity_type='Payment',
+            entity_id=instance.pk,
+            entity_str=getattr(instance, 'payment_number', None),
             details={
+                'payment_number': getattr(instance, 'payment_number', None),
                 'amount': str(getattr(instance, 'amount', 0)),
                 'currency': getattr(instance, 'currency', 'TZS'),
-                'payment_method': getattr(instance, 'payment_method', None),
+                'payment_method': str(getattr(instance.payment_method, 'code', '') if instance.payment_method else ''),
+                'status': instance.status,
             },
         )
 
@@ -64,11 +93,13 @@ def audit_payment_creation(sender, instance, created, **kwargs):
 def audit_delivery_confirmation(sender, instance, created, update_fields=None, **kwargs):
     if update_fields and 'status' in update_fields and instance.status == 'delivered':
         _create_audit_log(
-            user=getattr(instance, 'confirmed_by', None),
+            user=getattr(instance, 'assigned_to', None),
             action='delivery',
-            model_name='Delivery',
-            object_id=instance.pk,
+            entity_type='Delivery',
+            entity_id=instance.pk,
+            entity_str=getattr(instance, 'delivery_number', None),
             details={
+                'delivery_number': getattr(instance, 'delivery_number', None),
                 'status': instance.status,
             },
         )

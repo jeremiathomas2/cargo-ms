@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Regional Agents</h1>
+        <p>Partners handling cross-border logistics on the ground</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'cross_border:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-route"/></svg> Overview</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.05s">
+    <div class="filter-row">
+        <div class="filter-row-right" style="margin-left:auto;">
+            <form method="get" class="flex items-center gap-2 flex-wrap">
+                <div class="search-field" style="width: 280px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Name, company, country...">
+                </div>
+                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Company</th>
+                    <th>Country</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th class="text-right">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in agents %}
+                <tr>
+                    <td><span style="font-size:12.5px; font-weight:800; color:var(--text);">{{ a.name }}</span></td>
+                    <td><span class="td-faint">{{ a.company }}</span></td>
+                    <td><span class="badge b-info">{{ a.country }}</span></td>
+                    <td><span style="font-size:12px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text);">{{ a.phone }}</span></td>
+                    <td><span class="td-faint">{{ a.email }}</span></td>
+                    <td class="text-right"><span class="badge {% if a.is_active %}b-delivered{% else %}b-delayed{% endif %}">{% if a.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6"><div class="data-table-empty"><p>No regional agents registered.</p></div></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if agents.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ agents.number }} of {{ agents.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if agents.has_previous %}?page={{ agents.previous_page_number }}{% endif %}" class="page-btn {% if not agents.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if agents.has_next %}?page={{ agents.next_page_number }}{% endif %}" class="page-btn {% if not agents.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

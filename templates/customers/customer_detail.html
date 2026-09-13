@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head">
+    <div class="flex items-center gap-4 flex-wrap">
+        <a href="{% url 'customers:list' %}" class="icon-btn" style="padding: 10px;">
+            <svg class="w-5 h-5 stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
+        <div>
+            <h1 class="page-title" style="margin-bottom: 0;">{{ customer.full_name }}</h1>
+            <p class="page-sub" style="margin-top: 4px;">{{ customer.customer_number }} &middot; {{ customer.get_customer_type_display }}</p>
+        </div>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'customers:list' %}" class="btn ghost">Back</a>
+        <a href="{% url 'customers:edit' pk=customer.pk %}" class="btn btn-primary"><svg class="icon"><use href="#i-edit"/></svg> Edit</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-check"/></svg></div>
+        </div>
+        <div class="stat-value">{{ customer.get_status_display }}</div>
+        <div class="stat-label">Status</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-package"/></svg></div>
+        </div>
+        <div class="stat-value">{{ customer.total_shipments }}</div>
+        <div class="stat-label">Shipments</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--info-soft); color:var(--info);"><svg class="icon"><use href="#i-cash"/></svg></div>
+        </div>
+        <div class="stat-value">TZS {{ customer.credit_limit|default:0|floatformat:0 }}</div>
+        <div class="stat-label">Credit Limit</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-alert"/></svg></div>
+        </div>
+        <div class="stat-value">{% if customer.is_watchlisted %}Yes{% else %}No{% endif %}</div>
+        <div class="stat-label">Watchlisted</div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5 reveal" style="animation-delay:.08s">
+    <div class="panel">
+        <div class="flex items-center gap-3 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+            <div class="w-9 h-9 rounded-[11px] bg-brand/10 flex items-center justify-center">
+                <svg class="icon text-brand"><use href="#i-users"/></svg>
+            </div>
+            <div>
+                <h2 class="text-[15px] font-extrabold text-gray-900 dark:text-white">Account Info</h2>
+            </div>
+        </div>
+        <div class="p-5 space-y-3">
+            <div class="flex justify-between">
+                <span class="text-[12px] font-bold text-muted dark:text-[#8981B8]">Phone</span>
+                <span class="text-[13px] font-extrabold text-gray-900 dark:text-white">{{ customer.phone|default:"—" }}</span>
+            </div>
+            {% if customer.secondary_phone %}
+            <div class="flex justify-between">
+                <span class="text-[12px] font-bold text-muted dark:text-[#8981B8]">Secondary</span>
+                <span class="text-[13px] font-extrabold text-gray-900 dark:text-white">{{ customer.secondary_phone }}</span>
+            </div>
+            {% endif %}
+            <div class="flex justify-between">
+                <span class="text-[12px] font-bold text-muted dark:text-[#8981B8]">Email</span>
+                <span class="text-[13px] font-extrabold text-gray-900 dark:text-white">{{ customer.email|default:"—" }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-[12px] font-bold text-muted dark:text-[#8981B8]">Tax ID</span>
+                <span class="text-[13px] font-extrabold text-gray-900 dark:text-white">{{ customer.tax_id|default:"—" }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-[12px] font-bold text-muted dark:text-[#8981B8]">Payment Terms</span>
+                <span class="text-[13px] font-extrabold text-gray-900 dark:text-white">{{ customer.payment_terms_days }} days</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-[12px] font-bold text-muted dark:text-[#8981B8]">Balance</span>
+                <span class="text-[13px] font-extrabold text-gray-900 dark:text-white">TZS {{ customer.current_balance|floatformat:0 }}</span>
+            </div>
+            {% if customer.notes %}
+            <div class="pt-2 border-t border-gray-200 dark:border-[#291F55]">
+                <span class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider block mb-1">Notes</span>
+                <p class="text-[13px] font-semibold text-gray-900 dark:text-white whitespace-pre-wrap">{{ customer.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="flex items-center gap-3 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+            <div class="w-9 h-9 rounded-[11px] bg-primary/10 flex items-center justify-center">
+                <svg class="icon text-primary"><use href="#i-pin"/></svg>
+            </div>
+            <div>
+                <h2 class="text-[15px] font-extrabold text-gray-900 dark:text-white">Addresses</h2>
+                <p class="text-[11px] text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">{{ addresses|length }} on file</p>
+            </div>
+        </div>
+        <div class="p-5 space-y-3">
+            {% for a in addresses %}
+            <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2">
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider">{{ a.get_address_type_display }}</span>
+                    {% if a.is_default %}<span class="badge b-delivered" style="font-size:10px;">Default</span>{% endif %}
+                </div>
+                <div class="text-[13px] font-extrabold text-gray-900 dark:text-white">{{ a.address_line1 }}</div>
+                {% if a.address_line2 %}<div class="text-[12px] font-semibold text-muted dark:text-[#8981B8]">{{ a.address_line2 }}</div>{% endif %}
+                <div class="text-[12px] font-semibold text-muted dark:text-[#8981B8]">{{ a.city }}{% if a.region %}, {{ a.region }}{% endif %}, {{ a.country }}</div>
+                {% if a.contact_person %}<div class="text-[11px] font-bold text-muted dark:text-[#8981B8] mt-1.5">{{ a.contact_person }} &middot; {{ a.contact_phone }}</div>{% endif %}
+            </div>
+            {% empty %}
+            <div class="text-center py-6">
+                <p class="text-[13px] font-semibold text-muted dark:text-[#8981B8]">No addresses recorded</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="flex items-center gap-3 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+            <div class="w-9 h-9 rounded-[11px] bg-success/10 flex items-center justify-center">
+                <svg class="icon text-success"><use href="#i-phone"/></svg>
+            </div>
+            <div>
+                <h2 class="text-[15px] font-extrabold text-gray-900 dark:text-white">Contacts</h2>
+                <p class="text-[11px] text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">{{ contacts|length }} on file</p>
+            </div>
+        </div>
+        <div class="p-5 space-y-3">
+            {% for c in contacts %}
+            <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-[13px] font-extrabold text-gray-900 dark:text-white">{{ c.name }}</span>
+                    {% if c.is_primary %}<span class="badge b-delivered" style="font-size:10px;">Primary</span>{% endif %}
+                </div>
+                {% if c.title %}<div class="text-[11px] font-bold text-muted dark:text-[#8981B8]">{{ c.title }}</div>{% endif %}
+                <div class="text-[12px] font-semibold text-muted dark:text-[#8981B8]">{{ c.email|default:"—" }} &middot; {{ c.phone }}</div>
+            </div>
+            {% empty %}
+            <div class="text-center py-6">
+                <p class="text-[13px] font-semibold text-muted dark:text-[#8981B8]">No contacts recorded</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal mt-5" style="animation-delay:.11s">
+    <div class="flex items-center gap-3 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+        <div class="w-9 h-9 rounded-[11px] bg-secondary/10 flex items-center justify-center">
+            <svg class="icon text-secondary"><use href="#i-package"/></svg>
+        </div>
+        <div>
+            <h2 class="text-[15px] font-extrabold text-gray-900 dark:text-white">Recent Shipments</h2>
+            <p class="text-[11px] text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Last {{ recent_shipments|length }} shipments</p>
+        </div>
+    </div>
+    {% if recent_shipments %}
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead>
+                <tr class="border-b border-gray-200 dark:border-[#291F55]">
+                    <th class="px-5 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider">Tracking ID</th>
+                    <th class="px-5 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider">Origin</th>
+                    <th class="px-5 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider">Destination</th>
+                    <th class="px-5 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider">Status</th>
+                    <th class="px-5 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider text-right">Booked</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in recent_shipments %}
+                <tr class="border-b border-gray-100 dark:border-[#1E1847] hover:bg-card-2/50 dark:hover:bg-card-dark2/50 transition-colors">
+                    <td class="px-5 py-3.5">
+                        <a href="{% url 'cargo:detail' pk=s.pk %}" class="text-[13px] font-black text-brand hover:underline">{{ s.tracking_id }}</a>
+                    </td>
+                    <td class="px-5 py-3.5 text-[13px] font-semibold text-gray-900 dark:text-white">{{ s.origin|truncatechars:28 }}</td>
+                    <td class="px-5 py-3.5 text-[13px] font-semibold text-gray-900 dark:text-white">{{ s.destination|truncatechars:28 }}</td>
+                    <td class="px-5 py-3.5">
+                        {% if s.status == 'delivered' %}<span class="b-delivered">{{ s.get_status_display }}</span>
+                        {% elif s.status == 'in_transit' %}<span class="b-in-transit">{{ s.get_status_display }}</span>
+                        {% elif s.status == 'cancelled' or s.status == 'lost' or s.status == 'damaged' %}<span class="b-delayed">{{ s.get_status_display }}</span>
+                        {% else %}<span class="b-pending">{{ s.get_status_display }}</span>{% endif %}
+                    </td>
+                    <td class="px-5 py-3.5 text-right text-[12px] font-bold text-muted dark:text-[#8981B8]">{{ s.created_at|date:"d M Y" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="px-5 py-12 text-center">
+        <p class="text-[13px] font-semibold text-muted dark:text-[#8981B8]">No shipments found for this customer</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="panel reveal mt-5" style="animation-delay:.14s">
+    <div class="flex items-center gap-3 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]">
+        <div class="w-9 h-9 rounded-[11px] bg-warning/10 flex items-center justify-center">
+            <svg class="icon text-warning"><use href="#i-cash"/></svg>
+        </div>
+        <div>
+            <h2 class="text-[15px] font-extrabold text-gray-900 dark:text-white">Invoices</h2>
+            <p class="text-[11px] text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Last {{ invoices|length }} invoices</p>
+        </div>
+    </div>
+    {% if invoices %}
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead>
+                <tr class="border-b border-gray-200 dark:border-[#291F55]">
+                    <th class="px-5 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider">Invoice #</th>
+                    <th class="px-5 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider">Status</th>
+                    <th class="px-5 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider">Total</th>
+                    <th class="px-5 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider">Paid</th>
+                    <th class="px-5 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider">Balance</th>
+                    <th class="px-5 py-3 text-[11px] font-extrabold text-muted dark:text-[#8981B8] uppercase tracking-wider text-right">Due</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for i in invoices %}
+                <tr class="border-b border-gray-100 dark:border-[#1E1847] hover:bg-card-2/50 dark:hover:bg-card-dark2/50 transition-colors">
+                    <td class="px-5 py-3.5 text-[13px] font-black text-gray-900 dark:text-white">{{ i.invoice_number }}</td>
+                    <td class="px-5 py-3.5">
+                        {% if i.status == 'paid' %}<span class="b-delivered">{{ i.get_status_display }}</span>
+                        {% elif i.status == 'cancelled' %}<span class="b-delayed">{{ i.get_status_display }}</span>
+                        {% else %}<span class="b-pending">{{ i.get_status_display }}</span>{% endif %}
+                    </td>
+                    <td class="px-5 py-3.5 text-[13px] font-extrabold text-gray-900 dark:text-white">{{ i.currency }} {{ i.total|floatformat:2 }}</td>
+                    <td class="px-5 py-3.5 text-[13px] font-semibold text-gray-900 dark:text-white">{{ i.amount_paid|floatformat:2 }}</td>
+                    <td class="px-5 py-3.5 text-[13px] font-extrabold {% if i.balance > 0 %}text-danger{% else %}text-success{% endif %} dark:text-white">{{ i.balance|floatformat:2 }}</td>
+                    <td class="px-5 py-3.5 text-right text-[12px] font-bold text-muted dark:text-[#8981B8]">{{ i.due_date|date:"d M Y"|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="px-5 py-12 text-center">
+        <p class="text-[13px] font-semibold text-muted dark:text-[#8981B8]">No invoices found for this customer</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

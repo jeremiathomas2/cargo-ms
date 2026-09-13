@@ -28,7 +28,7 @@ class BorderCrossingEventAdmin(admin.ModelAdmin):
         "timestamp",
     )
     list_filter = ("event_type", "border_post", "timestamp")
-    search_fields = ("trip__trip_number", "shipment__tracking_number", "notes")
+    search_fields = ("trip__trip_number", "shipment__tracking_id", "notes")
 
 
 @admin.register(CustomsDeclaration)

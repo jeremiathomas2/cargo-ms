@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Risk Management</h1>
+        <p>SLA breaches, watchlists and shipment risk scoring</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'risk_management:breach_list' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-alert"/></svg> Breaches</a>
+        <a href="{% url 'risk_management:risk_score_list' %}" class="btn btn-primary"><svg class="icon"><use href="#i-shield"/></svg> Risk Scores</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--danger-soft); color:var(--danger);"><svg class="icon"><use href="#i-alert"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_breaches }}</div>
+        <div class="stat-label">Major/Critical Breaches</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-clock"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_open_breaches }}</div>
+        <div class="stat-label">Open Breaches</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-eye"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_watchlist }}</div>
+        <div class="stat-label">Active Watchlist</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-shield"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_high_risk }}</div>
+        <div class="stat-label">High-Risk Shipments</div>
+    </div>
+</div>
+
+<div class="grid-2 reveal" style="animation-delay:.08s">
+    <div class="panel">
+        <div class="panel-head">
+            <div><h3>Latest SLA Breaches</h3><p>Unresolved delivery delays</p></div>
+            <a href="{% url 'risk_management:breach_list' %}" class="link-more">View all</a>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Shipment</th><th>SLA</th><th>Severity</th><th class="text-right">Delay</th></tr></thead>
+                <tbody>
+                    {% for b in breaches %}
+                    <tr>
+                        <td><a href="{% url 'cargo:detail' pk=b.shipment.pk %}" style="font-size:11.5px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ b.shipment.tracking_id }}</a></td>
+                        <td><span class="badge b-info">{{ b.sla_level.code }}</span></td>
+                        <td><span class="badge {% if b.severity == 'critical' %}b-delayed{% elif b.severity == 'major' %}b-delayed{% else %}b-pending{% endif %}">{{ b.get_severity_display }}</span></td>
+                        <td class="text-right"><span style="font-size:12px; font-weight:800; color:var(--danger);">{{ b.breach_duration_hours }} hrs</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4"><div class="data-table-empty"><p>No SLA breaches.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div><h3>Watchlist</h3><p>Flagged customers, addresses and phone numbers</p></div>
+            <a href="{% url 'risk_management:watchlist_list' %}" class="link-more">View all</a>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Type</th><th>Value</th><th>Reason</th><th class="text-right">Added</th></tr></thead>
+                <tbody>
+                    {% for w in watchlist %}
+                    <tr>
+                        <td><span class="badge b-warehouse">{{ w.get_entity_type_display }}</span></td>
+                        <td><span style="font-size:12px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text);">{{ w.entity_value|truncatechars:28 }}</span></td>
+                        <td><span class="td-faint">{{ w.reason|truncatechars:35 }}</span></td>
+                        <td class="text-right"><span class="td-faint">{{ w.added_at|timesince }} ago</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4"><div class="data-table-empty"><p>Watchlist is empty.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

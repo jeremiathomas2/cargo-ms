@@ -137,13 +137,12 @@
                     <th class="text-right">Total Value</th>
                 </tr>
             </thead>
+            {% if report_type == 'customer_shipments' %}
             <tbody>
-                {% for row in data.customers|default:data.branches %}
+                {% for row in data.customers %}
                 <tr>
                     <td style="font-weight:800; color:var(--brand);">#{{ forloop.counter }}</td>
-                    <td style="font-size:13px; font-weight:800; color:var(--text);">
-                        {% if report_type == 'customer_shipments' %}{{ row.customer__first_name|default:"" }} {{ row.customer__last_name|default:"" }} {{ row.customer__company_name|default:"" }}{% else %}{{ row.origin_branch__name|default:"—" }}{% endif %}
-                    </td>
+                    <td style="font-size:13px; font-weight:800; color:var(--text);">{{ row.customer__first_name|default:"" }} {{ row.customer__last_name|default:"" }} {{ row.customer__company_name|default:"" }}</td>
                     <td class="text-right" style="font-weight:800;">{{ row.count }}</td>
                     <td class="text-right" style="font-weight:800; color:var(--success);">{{ row.total_cost|default:0|floatformat:2 }}</td>
                 </tr>
@@ -158,6 +157,27 @@
                 </tr>
                 {% endfor %}
             </tbody>
+            {% else %}
+            <tbody>
+                {% for row in data.branches %}
+                <tr>
+                    <td style="font-weight:800; color:var(--brand);">#{{ forloop.counter }}</td>
+                    <td style="font-size:13px; font-weight:800; color:var(--text);">{{ row.origin_branch__name|default:"—" }}</td>
+                    <td class="text-right" style="font-weight:800;">{{ row.count }}</td>
+                    <td class="text-right" style="font-weight:800; color:var(--success);">{{ row.total_cost|default:0|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-bar"/></svg></div>
+                            <p>No data available for this period.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% endif %}
         </table>
     </div>
 </div>
@@ -167,7 +187,7 @@
 
 {% block extra_js %}
 <script>
-(function(){
+LibsReady(function(){
     {% if report_type == 'shipment_summary' and data.by_status %}
     var ctx = document.getElementById('statusChart');
     if (ctx) {
@@ -201,6 +221,6 @@
         });
     }
     {% endif %}
-})();
+});
 </script>
 {% endblock %}

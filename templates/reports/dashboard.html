@@ -8,6 +8,8 @@
         <p>Business intelligence, performance metrics and exportable data</p>
     </div>
     <div class="page-head-actions">
+        <a href="{% url 'reports:templates' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-file"/></svg> Templates</a>
+        <a href="{% url 'reports:exports' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-upload"/></svg> Exports</a>
         <div class="range-select">
             <svg class="icon"><use href="#i-clock"/></svg>
             <span>Last 30 days</span>
@@ -122,7 +124,7 @@
 
 {% block extra_js %}
 <script>
-(function(){
+LibsReady(function(){
     var ctx = document.getElementById('overviewChart');
     if (!ctx) return;
     var c = new Chart(ctx, {
@@ -154,6 +156,6 @@
             }
         }
     });
-})();
+});
 </script>
 {% endblock %}

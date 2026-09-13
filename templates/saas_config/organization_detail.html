@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>{{ org.name }}</h1>
+        <p>{{ org.slug }} · {{ org.get_plan_display }} plan</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'saas_config:organization_list' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-chevron-left"/></svg> Back</a>
+        <span class="badge {% if org.is_active %}b-delivered{% else %}b-delayed{% endif %}" style="font-size:13px;">{% if org.is_active %}Active{% else %}Inactive{% endif %}</span>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-users"/></svg></div>
+        </div>
+        <div class="stat-value">{{ quota.users_used|default:0 }}/{{ org.max_users|default:"∞" }}</div>
+        <div class="stat-label">Users Used</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-box"/></svg></div>
+        </div>
+        <div class="stat-value">{{ quota.shipments_used|default:0 }}/{{ org.max_shipments|default:"∞" }}</div>
+        <div class="stat-label">Shipments Used</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-download"/></svg></div>
+        </div>
+        <div class="stat-value">{{ quota.storage_used_mb|default:0 }} MB</div>
+        <div class="stat-label">Storage Used</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-up"/></svg></div>
+        </div>
+        <div class="stat-value">{{ quota.api_requests_used|default:0 }}</div>
+        <div class="stat-label">API Requests</div>
+    </div>
+</div>
+
+<div class="grid-2 reveal" style="animation-delay:.08s">
+    <div class="panel">
+        <div class="flex items-center justify-between gap-2.5 px-5 pt-[18px] pb-3.5 border-b border-gray-200 dark:border-[#291F55]"><div><h2 class="text-[16px] font-extrabold text-gray-900 dark:text-white">Config</h2><p class="text-xs text-muted dark:text-[#B2ACD6] font-semibold mt-0.5">Tenant profile details</p></div></div>
+        <div class="p-5">
+            <div class="grid grid-cols-2 gap-3">
+                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2"><div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Subdomain</div><div class="text-[12.5px] font-extrabold text-gray-900 dark:text-white">{{ org.subdomain|default:"—" }}</div></div>
+                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2"><div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Timezone</div><div class="text-[12.5px] font-extrabold text-gray-900 dark:text-white">{{ org.timezone }}</div></div>
+                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2"><div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Currency</div><div class="text-[12.5px] font-extrabold text-gray-900 dark:text-white">{{ org.currency }}</div></div>
+                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2"><div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Brand Color</div><div class="text-[12.5px] font-extrabold text-gray-900 dark:text-white"><span style="display:inline-block; width:14px; height:14px; border-radius:5px; vertical-align:middle; background:{{ org.primary_color }};"></span> {{ org.primary_color }}</div></div>
+                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2"><div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Plan</div><div class="text-[12.5px] font-extrabold text-gray-900 dark:text-white">{{ org.get_plan_display }}</div></div>
+                <div class="p-3 rounded-[12px] bg-card-2 dark:bg-card-dark2"><div class="text-[10.5px] font-extrabold text-faint dark:text-[#8981B8] uppercase tracking-wider mb-1">Created</div><div class="text-[12.5px] font-extrabold text-gray-900 dark:text-white">{{ org.created_at|date:"M j, Y" }}</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div><h3>Domains</h3><p>Verified tenant domains</p></div>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Domain</th><th>Primary</th><th class="text-right">Verified</th></tr></thead>
+                <tbody>
+                    {% for d in domains %}
+                    <tr>
+                        <td><span style="font-size:12.5px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text);">{{ d.domain }}</span></td>
+                        <td><span class="badge {% if d.is_primary %}b-delivered{% else %}b-pending{% endif %}">{% if d.is_primary %}Yes{% else %}No{% endif %}</span></td>
+                        <td class="text-right"><span class="badge {% if d.is_verified %}b-delivered{% else %}b-delayed{% endif %}">{% if d.is_verified %}Verified{% else %}Pending{% endif %}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3"><div class="data-table-empty"><p>No domains configured.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

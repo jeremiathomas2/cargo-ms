@@ -171,9 +171,9 @@
 
 {% block extra_js %}
 <script>
-(function(){
+LibsReady(function(){
     var pts = {{ positions_json|safe }};
-    if (window.L && (pts||[]).length) {
+    if ((pts||[]).length) {
         var map = L.map('historyMap').setView([pts[0].lat, pts[0].lng], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'&copy; OpenStreetMap'}).addTo(map);
         var colors = ['#D96A16','#1DA36B','#38AEF2','#6D5BD0'];
@@ -201,6 +201,6 @@
                         y:{beginAtZero:true, grid:{color:'rgba(230,231,240,.5)'}, ticks:{font:{family:'Nunito Sans', size:11, weight:'700'}}}}}
         });
     }
-})();
+});
 </script>
 {% endblock %}

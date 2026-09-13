@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Webhook Subscriptions</h1>
+        <p>Registered callback URLs and subscribed events</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'webhooks_integration:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-up"/></svg> Overview</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.05s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'webhooks_integration:subscription_list' %}" class="chip {% if not active_filter %}active{% endif %}">All</a>
+            <a href="?active=1" class="chip {% if active_filter == '1' %}active{% endif %}">Active</a>
+            <a href="?active=0" class="chip {% if active_filter == '0' %}active{% endif %}">Inactive</a>
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2 flex-wrap">
+                <div class="search-field" style="width: 280px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="URL, org, event...">
+                </div>
+                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Endpoint URL</th>
+                    <th>Organization</th>
+                    <th>Events</th>
+                    <th>Retries</th>
+                    <th class="text-right">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in subscriptions %}
+                <tr>
+                    <td><span style="font-size:12px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text);">{{ s.url }}</span></td>
+                    <td><span style="font-size:12px; font-weight:700; color:var(--text-muted);">{{ s.organization.name }}</span></td>
+                    <td>
+                        {% for e in s.events %}
+                        <span class="badge b-info">{{ e }}</span>
+                        {% empty %}<span class="td-faint">—</span>
+                        {% endfor %}
+                    </td>
+                    <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ s.retry_count }}</span></td>
+                    <td class="text-right"><span class="badge {% if s.is_active %}b-delivered{% else %}b-delayed{% endif %}">{% if s.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5"><div class="data-table-empty"><p>No webhook subscriptions.</p></div></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if subscriptions.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ subscriptions.number }} of {{ subscriptions.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if subscriptions.has_previous %}?page={{ subscriptions.previous_page_number }}{% endif %}" class="page-btn {% if not subscriptions.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if subscriptions.has_next %}?page={{ subscriptions.next_page_number }}{% endif %}" class="page-btn {% if not subscriptions.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

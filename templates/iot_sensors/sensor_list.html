@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Sensor Devices</h1>
+        <p>Trackers, serial numbers and battery health</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'iot_sensors:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-map"/></svg> Overview</a>
+        <a href="{% url 'iot_sensors:alert_list' %}" class="btn btn-primary"><svg class="icon"><use href="#i-alert"/></svg> Alerts</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-pin"/></svg></div>
+        </div>
+        <div class="stat-value">{{ devices.paginator.count }}</div>
+        <div class="stat-label">Total Devices</div>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.08s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'iot_sensors:sensor_list' %}" class="chip {% if not type_filter %}active{% endif %}">All</a>
+            {% for val,label in type_choices %}
+            <a href="?type={{ val }}" class="chip {% if type_filter == val %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2 flex-wrap">
+                <div class="search-field" style="width: 280px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Tracker ID, serial, tracking no...">
+                </div>
+                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.1s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Tracker</th>
+                    <th>Type</th>
+                    <th>Serial</th>
+                    <th>Shipment</th>
+                    <th>Battery</th>
+                    <th>Status</th>
+                    <th class="text-right">Last Update</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in devices %}
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div class="fleet-icon" style="background:var(--brand-soft); border:none;">
+                                <svg class="icon" style="color:var(--brand);"><use href="#i-pin"/></svg>
+                            </div>
+                            <a href="{% url 'iot_sensors:sensor_detail' pk=d.pk %}" style="font-size:13px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ d.tracker_id }}</a>
+                        </div>
+                    </td>
+                    <td><span class="badge b-warehouse">{{ d.get_sensor_type_display }}</span></td>
+                    <td>
+                        <div style="font-size:12px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text);">{{ d.serial_number|default:"—" }}</div>
+                    </td>
+                    <td>
+                        {% if d.shipment %}
+                        <a href="{% url 'cargo:detail' pk=d.shipment.pk %}" style="font-size:11.5px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text-muted);">{{ d.shipment.tracking_id }}</a>
+                        {% else %}<span class="td-faint">—</span>{% endif %}
+                    </td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:52px; height:8px; background:var(--card-2); border-radius:999px; overflow:hidden;">
+                                <div style="width:{{ d.battery_level }}%; height:100%; background:{% if d.battery_level < 20 %}var(--danger){% elif d.battery_level < 50 %}var(--warning){% else %}var(--success){% endif %};"></div>
+                            </div>
+                            <span style="font-size:12px; font-weight:700;">{{ d.battery_level }}%</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge {% if d.is_active %}b-delivered{% else %}b-delayed{% endif %}">{% if d.is_active %}Active{% else %}Inactive{% endif %}</span>
+                    </td>
+                    <td class="text-right">
+                        <div style="font-size:12.5px; font-weight:800; color:var(--text); white-space:nowrap;">{% if d.last_update %}{{ d.last_update|timesince }} ago{% else %}—{% endif %}</div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-pin"/></svg></div>
+                            <p>No sensor devices registered.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if devices.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ devices.number }} of {{ devices.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if devices.has_previous %}?page={{ devices.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not devices.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if devices.has_next %}?page={{ devices.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not devices.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,8 +1,11 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db.models import Count, Sum, Q
+from django.db.models.functions import TruncMonth
 from django.http import HttpResponse
 from django.utils import timezone
-from django.db.models import Count, Sum, Q
 from datetime import timedelta
 import csv
 import json
@@ -11,6 +14,8 @@ from cargo.models import Shipment
 from billing.models import Invoice
 from payments.models import Payment
 from customers.models import Customer
+from saas_config.models import Organization
+from .models import ReportTemplate, ReportExport
 
 
 REPORT_TYPES = {
@@ -86,13 +91,20 @@ def report_view(request, report_type):
         pending = Invoice.objects.filter(status__in=['unpaid', 'partially_paid']).aggregate(
             total=Sum('balance')
         )['total'] or 0
-        by_month = list(
+        by_month_qs = (
             Payment.objects.filter(status='verified', created_at__gte=since)
-            .extra(select={'month': "strftime('%%Y-%%m', created_at)"})
+            .annotate(month=TruncMonth('created_at'))
             .values('month')
             .annotate(total=Sum('amount'))
             .order_by('month')
         )
+        by_month = [
+            {
+                'month': row['month'].strftime('%Y-%m') if row['month'] else '',
+                'total': float(row['total'] or 0),
+            }
+            for row in by_month_qs
+        ]
         data = {
             'total_revenue': total_revenue,
             'total_payments': total_payments,
@@ -139,6 +151,113 @@ def report_view(request, report_type):
         'data': data,
         'days': days,
         'since': since,
+    })
+
+
+@login_required
+def report_templates(request):
+    queryset = ReportTemplate.objects.select_related("organization").order_by("name")
+    search = request.GET.get("q", "")
+    if search:
+        queryset = queryset.filter(
+            Q(name__icontains=search) |
+            Q(report_type__icontains=search) |
+            Q(organization__name__icontains=search)
+        )
+    paginator = Paginator(queryset, 20)
+    templates = paginator.get_page(request.GET.get("page", 1))
+
+    if request.method == "POST":
+        action = request.POST.get("action", "")
+        if action == "create_template":
+            name = request.POST.get("name", "").strip()
+            report_type = request.POST.get("report_type", "").strip()
+            org_id = request.POST.get("organization", "")
+            if name and report_type in ReportTemplate.ReportType.values and org_id:
+                organization = Organization.objects.filter(pk=org_id).first()
+                if organization:
+                    ReportTemplate.objects.create(
+                        name=name,
+                        report_type=report_type,
+                        organization=organization,
+                        is_active=request.POST.get("is_active") == "on",
+                    )
+                    messages.success(request, f'Report template "{name}" created.')
+                else:
+                    messages.error(request, "Please choose a valid organization.")
+            else:
+                messages.error(request, "Name, report type and organization are required.")
+        elif action == "toggle_template":
+            template = ReportTemplate.objects.filter(pk=request.POST.get("template_id")).first()
+            if template:
+                template.is_active = not template.is_active
+                template.save(update_fields=["is_active"])
+                messages.success(request, f'Template "{template.name}" {"activated" if template.is_active else "deactivated"}.')
+            else:
+                messages.error(request, "Report template not found.")
+        elif action == "delete_template":
+            template = ReportTemplate.objects.filter(pk=request.POST.get("template_id")).first()
+            if template:
+                template.delete()
+                messages.success(request, "Report template deleted.")
+            else:
+                messages.error(request, "Report template not found.")
+        return redirect("reports:templates")
+
+    return render(request, "reports/templates.html", {
+        "templates": templates,
+        "organizations": Organization.objects.order_by("name"),
+        "report_type_choices": ReportTemplate.ReportType.choices,
+        "search": search,
+    })
+
+
+@login_required
+def report_exports(request):
+    queryset = ReportExport.objects.select_related("template", "requested_by").order_by("-created_at")
+    status_filter = request.GET.get("status", "")
+    if status_filter in ReportExport.Status.values:
+        queryset = queryset.filter(status=status_filter)
+    paginator = Paginator(queryset, 20)
+    exports = paginator.get_page(request.GET.get("page", 1))
+
+    if request.method == "POST":
+        action = request.POST.get("action", "")
+        if action == "create_export":
+            report_type = request.POST.get("report_type", "").strip()
+            export_format = request.POST.get("export_format", "pdf")
+            if report_type in ReportTemplate.ReportType.values and export_format in ReportExport.ExportFormat.values:
+                template = ReportTemplate.objects.filter(
+                    report_type=report_type, is_active=True, organization_id=request.POST.get("organization")
+                ).first()
+                ReportExport.objects.create(
+                    template=template,
+                    report_type=report_type,
+                    export_format=export_format,
+                    requested_by=request.user,
+                    parameters={"days": 30},
+                    status=ReportExport.Status.PENDING,
+                )
+                messages.success(request, "Export queued. Check back here for download.")
+            else:
+                messages.error(request, "Please choose a valid report type and format.")
+        elif action == "delete_export":
+            export = ReportExport.objects.filter(pk=request.POST.get("export_id")).first()
+            if export:
+                export.delete()
+                messages.success(request, "Export removed.")
+            else:
+                messages.error(request, "Export not found.")
+        return redirect("reports:exports")
+
+    return render(request, "reports/exports.html", {
+        "exports": exports,
+        "status_filter": status_filter,
+        "report_type_choices": ReportTemplate.ReportType.choices,
+        "format_choices": ReportExport.ExportFormat.choices,
+        "organizations": Organization.objects.order_by("name"),
+        "completed_count": ReportExport.objects.filter(status=ReportExport.Status.COMPLETED).count(),
+        "pending_count": ReportExport.objects.filter(status=ReportExport.Status.PENDING).count(),
     })
 
 

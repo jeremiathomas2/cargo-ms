@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Border Crossings</h1>
+        <p>Entry and exit events recorded at border posts</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'cross_border:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-route"/></svg> Overview</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.05s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'cross_border:crossing_list' %}" class="chip {% if not type_filter %}active{% endif %}">All</a>
+            {% for val,label in event_types %}
+            <a href="?type={{ val }}" class="chip {% if type_filter == val %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Border Post</th>
+                    <th>Trip</th>
+                    <th>Shipment</th>
+                    <th>Type</th>
+                    <th>Location</th>
+                    <th class="text-right">Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in crossings %}
+                <tr>
+                    <td><span style="font-size:12.5px; font-weight:800; color:var(--text);">{{ c.border_post.name }}</span></td>
+                    <td><span style="font-size:12px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text-muted);">{{ c.trip.trip_number|default:"—" }}</span></td>
+                    <td><a href="{% url 'cargo:detail' pk=c.shipment.pk %}" style="font-size:11.5px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text-muted);">{{ c.shipment.tracking_id }}</a></td>
+                    <td><span class="badge {% if c.event_type == 'entry' %}b-delivered{% else %}b-pending{% endif %}">{{ c.get_event_type_display }}</span></td>
+                    <td><span class="td-faint">{{ c.latitude|floatformat:3 }}, {{ c.longitude|floatformat:3 }}</span></td>
+                    <td class="text-right"><span class="td-faint">{{ c.timestamp|timesince }} ago</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6"><div class="data-table-empty"><p>No crossing events recorded.</p></div></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if crossings.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ crossings.number }} of {{ crossings.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if crossings.has_previous %}?page={{ crossings.previous_page_number }}{% endif %}" class="page-btn {% if not crossings.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if crossings.has_next %}?page={{ crossings.next_page_number }}{% endif %}" class="page-btn {% if not crossings.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

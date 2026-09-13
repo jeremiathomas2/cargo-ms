@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>AI Intelligence</h1>
+        <p>ETA projections, route optimization, anomaly detection and demand forecasting</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'ai_intelligence:anomaly_list' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-alert"/></svg> Anomalies</a>
+        <a href="{% url 'ai_intelligence:pricing_list' %}" class="btn btn-primary"><svg class="icon"><use href="#i-cash"/></svg> Pricing Recs</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-clock"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_projections }}</div>
+        <div class="stat-label">ETA Projections</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--danger-soft); color:var(--danger);"><svg class="icon"><use href="#i-alert"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_anomalies_open }}</div>
+        <div class="stat-label">Open Anomalies</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-check"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_optimizations }}</div>
+        <div class="stat-label">Route Optimizations</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-cash"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_pricing }}</div>
+        <div class="stat-label">Pending Pricing Recs</div>
+    </div>
+</div>
+
+<div class="grid-2 reveal" style="animation-delay:.08s">
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <h3>Recent Anomalies</h3>
+                <p>Speed, route and dwell events</p>
+            </div>
+            <a href="{% url 'ai_intelligence:anomaly_list' %}" class="link-more">View all</a>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr><th>Device</th><th>Type</th><th>Severity</th><th class="text-right">Time</th></tr>
+                </thead>
+                <tbody>
+                    {% for a in anomalies %}
+                    <tr>
+                        <td><span style="font-size:12.5px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ a.device.tracker_id }}</span></td>
+                        <td><span class="badge b-pending">{{ a.get_anomaly_type_display }}</span></td>
+                        <td><span class="badge {% if a.severity == 'critical' or a.severity == 'high' %}b-delayed{% elif a.severity == 'medium' %}b-pending{% else %}b-info{% endif %}">{{ a.get_severity_display }}</span></td>
+                        <td class="text-right"><span class="td-faint">{{ a.detected_at|timesince }} ago</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4"><div class="data-table-empty"><p>No anomalies detected.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <h3>Pricing Recommendations</h3>
+                <p>AI-generated rate adjustments</p>
+            </div>
+            <a href="{% url 'ai_intelligence:pricing_list' %}" class="link-more">View all</a>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr><th>Route</th><th>Current</th><th>Suggested</th><th>Status</th><th class="text-right">Created</th></tr>
+                </thead>
+                <tbody>
+                    {% for p in pricing %}
+                    <tr>
+                        <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ p.route.name|default:"—" }}</span></td>
+                        <td><span style="font-size:12px; font-weight:700; color:var(--text);">{{ p.current_rate }}</span></td>
+                        <td><span style="font-size:12px; font-weight:700; color:{% if p.suggested_rate > p.current_rate %}var(--success){% else %}var(--danger){% endif %};">{{ p.suggested_rate }}</span></td>
+                        <td><span class="badge {% if p.is_approved %}b-delivered{% else %}b-pending{% endif %}">{% if p.is_approved %}Approved{% else %}Pending{% endif %}</span></td>
+                        <td class="text-right"><span class="td-faint">{{ p.created_at|timesince }} ago</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5"><div class="data-table-empty"><p>No pricing recommendations.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

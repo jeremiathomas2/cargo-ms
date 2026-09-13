@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Shipment Templates</h1>
+        <p>Reusable routes and cargo profiles for fast booking</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="#new-template" class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg> New Template</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-file"/></svg></div>
+        </div>
+        <div class="stat-value">{{ templates_page.paginator.count }}</div>
+        <div class="stat-label">Templates</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-clock"/></svg></div>
+        </div>
+        <div class="stat-value">{{ recurring_count|default:0 }}</div>
+        <div class="stat-label">Recurring</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--info-soft); color:var(--info);"><svg class="icon"><use href="#i-route"/></svg></div>
+        </div>
+        <div class="stat-value">{{ customer_count|default:0 }}</div>
+        <div class="stat-label">Active Customers</div>
+    </div>
+</div>
+
+<form method="post" action="{% url 'self_service:shipment_templates' %}" id="new-template" class="panel reveal" style="margin-bottom:20px; animation-delay:.08s;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="create_template">
+    <div style="padding:18px 20px; border-bottom:1px solid var(--border);">
+        <h2 style="font-size:14px; font-weight:800;">Create New Template</h2>
+        <p class="sub">Save a repeatable route so future bookings prefill automatically</p>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" style="padding:20px;">
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Template Name</label>
+            <input type="text" name="name" required placeholder="Weekly Dar→Mwanza" class="input-field" style="margin-top:6px;">
+        </div>
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Customer</label>
+            <select name="customer" required class="input-field" style="margin-top:6px;">
+                <option value="">— Select customer —</option>
+                {% for c in customers %}
+                <option value="{{ c.pk }}">{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Origin</label>
+            <input type="text" name="origin" required placeholder="Dar es Salaam" class="input-field" style="margin-top:6px;">
+        </div>
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Destination</label>
+            <input type="text" name="destination" required placeholder="Mwanza" class="input-field" style="margin-top:6px;">
+        </div>
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Cargo Type</label>
+            <input type="text" name="cargo_type" placeholder="General / Perishable / ..." class="input-field" style="margin-top:6px;">
+        </div>
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Est. Weight (kg)</label>
+            <input type="number" name="weight" step="0.01" min="0" placeholder="500" class="input-field" style="margin-top:6px;">
+        </div>
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Recurrence</label>
+            <select name="recurrence_interval" class="input-field" style="margin-top:6px;">
+                <option value="">None</option>
+                {% for value, label in recurrence_choices %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+            <label style="display:flex; align-items:center; gap:9px; font-size:13px; font-weight:800; cursor:pointer;">
+                <input type="checkbox" name="is_recurring" style="width:16px; height:16px; accent-color:var(--brand);">
+                Recurring shipment
+            </label>
+        </div>
+        <div class="md:col-span-2 lg:col-span-3">
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Special Handling</label>
+            <input type="text" name="special_handling" placeholder="Fragile, temperature controlled, high value..." class="input-field" style="margin-top:6px;">
+        </div>
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--border); display:flex; justify-content:flex-end;">
+        <button type="submit" class="btn btn-primary" style="margin:0;"><svg class="icon"><use href="#i-plus"/></svg> Save Template</button>
+    </div>
+</form>
+
+<div class="panel reveal" style="animation-delay:.1s">
+    <div class="filter-row" style="border:none;">
+        <div class="chip-group">
+            <a href="{% url 'self_service:shipment_templates' %}" class="chip {% if not search %}active{% endif %}">All</a>
+            <a href="#new-template" class="chip">Add New</a>
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2">
+                <div class="search-field" style="width:320px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Template, origin, destination, customer...">
+                </div>
+                <button type="submit" class="chip" style="background:var(--brand); color:#fff; border-color:var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Template</th>
+                    <th>Customer</th>
+                    <th>Route</th>
+                    <th>Cargo</th>
+                    <th>Weight</th>
+                    <th>Recurring</th>
+                    <th>Last Used</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in templates_page %}
+                <tr>
+                    <td style="font-size:13px; font-weight:800;">{{ t.name }}</td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ t.customer }}</td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700;">
+                            <span>{{ t.origin }}</span>
+                            <svg class="icon" style="width:13px;height:13px;color:var(--faint);"><use href="#i-chevron-down"/></svg>
+                            <span>{{ t.destination }}</span>
+                        </div>
+                    </td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ t.cargo_type|default:"—" }}</td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ t.weight|default:"—" }}</td>
+                    <td>
+                        {% if t.is_recurring %}
+                        <span class="badge b-info">{{ t.get_recurrence_interval_display }}</span>
+                        {% else %}
+                        <span class="td-faint">One-off</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12px; font-weight:700; white-space:nowrap;">
+                        {% if t.last_used %}{{ t.last_used|timesince }} ago{% else %}<span class="td-faint">Never</span>{% endif %}
+                    </td>
+                    <td class="text-right">
+                        <form method="post" action="{% url 'self_service:shipment_templates' %}" style="display:inline;" onsubmit="return confirm('Delete this template?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete_template">
+                            <input type="hidden" name="template_id" value="{{ t.pk }}">
+                            <button type="submit" class="chip" style="font-size:11px; background:var(--danger-soft); color:var(--danger); border-color:var(--danger);">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-file"/></svg></div>
+                            <p>No shipment templates yet. Create your first one above.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if templates_page.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ templates_page.number }} of {{ templates_page.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if templates_page.has_previous %}?page={{ templates_page.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not templates_page.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if templates_page.has_next %}?page={{ templates_page.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not templates_page.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

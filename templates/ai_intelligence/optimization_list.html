@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Route Optimizations</h1>
+        <p>AI-suggested routing with distance, time and fuel savings</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'ai_intelligence:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-bar"/></svg> Overview</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.05s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Trip</th>
+                    <th>Saved KM</th>
+                    <th>Saved Hours</th>
+                    <th>Fuel Savings</th>
+                    <th>Status</th>
+                    <th class="text-right">Generated</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in optimizations %}
+                <tr>
+                    <td>
+                        {% if o.trip %}
+                        <a href="{% url 'transportation:trip_detail' pk=o.trip.pk %}" style="font-size:12.5px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ o.trip.trip_number|default:o.trip.pk }}</a>
+                        {% else %}<span class="td-faint">—</span>{% endif %}
+                    </td>
+                    <td><span style="font-size:12.5px; font-weight:700; color:var(--success);">{{ o.estimated_savings_km }} km</span></td>
+                    <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ o.estimated_savings_hours }} hrs</span></td>
+                    <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ o.fuel_savings }}</span></td>
+                    <td><span class="badge {% if o.is_applied %}b-delivered{% else %}b-pending{% endif %}">{% if o.is_applied %}Applied{% else %}Suggested{% endif %}</span></td>
+                    <td class="text-right"><span class="td-faint">{{ o.created_at|timesince }} ago</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-route"/></svg></div>
+                            <p>No route optimizations generated.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if optimizations.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ optimizations.number }} of {{ optimizations.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if optimizations.has_previous %}?page={{ optimizations.previous_page_number }}{% endif %}" class="page-btn {% if not optimizations.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if optimizations.has_next %}?page={{ optimizations.next_page_number }}{% endif %}" class="page-btn {% if not optimizations.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

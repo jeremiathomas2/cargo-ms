@@ -32,7 +32,7 @@ class SLABreachAdmin(admin.ModelAdmin):
         "created_at",
     )
     list_filter = ("severity", "escalated", "resolved", "created_at")
-    search_fields = ("shipment__tracking_number",)
+    search_fields = ("shipment__tracking_id",)
 
 
 @admin.register(Watchlist)
@@ -61,4 +61,4 @@ class RiskScoreAdmin(admin.ModelAdmin):
         "created_at",
     )
     list_filter = ("reviewed", "created_at")
-    search_fields = ("shipment__tracking_number",)
+    search_fields = ("shipment__tracking_id",)

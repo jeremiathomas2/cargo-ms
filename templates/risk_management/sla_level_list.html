@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>SLA Levels</h1>
+        <p>Service level agreements available on the network</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'risk_management:breach_list' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-alert"/></svg> Breaches</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.05s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th>Target Transit</th>
+                    <th>Max Transit</th>
+                    <th>Description</th>
+                    <th class="text-right">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in levels %}
+                <tr>
+                    <td><span style="font-size:12.5px; font-weight:800; color:var(--text);">{{ s.name }}</span></td>
+                    <td><span class="badge b-info">{{ s.code }}</span></td>
+                    <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ s.target_transit_hours }} hrs</span></td>
+                    <td><span style="font-size:12.5px; font-weight:700; color:var(--danger);">{{ s.max_transit_hours }} hrs</span></td>
+                    <td><span class="td-faint">{{ s.description|default:"—" }}</span></td>
+                    <td class="text-right"><span class="badge {% if s.is_active %}b-delivered{% else %}b-delayed{% endif %}">{% if s.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-clock"/></svg></div>
+                            <p>No SLA levels configured.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

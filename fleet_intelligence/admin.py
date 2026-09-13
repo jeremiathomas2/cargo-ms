@@ -36,7 +36,7 @@ class VehicleMaintenanceAdmin(admin.ModelAdmin):
         "created_at",
     )
     list_filter = ("maintenance_type", "status")
-    search_fields = ("vehicle__plate_number", "description", "performed_by")
+    search_fields = ("vehicle__registration_number", "description", "performed_by")
 
 
 @admin.register(FuelLog)
@@ -52,7 +52,7 @@ class FuelLogAdmin(admin.ModelAdmin):
         "created_by",
     )
     list_filter = ("date",)
-    search_fields = ("vehicle__plate_number", "station")
+    search_fields = ("vehicle__registration_number", "station")
 
 
 @admin.register(CarbonEmission)
@@ -68,4 +68,4 @@ class CarbonEmissionAdmin(admin.ModelAdmin):
         "created_at",
     )
     list_filter = ("created_at",)
-    search_fields = ("shipment__tracking_number", "trip__trip_number")
+    search_fields = ("shipment__tracking_id", "trip__trip_number")

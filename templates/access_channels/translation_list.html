@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Translations</h1>
+        <p>Localized UI strings across supported languages</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'access_channels:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-bell"/></svg> Overview</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.05s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'access_channels:translation_list' %}" class="chip {% if not lang_filter %}active{% endif %}">All</a>
+            {% for lang in languages %}
+            <a href="?lang={{ lang }}" class="chip {% if lang_filter == lang %}active{% endif %}">{{ lang }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2 flex-wrap">
+                <div class="search-field" style="width: 280px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Key or value...">
+                </div>
+                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Language</th>
+                    <th>Key</th>
+                    <th>Value</th>
+                    <th>Context</th>
+                    <th class="text-right">Updated</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in translations %}
+                <tr>
+                    <td><span class="badge b-info">{{ t.language_code }}</span></td>
+                    <td><span style="font-size:12px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ t.key }}</span></td>
+                    <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ t.value|truncatechars:60 }}</span></td>
+                    <td><span class="td-faint">{{ t.context|default:"—" }}</span></td>
+                    <td class="text-right"><span class="td-faint">{{ t.updated_at|timesince }} ago</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5"><div class="data-table-empty"><p>No translations found.</p></div></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if translations.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ translations.number }} of {{ translations.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if translations.has_previous %}?page={{ translations.previous_page_number }}{% endif %}" class="page-btn {% if not translations.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if translations.has_next %}?page={{ translations.next_page_number }}{% endif %}" class="page-btn {% if not translations.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

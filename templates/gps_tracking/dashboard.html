@@ -167,7 +167,7 @@
 
 {% block extra_js %}
 <script>
-(function(){
+LibsReady(function(){
     var typeData = {{ device_type_counts|safe }};
     if (typeData && typeData.length) {
         var el = document.getElementById('fleetChart');
@@ -187,6 +187,6 @@
             });
         }
     }
-})();
+});
 </script>
 {% endblock %}

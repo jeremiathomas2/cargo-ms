@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Corporate API Keys</h1>
+        <p>Access credentials for external integrations and self-service bookings</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="#new-key" class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg> Generate Key</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-shield"/></svg></div>
+        </div>
+        <div class="stat-value">{{ keys_page.paginator.count }}</div>
+        <div class="stat-label">API Keys</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-check"/></svg></div>
+        </div>
+        <div class="stat-value">{{ active_count|default:0 }}</div>
+        <div class="stat-label">Active</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--info-soft); color:var(--info);"><svg class="icon"><use href="#i-bar"/></svg></div>
+        </div>
+        <div class="stat-value">{{ avg_rate_limit|default:0 }}</div>
+        <div class="stat-label">Avg Rate Limit</div>
+    </div>
+</div>
+
+<form method="post" action="{% url 'self_service:api_keys' %}" id="new-key" class="panel reveal" style="margin-bottom:20px; animation-delay:.08s;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="create_key">
+    <div style="padding:18px 20px; border-bottom:1px solid var(--border);">
+        <h2 style="font-size:14px; font-weight:800;">Generate New API Key</h2>
+        <p class="sub">Keys are shown once. Store the secret key in a secure vault.</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4" style="padding:20px;">
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Key Name</label>
+            <input type="text" name="key_name" required placeholder="Production gateway" class="input-field" style="margin-top:6px;">
+        </div>
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Customer</label>
+            <select name="customer" required class="input-field" style="margin-top:6px;">
+                <option value="">— Select customer —</option>
+                {% for c in customers %}
+                <option value="{{ c.pk }}">{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label style="font-size:12px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.3px;">Rate Limit (req/day)</label>
+            <input type="number" name="rate_limit" min="1" value="1000" class="input-field" style="margin-top:6px;">
+        </div>
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--border); display:flex; justify-content:flex-end;">
+        <button type="submit" class="btn btn-primary" style="margin:0;"><svg class="icon"><use href="#i-plus"/></svg> Generate</button>
+    </div>
+</form>
+
+<div class="panel reveal" style="animation-delay:.1s">
+    <div class="filter-row" style="border:none;">
+        <div class="chip-group">
+            <a href="{% url 'self_service:api_keys' %}" class="chip {% if not customer_filter %}active{% endif %}">All</a>
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2">
+                <select name="customer" class="chip" onchange="this.form.submit()">
+                    <option value="">All Customers</option>
+                    {% for c in customers %}
+                    <option value="{{ c.pk }}" {% if customer_filter == c.pk|stringformat:"s" %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Key Name</th>
+                    <th>Customer</th>
+                    <th>API Key</th>
+                    <th>Requests</th>
+                    <th>Rate Limit</th>
+                    <th>Created</th>
+                    <th>Expires</th>
+                    <th>Status</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for k in keys_page %}
+                <tr>
+                    <td style="font-size:13px; font-weight:800;">{{ k.key_name }}</td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ k.customer }}</td>
+                    <td>
+                        <span class="td-faint" style="font-family:ui-monospace, monospace; font-size:11.5px;" title="{{ k.api_key }}">{{ k.api_key|truncatechars:10 }}••••</span>
+                    </td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ k.total_requests }}</td>
+                    <td style="font-size:12.5px; font-weight:700;">{{ k.rate_limit }}/day</td>
+                    <td style="font-size:12px; font-weight:700; white-space:nowrap;">{{ k.created_at|date:"d M Y" }}</td>
+                    <td style="font-size:12px; font-weight:700; white-space:nowrap;">
+                        {% if k.expires_at %}{{ k.expires_at|date:"d M Y" }}{% else %}<span class="td-faint">Never</span>{% endif %}
+                    </td>
+                    <td>
+                        <span class="badge {% if k.is_active %}b-delivered{% else %}b-delayed{% endif %}">{% if k.is_active %}Active{% else %}Revoked{% endif %}</span>
+                    </td>
+                    <td class="text-right">
+                        <div style="display:inline-flex; gap:6px;">
+                            <form method="post" action="{% url 'self_service:api_keys' %}" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="toggle_key">
+                                <input type="hidden" name="key_id" value="{{ k.pk }}">
+                                <button type="submit" class="chip" style="font-size:11px;">{% if k.is_active %}Revoke{% else %}Activate{% endif %}</button>
+                            </form>
+                            <form method="post" action="{% url 'self_service:api_keys' %}" style="display:inline;" onsubmit="return confirm('Delete this API key permanently?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_key">
+                                <input type="hidden" name="key_id" value="{{ k.pk }}">
+                                <button type="submit" class="chip" style="font-size:11px; background:var(--danger-soft); color:var(--danger); border-color:var(--danger);">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9">
+                        <div class="data-table-empty">
+                            <div class="empty-icon"><svg class="icon"><use href="#i-shield"/></svg></div>
+                            <p>No API keys yet. Generate one above.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if keys_page.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ keys_page.number }} of {{ keys_page.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if keys_page.has_previous %}?page={{ keys_page.previous_page_number }}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not keys_page.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if keys_page.has_next %}?page={{ keys_page.next_page_number }}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% else %}#{% endif %}"
+               class="page-btn {% if not keys_page.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

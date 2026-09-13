@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>USSD Sessions</h1>
+        <p>Phone-based shipment tracking interactions</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'access_channels:dashboard' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-bell"/></svg> Overview</a>
+    </div>
+</div>
+
+<div class="panel reveal" style="margin-bottom: 20px; animation-delay:.05s">
+    <div class="filter-row">
+        <div class="chip-group">
+            <a href="{% url 'access_channels:ussd_list' %}" class="chip {% if not status_filter %}active{% endif %}">All</a>
+            {% for val,label in status_choices %}
+            <a href="?status={{ val }}" class="chip {% if status_filter == val %}active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </div>
+        <div class="filter-row-right">
+            <form method="get" class="flex items-center gap-2 flex-wrap">
+                <div class="search-field" style="width: 280px;">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Session ID, phone, tracking...">
+                </div>
+                <button type="submit" class="chip" style="background: var(--brand); color: #fff; border-color: var(--brand);">
+                    <svg class="icon"><use href="#i-filter"/></svg> Go
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="panel reveal" style="animation-delay:.08s">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Session ID</th>
+                    <th>Phone</th>
+                    <th>Tracking No</th>
+                    <th>Responses</th>
+                    <th class="text-right">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in sessions %}
+                <tr>
+                    <td><span style="font-size:12px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ s.session_id }}</span></td>
+                    <td><span style="font-size:12.5px; font-weight:700; font-family:ui-monospace, monospace; color:var(--text);">{{ s.phone_number }}</span></td>
+                    <td><a href="{% url 'public_tracking:result' tracking_id=s.tracking_number %}" style="font-size:12px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text-muted);">{{ s.tracking_number }}</a></td>
+                    <td><span class="td-faint">{{ s.responses|length }}</span></td>
+                    <td class="text-right"><span class="badge {% if s.status == 'active' %}b-transit{% elif s.status == 'completed' %}b-delivered{% else %}b-delayed{% endif %}">{{ s.get_status_display }}</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5"><div class="data-table-empty"><p>No USSD sessions.</p></div></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if sessions.has_other_pages %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ sessions.number }} of {{ sessions.paginator.num_pages }}</div>
+        <div class="pagination-controls">
+            <a href="{% if sessions.has_previous %}?page={{ sessions.previous_page_number }}{% endif %}" class="page-btn {% if not sessions.has_previous %}disabled{% endif %}">
+                <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-left"/></svg> Prev
+            </a>
+            <a href="{% if sessions.has_next %}?page={{ sessions.next_page_number }}{% endif %}" class="page-btn {% if not sessions.has_next %}disabled{% endif %}">
+                Next <svg class="icon" style="width:14px;height:14px;"><use href="#i-chevron-down"/></svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

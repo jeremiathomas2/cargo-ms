@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-head reveal" style="animation-delay:.02s">
+    <div>
+        <h1>Fleet Intelligence</h1>
+        <p>Driver scorecards, vehicle maintenance, fuel and carbon analytics</p>
+    </div>
+    <div class="page-head-actions">
+        <a href="{% url 'fleet_intelligence:scorecard_list' %}" class="btn btn-ghost"><svg class="icon"><use href="#i-users"/></svg> Scorecards</a>
+        <a href="{% url 'fleet_intelligence:maintenance_list' %}" class="btn btn-primary"><svg class="icon"><use href="#i-truck"/></svg> Maintenance</a>
+    </div>
+</div>
+
+<div class="stat-grid reveal" style="animation-delay:.05s">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--brand-soft); color:var(--brand);"><svg class="icon"><use href="#i-users"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_scorecards }}</div>
+        <div class="stat-label">Driver Scorecards</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--warning-soft); color:var(--warning);"><svg class="icon"><use href="#i-alert"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_maintenance }}</div>
+        <div class="stat-label">Open Maintenance</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--secondary-soft); color:var(--secondary);"><svg class="icon"><use href="#i-cash"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_fuel }}</div>
+        <div class="stat-label">Fuel Logs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div class="stat-icon" style="background:var(--success-soft); color:var(--success);"><svg class="icon"><use href="#i-package"/></svg></div>
+        </div>
+        <div class="stat-value">{{ num_emissions }}</div>
+        <div class="stat-label">Emission Records</div>
+    </div>
+</div>
+
+<div class="grid-2 reveal" style="animation-delay:.08s">
+    <div class="panel">
+        <div class="panel-head">
+            <div><h3>Top Drivers</h3><p>Latest scorecard rankings</p></div>
+            <a href="{% url 'fleet_intelligence:scorecard_list' %}" class="link-more">View all</a>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Driver</th><th>Score</th><th>On-Time</th><th>Speeding</th><th class="text-right">Period</th></tr></thead>
+                <tbody>
+                    {% for s in scorecards %}
+                    <tr>
+                        <td><span style="font-size:12.5px; font-weight:800; color:var(--text);">{{ s.driver.first_name }} {{ s.driver.last_name }}</span></td>
+                        <td><span style="font-size:13px; font-weight:800; color:{% if s.total_score >= 80 %}var(--success){% elif s.total_score >= 50 %}var(--warning){% else %}var(--danger){% endif %};">{{ s.total_score }}</span></td>
+                        <td><span class="badge {% if s.on_time_deliveries > 0 %}b-delivered{% else %}b-delayed{% endif %}">{{ s.on_time_deliveries }}/{{ s.total_deliveries }}</span></td>
+                        <td><span class="badge {% if s.speeding_events == 0 %}b-delivered{% else %}b-delayed{% endif %}">{{ s.speeding_events }}</span></td>
+                        <td class="text-right"><span class="td-faint">{{ s.period_start|date:"M j" }} → {{ s.period_end|date:"M j" }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5"><div class="data-table-empty"><p>No scorecards yet.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div><h3>Recent Fuel Logs</h3><p>Latest fill-ups recorded</p></div>
+            <a href="{% url 'fleet_intelligence:fuel_log_list' %}" class="link-more">View all</a>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Vehicle</th><th>Liters</th><th>Cost</th><th class="text-right">Date</th></tr></thead>
+                <tbody>
+                    {% for f in fuel %}
+                    <tr>
+                        <td><span style="font-size:12.5px; font-weight:800; font-family:ui-monospace, monospace; color:var(--text);">{{ f.vehicle.registration_number }}</span></td>
+                        <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ f.fuel_liters }}</span></td>
+                        <td><span style="font-size:12.5px; font-weight:700; color:var(--text);">{{ f.fuel_cost }}</span></td>
+                        <td class="text-right"><span class="td-faint">{{ f.date|date:"M j, Y" }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4"><div class="data-table-empty"><p>No fuel logs.</p></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

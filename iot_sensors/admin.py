@@ -61,4 +61,4 @@ class DigitalSealAdmin(admin.ModelAdmin):
         "verified_at",
     )
     list_filter = ("status", "applied_at")
-    search_fields = ("seal_id", "shipment__tracking_number")
+    search_fields = ("seal_id", "shipment__tracking_id")
